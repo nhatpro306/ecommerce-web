@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { CategoryType } from '../../types';
-import { toast } from 'sonner';
+import { isNoRowsError, toUserFacingQueryError } from '@/utils/errorHandling';
 
 export const categoryService = {
   async getCategories(): Promise<CategoryType[]> {
@@ -11,16 +11,14 @@ export const categoryService = {
         .order('name');
 
       if (error) {
-        console.error('Error fetching categories:', error);
-        toast.error('Failed to fetch categories');
-        return [];
+        throw toUserFacingQueryError('Categories', error);
       }
 
       return data as CategoryType[];
     } catch (error) {
-      console.error('Error in getCategories:', error);
-      toast.error('Something went wrong');
-      return [];
+      throw error instanceof Error
+        ? error
+        : toUserFacingQueryError('Categories', {});
     }
   },
 
@@ -33,16 +31,17 @@ export const categoryService = {
         .single();
 
       if (error) {
-        console.error('Error fetching category:', error);
-        toast.error('Failed to fetch category');
-        return null;
+        if (isNoRowsError(error)) {
+          return null;
+        }
+        throw toUserFacingQueryError('Category', error);
       }
 
       return data as CategoryType;
     } catch (error) {
-      console.error('Error in getCategoryById:', error);
-      toast.error('Something went wrong');
-      return null;
+      throw error instanceof Error
+        ? error
+        : toUserFacingQueryError('Category', {});
     }
   },
 };

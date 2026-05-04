@@ -1,5 +1,6 @@
 import { productService } from '@/services/product/productService'
 import { ProductType } from '@/types'
+import { UNABLE_TO_REACH_DATABASE } from '@/utils/errorHandling'
 import { useQuery, UseQueryOptions } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 
@@ -99,22 +100,23 @@ export function useProducts(options?: UseQueryOptions<ProductType[]>) {
     categoryFilter: 'all',
   });
 
-	const query = useQuery({
-		queryKey: productKeys.lists(),
-		queryFn: async () => {
-			const data = await productService.getProducts()
-			// Ensure we always return an array
-			return Array.isArray(data) ? data : []
-		},
+  const query = useQuery({
+    queryKey: productKeys.lists(),
+    queryFn: async () => {
+      const data = await productService.getProducts()
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : []
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     retry: (failureCount, error) => {
-      // Don't retry on 404 or permission errors
       if (
         error instanceof Error &&
-        (error.message.includes('404') ||
+        (error.message.includes(UNABLE_TO_REACH_DATABASE) ||
+          error.message.includes('404') ||
           error.message.includes('permission') ||
-          error.message.includes('unauthorized'))
+          error.message.includes('unauthorized') ||
+          error.message.includes('do not have permission'))
       ) {
         return false;
       }
@@ -193,12 +195,13 @@ export function useProduct(
     enabled: !!productId, // Only fetch when productId is provided
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
-      // Don't retry on 404 or permission errors
       if (
         error instanceof Error &&
-        (error.message.includes('404') ||
+        (error.message.includes(UNABLE_TO_REACH_DATABASE) ||
+          error.message.includes('404') ||
           error.message.includes('not found') ||
-          error.message.includes('permission'))
+          error.message.includes('permission') ||
+          error.message.includes('do not have permission'))
       ) {
         return false;
       }
@@ -223,12 +226,13 @@ export function useProductsByCategory(
     enabled: !!categoryId && categoryId > 0, // Only fetch when valid categoryId
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
-      // Don't retry on 404 or permission errors
       if (
         error instanceof Error &&
-        (error.message.includes('404') ||
+        (error.message.includes(UNABLE_TO_REACH_DATABASE) ||
+          error.message.includes('404') ||
           error.message.includes('permission') ||
-          error.message.includes('unauthorized'))
+          error.message.includes('unauthorized') ||
+          error.message.includes('do not have permission'))
       ) {
         return false;
       }
@@ -253,20 +257,22 @@ export function useFilteredProducts(
   });
 
   // Use the base products query without additional filtering
-	const productsQuery = useQuery({
-		queryKey: productKeys.lists(),
-		queryFn: async () => {
-			const data = await productService.getProducts()
-			return Array.isArray(data) ? data : []
-		},
+  const productsQuery = useQuery({
+    queryKey: productKeys.lists(),
+    queryFn: async () => {
+      const data = await productService.getProducts()
+      return Array.isArray(data) ? data : []
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: (failureCount, error) => {
       if (
         error instanceof Error &&
-        (error.message.includes('404') ||
+        (error.message.includes(UNABLE_TO_REACH_DATABASE) ||
+          error.message.includes('404') ||
           error.message.includes('permission') ||
-          error.message.includes('unauthorized'))
+          error.message.includes('unauthorized') ||
+          error.message.includes('do not have permission'))
       ) {
         return false;
       }

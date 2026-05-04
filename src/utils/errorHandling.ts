@@ -6,6 +6,36 @@ export const ErrorCodes = {
   RLS_VIOLATION: '42501',
 };
 
+/** Substring in messages from {@link toUserFacingQueryError} for unreachable API/DB. */
+export const UNABLE_TO_REACH_DATABASE = 'Unable to reach the database';
+
+/**
+ * Maps Supabase/PostgREST client errors to an Error for React Query.
+ * Does not log — keeps dev terminal clean; show errors in UI instead.
+ */
+export function toUserFacingQueryError(
+  subject: string,
+  error: { message?: string; code?: string }
+): Error {
+  const raw = error.message ?? '';
+  if (
+    raw.includes('Failed to fetch') ||
+    raw.includes('NetworkError') ||
+    raw.includes('Load failed')
+  ) {
+    return new Error(
+      `${UNABLE_TO_REACH_DATABASE}. Check your connection and Supabase configuration.`
+    );
+  }
+  if (error.code === ErrorCodes.RLS_VIOLATION) {
+    return new Error('You do not have permission to view this data.');
+  }
+  if (raw) {
+    return new Error(`${subject}: ${raw}`);
+  }
+  return new Error(`${subject} could not be loaded.`);
+}
+
 /**
  * Check if error is a "No rows returned" error
  */

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 import { Progress } from "@/components/ui/progress";
 import { useGetProductReviews, useCreateReview } from "@/hooks/queries";

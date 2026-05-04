@@ -16,6 +16,7 @@ import {
   Users,
   ChevronRight,
   User,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -73,7 +74,12 @@ export default function Sidebar() {
   const { state } = useSidebar();
 
   // Use the TanStack Query hook instead of manual state management
-  const { data: categories, isLoading: loading } = useCategories();
+  const {
+    data: categories,
+    isLoading: loading,
+    error: categoriesError,
+    refetch: refetchCategories,
+  } = useCategories();
 
   const isCollapsed = state === "collapsed";
 
@@ -211,7 +217,7 @@ export default function Sidebar() {
                         >
                           <SidebarMenuItem>
                             <SidebarMenuButton
-                              asChild
+                              render={<Link href={item.href} />}
                               isActive={isActive}
                               className={cn(
                                 "group relative transition-all duration-200",
@@ -221,35 +227,33 @@ export default function Sidebar() {
                               )}
                               tooltip={item.name}
                             >
-                              <Link href={item.href}>
-                                <Icon
-                                  className={cn(
-                                    "h-4 w-4 transition-all duration-200",
-                                    isActive
-                                      ? "text-primary"
-                                      : "text-muted-foreground group-hover:text-foreground",
-                                  )}
+                              <Icon
+                                className={cn(
+                                  "h-4 w-4 transition-all duration-200",
+                                  isActive
+                                    ? "text-primary"
+                                    : "text-muted-foreground group-hover:text-foreground",
+                                )}
+                              />
+                              {!isCollapsed && (
+                                <span className="text-sm font-medium">
+                                  {item.name}
+                                </span>
+                              )}
+                              {/* Active indicator */}
+                              {isActive && (
+                                <Motion
+                                  variants={indicatorVariants}
+                                  initial="closed"
+                                  animate="open"
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30,
+                                  }}
+                                  className="bg-primary absolute right-2 h-2 w-2 rounded-full"
                                 />
-                                {!isCollapsed && (
-                                  <span className="text-sm font-medium">
-                                    {item.name}
-                                  </span>
-                                )}
-                                {/* Active indicator */}
-                                {isActive && (
-                                  <Motion
-                                    variants={indicatorVariants}
-                                    initial="closed"
-                                    animate="open"
-                                    transition={{
-                                      type: "spring",
-                                      stiffness: 500,
-                                      damping: 30,
-                                    }}
-                                    className="bg-primary absolute right-2 h-2 w-2 rounded-full"
-                                  />
-                                )}
-                              </Link>
+                              )}
                             </SidebarMenuButton>
                           </SidebarMenuItem>
                         </Motion>
@@ -284,6 +288,28 @@ export default function Sidebar() {
                       />
                     ))}
                   </div>
+                ) : categoriesError ? (
+                  <div
+                    className={cn(
+                      "bg-destructive/10 text-destructive border-destructive/20 space-y-2 rounded-lg border p-2 text-xs",
+                      isCollapsed && "px-1",
+                    )}
+                  >
+                    {!isCollapsed && (
+                      <p className="leading-snug font-medium">
+                        Couldn&apos;t load categories
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void refetchCategories()}
+                      className="bg-background/80 text-foreground hover:bg-background flex w-full cursor-pointer items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs font-medium"
+                      title="Retry loading categories"
+                    >
+                      <RefreshCw className="h-3 w-3 shrink-0" />
+                      {!isCollapsed && <span>Retry</span>}
+                    </button>
+                  </div>
                 ) : (
                   <Motion
                     variants={staggerVariants}
@@ -303,7 +329,7 @@ export default function Sidebar() {
                         >
                           <SidebarMenuItem>
                             <SidebarMenuButton
-                              asChild
+                              render={<Link href={category.href} />}
                               isActive={isActive}
                               className={cn(
                                 "group relative transition-all duration-200",
@@ -313,35 +339,33 @@ export default function Sidebar() {
                               )}
                               tooltip={category.name}
                             >
-                              <Link href={category.href}>
-                                <Icon
-                                  className={cn(
-                                    "h-4 w-4 transition-all duration-200",
-                                    isActive
-                                      ? "text-primary"
-                                      : "text-muted-foreground group-hover:text-foreground",
-                                  )}
+                              <Icon
+                                className={cn(
+                                  "h-4 w-4 transition-all duration-200",
+                                  isActive
+                                    ? "text-primary"
+                                    : "text-muted-foreground group-hover:text-foreground",
+                                )}
+                              />
+                              {!isCollapsed && (
+                                <span className="text-sm font-medium">
+                                  {category.name}
+                                </span>
+                              )}
+                              {/* Active indicator */}
+                              {isActive && (
+                                <Motion
+                                  variants={indicatorVariants}
+                                  initial="closed"
+                                  animate="open"
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30,
+                                  }}
+                                  className="bg-primary absolute right-2 h-2 w-2 rounded-full"
                                 />
-                                {!isCollapsed && (
-                                  <span className="text-sm font-medium">
-                                    {category.name}
-                                  </span>
-                                )}
-                                {/* Active indicator */}
-                                {isActive && (
-                                  <Motion
-                                    variants={indicatorVariants}
-                                    initial="closed"
-                                    animate="open"
-                                    transition={{
-                                      type: "spring",
-                                      stiffness: 500,
-                                      damping: 30,
-                                    }}
-                                    className="bg-primary absolute right-2 h-2 w-2 rounded-full"
-                                  />
-                                )}
-                              </Link>
+                              )}
                             </SidebarMenuButton>
                           </SidebarMenuItem>
                         </Motion>
@@ -359,52 +383,54 @@ export default function Sidebar() {
       {user && (
         <SidebarFooter>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              {!isCollapsed ? (
-                <Motion
-                  variants={contentVariants}
-                  initial={isCollapsed ? "closed" : "open"}
-                  animate={isCollapsed ? "closed" : "open"}
-                  className="bg-background/60 hover:bg-background/80 group border-border/30 flex cursor-pointer items-center rounded-xl border p-3 shadow-sm transition-all duration-200"
-                >
-                  <Avatar className="ring-primary/20 h-9 w-9 ring-2">
-                    <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-br font-semibold">
-                      {user.email?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="ml-3 min-w-0 flex-1">
-                    <p className="text-foreground truncate text-sm font-medium">
-                      {user.email?.split("@")[0] || "User"}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {user.email}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className="h-2 w-2 rounded-full bg-green-500"
-                      title="Online"
-                    />
-                    <ChevronRight className="text-muted-foreground group-hover:text-foreground h-4 w-4 transition-colors duration-200" />
-                  </div>
-                </Motion>
-              ) : (
-                <SidebarMenuButton
-                  size="lg"
-                  className="group cursor-pointer"
-                  tooltip={`${user.email?.split("@")[0] || "User"}`}
-                >
-                  <div className="relative">
-                    <Avatar className="ring-primary/20 group-hover:ring-primary/40 h-8 w-8 ring-2 transition-all duration-200">
+            <DropdownMenuTrigger
+              render={
+                !isCollapsed ? (
+                  <Motion
+                    variants={contentVariants}
+                    initial={isCollapsed ? "closed" : "open"}
+                    animate={isCollapsed ? "closed" : "open"}
+                    className="bg-background/60 hover:bg-background/80 group border-border/30 flex cursor-pointer items-center rounded-xl border p-3 shadow-sm transition-all duration-200"
+                  >
+                    <Avatar className="ring-primary/20 h-9 w-9 ring-2">
                       <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-br font-semibold">
                         {user.email?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="border-background absolute -right-1 -bottom-1 h-3 w-3 rounded-full border-2 bg-green-500" />
-                  </div>
-                </SidebarMenuButton>
-              )}
-            </DropdownMenuTrigger>
+                    <div className="ml-3 min-w-0 flex-1">
+                      <p className="text-foreground truncate text-sm font-medium">
+                        {user.email?.split("@")[0] || "User"}
+                      </p>
+                      <p className="text-muted-foreground truncate text-xs">
+                        {user.email}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className="h-2 w-2 rounded-full bg-green-500"
+                        title="Online"
+                      />
+                      <ChevronRight className="text-muted-foreground group-hover:text-foreground h-4 w-4 transition-colors duration-200" />
+                    </div>
+                  </Motion>
+                ) : (
+                  <SidebarMenuButton
+                    size="lg"
+                    className="group cursor-pointer"
+                    tooltip={`${user.email?.split("@")[0] || "User"}`}
+                  >
+                    <div className="relative">
+                      <Avatar className="ring-primary/20 group-hover:ring-primary/40 h-8 w-8 ring-2 transition-all duration-200">
+                        <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-br font-semibold">
+                          {user.email?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="border-background absolute -right-1 -bottom-1 h-3 w-3 rounded-full border-2 bg-green-500" />
+                    </div>
+                  </SidebarMenuButton>
+                )
+              }
+            />
             <DropdownMenuContent
               align="end"
               side="right"

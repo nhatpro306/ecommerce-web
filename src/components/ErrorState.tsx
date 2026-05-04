@@ -94,11 +94,14 @@ export function ErrorState({
             </Button>
           )}
           {showHomeButton && (
-            <Button asChild variant="outline" className="w-full cursor-pointer">
-              <Link href="/">
-                <Home className="mr-2 h-4 w-4" />
-                Go Home
-              </Link>
+            <Button
+              render={<Link href="/" />}
+              nativeButton={false}
+              variant="outline"
+              className="w-full cursor-pointer"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Go Home
             </Button>
           )}
         </CardContent>
