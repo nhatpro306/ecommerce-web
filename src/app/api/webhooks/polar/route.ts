@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
 		const { data: existingOrder } = await supabase
 			.from('orders')
 			.select('id')
-			.eq('payment_id', checkout.id)
-			.eq('user_id', userId)
-			.single()
+			.eq('payment_id', String(checkout.id))
+			.eq('user_id', String(userId))
+			.maybeSingle()
 
-		if (existingOrder) {
+		if (existingOrder != null) {
 			console.log(`Order already exists for checkout ${checkout.id}`)
 			return NextResponse.json({
 				message: 'Order already processed',

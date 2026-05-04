@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react"; 
+import { motion } from "motion/react";
 import { Filter, SortAsc } from "lucide-react";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilterOptions } from '@/hooks/queries'
+import { FilterOptions } from "@/hooks/queries";
 
 interface ProductFilterProps {
   filters: FilterOptions;
@@ -38,21 +38,24 @@ const categoryOptions = [
 ];
 
 export function ProductFilter({ filters, onFilterChange }: ProductFilterProps) {
-  const handleSortChange = (value: string) => {
+  const handleSortChange = (value: string | null) => {
+    if (value == null) return;
     onFilterChange({
       ...filters,
       sortBy: value as FilterOptions["sortBy"],
     });
   };
 
-  const handleStockChange = (value: string) => {
+  const handleStockChange = (value: string | null) => {
+    if (value == null) return;
     onFilterChange({
       ...filters,
       stockFilter: value as FilterOptions["stockFilter"],
     });
   };
 
-  const handleCategoryChange = (value: string) => {
+  const handleCategoryChange = (value: string | null) => {
+    if (value == null) return;
     onFilterChange({
       ...filters,
       categoryFilter: value as FilterOptions["categoryFilter"],

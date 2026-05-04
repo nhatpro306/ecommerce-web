@@ -124,9 +124,9 @@ export async function createPolarCheckout() {
 
 		// Single price entry with total amount and all items in metadata
 		prices[polarProductId] = [{
-			amountType: 'fixed',
+			amountType: 'fixed' as const,
 			priceAmount: totalAmountInCents,
-			priceCurrency: 'usd',
+			priceCurrency: 'usd' as const,
 			metadata: {
 				cart_items: JSON.stringify(cartItemsData),
 				total_items: cartItems.length.toString(),
@@ -140,7 +140,7 @@ export async function createPolarCheckout() {
 		// Use the single Polar product ID with multiple price entries
 		const checkout = await polar.checkouts.create({
 			products: [polarProductId], // Single Polar product ID
-			prices: prices,
+			prices: prices as Parameters<typeof polar.checkouts.create>[0]['prices'],
 			externalCustomerId: user.id, // Map to Supabase user ID
 			successUrl: `${baseUrl}/checkout/success?checkout_id={CHECKOUT_ID}`,
 			customerEmail: user.email || undefined,

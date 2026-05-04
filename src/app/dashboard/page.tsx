@@ -7,6 +7,7 @@ import { useProducts, useOrders } from "@/hooks/queries";
 import Link from "next/link";
 import { OrderCard } from "@/components/OrderCard";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { ErrorState } from "@/components/ErrorState";
 import Image from "next/image";
 
 export default function DashboardPage() {
@@ -16,10 +17,13 @@ export default function DashboardPage() {
   >("analytics");
 
   // Use query hooks instead of manual state management
-  const { data: products, isLoading: productsLoading } = useProducts();
+  const {
+    data: products,
+    isLoading: productsLoading,
+    error: productsError,
+    refetch: refetchProducts,
+  } = useProducts();
   const { data: orders, isLoading: ordersLoading } = useOrders(user?.id || "");
-
-  const loading = productsLoading || ordersLoading;
 
   if (!user) {
     return (
@@ -80,88 +84,100 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <p>Loading...</p>
-          </div>
-        ) : (
-          <>
-            {/* Analytics Tab */}
-            {activeTab === "analytics" && (
-              <DashboardCharts orders={orders || []} />
-            )}
+        {activeTab === "analytics" &&
+          (ordersLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <p>Loading...</p>
+            </div>
+          ) : (
+            <DashboardCharts orders={orders || []} />
+          ))}
 
-            {/* Products Tab */}
-            {activeTab === "products" && (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {products && products.length > 0 ? (
-                  products.map((product) => (
-                    <Card key={product.product_id} className="overflow-hidden">
-                      <div className="h-48 bg-gray-100">
-                        {product.image ? (
-                          <Image
-                            src={product.image || ""}
-                            alt={product.title}
-                            width={400}
-                            height={192}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="text-muted-foreground flex h-full w-full items-center justify-center">
-                            No image
-                          </div>
-                        )}
+        {activeTab === "products" &&
+          (productsLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <p>Loading...</p>
+            </div>
+          ) : productsError ? (
+            <ErrorState
+              title="Failed to load products"
+              description="We could not load products for the dashboard. Check your connection."
+              onRetry={refetchProducts}
+              error={productsError}
+              type="network"
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {products && products.length > 0 ? (
+                products.map((product) => (
+                  <Card key={product.product_id} className="overflow-hidden">
+                    <div className="h-48 bg-gray-100">
+                      {product.image ? (
+                        <Image
+                          src={product.image || ""}
+                          alt={product.title}
+                          width={400}
+                          height={192}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-muted-foreground flex h-full w-full items-center justify-center">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="line-clamp-1">
+                        {product.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-muted-foreground mb-2 line-clamp-2 text-sm">
+                        {product.description}
                       </div>
-                      <CardHeader>
-                        <CardTitle className="line-clamp-1">
-                          {product.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-muted-foreground mb-2 line-clamp-2 text-sm">
-                          {product.description}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">
-                            ${product.price.toFixed(2)}
-                          </span>
-                          <Link href={`/products/${product.product_id}`}>
-                            <Button size="sm">View Details</Button>
-                          </Link>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="col-span-full flex h-64 items-center justify-center">
-                    <p className="text-muted-foreground">No products found</p>
-                  </div>
-                )}
-              </div>
-            )}
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">
+                          ${product.price.toFixed(2)}
+                        </span>
+                        <Link href={`/products/${product.product_id}`}>
+                          <Button size="sm">View Details</Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full flex h-64 items-center justify-center">
+                  <p className="text-muted-foreground">No products found</p>
+                </div>
+              )}
+            </div>
+          ))}
 
-            {/* Orders Tab */}
-            {activeTab === "orders" && (
-              <div className="space-y-6">
-                {orders && orders.length > 0 ? (
-                  orders.map((order) => (
-                    <OrderCard key={order.id} order={order} />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center px-4 py-12">
-                    <p className="mb-4 text-xl font-medium">No orders yet</p>
-                    <p className="text-muted-foreground mb-6">
-                      You haven&apos;t placed any orders yet.
-                    </p>
-                    <Link href="/">
-                      <Button>Browse Products</Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
+        {activeTab === "orders" &&
+          (ordersLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <p>Loading...</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {orders && orders.length > 0 ? (
+                orders.map((order) => (
+                  <OrderCard key={order.id} order={order} />
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center px-4 py-12">
+                  <p className="mb-4 text-xl font-medium">No orders yet</p>
+                  <p className="text-muted-foreground mb-6">
+                    You haven&apos;t placed any orders yet.
+                  </p>
+                  <Link href="/">
+                    <Button>Browse Products</Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ))}
       </div>
     </div>
   );

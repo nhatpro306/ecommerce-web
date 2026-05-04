@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { ProductType } from '../../types';
-// import { handleCommonErrors } from '@/utils/errorHandling';
+import { isNoRowsError, toUserFacingQueryError } from '@/utils/errorHandling';
 
 export const productService = {
   async getProducts(): Promise<ProductType[]> {
@@ -11,16 +11,14 @@ export const productService = {
         .order('title');
 
       if (error) {
-        console.error('Error fetching products:', error);
-        throw new Error(`Failed to fetch products: ${error.message}`);
+        throw toUserFacingQueryError('Products', error);
       }
 
       return data as ProductType[];
     } catch (error) {
-      // Re-throw to let the calling component handle the error
       throw error instanceof Error
         ? error
-        : new Error('Failed to fetch products');
+        : toUserFacingQueryError('Products', {});
     }
   },
 
@@ -33,20 +31,17 @@ export const productService = {
         .single();
 
       if (error) {
-        console.error('Error fetching product:', error);
-        if (error.code === 'PGRST116') {
-          // No rows returned - product not found
+        if (isNoRowsError(error)) {
           return null;
         }
-        throw new Error(`Failed to fetch product: ${error.message}`);
+        throw toUserFacingQueryError('Product', error);
       }
 
       return data as ProductType;
     } catch (error) {
-      // Re-throw to let the calling component handle the error
       throw error instanceof Error
         ? error
-        : new Error('Failed to fetch product');
+        : toUserFacingQueryError('Product', {});
     }
   },
 
@@ -59,18 +54,14 @@ export const productService = {
         .order('title');
 
       if (error) {
-        console.error('Error fetching products by category:', error);
-        throw new Error(
-          `Failed to fetch products by category: ${error.message}`
-        );
+        throw toUserFacingQueryError('Products', error);
       }
 
       return data as ProductType[];
     } catch (error) {
-      // Re-throw to let the calling component handle the error
       throw error instanceof Error
         ? error
-        : new Error('Failed to fetch products by category');
+        : toUserFacingQueryError('Products', {});
     }
   },
 };

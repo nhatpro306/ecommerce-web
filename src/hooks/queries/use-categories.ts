@@ -1,5 +1,6 @@
 import { categoryService } from '@/services/category/categoryService'
 import { CategoryType } from '@/types'
+import { UNABLE_TO_REACH_DATABASE } from '@/utils/errorHandling'
 import { useQuery, UseQueryOptions } from '@tanstack/react-query'
 
 // Query Keys
@@ -20,8 +21,10 @@ export function useCategories(options?: UseQueryOptions<CategoryType[]>) {
 		retry: (failureCount, error) => {
 			if (
 				error instanceof Error &&
-				(error.message.includes('404') ||
-					error.message.includes('permission'))
+				(error.message.includes(UNABLE_TO_REACH_DATABASE) ||
+					error.message.includes('404') ||
+					error.message.includes('permission') ||
+					error.message.includes('do not have permission'))
 			) {
 				return false
 			}
@@ -45,8 +48,10 @@ export function useCategory(
 		retry: (failureCount, error) => {
 			if (
 				error instanceof Error &&
-				(error.message.includes('404') ||
-					error.message.includes('not found'))
+				(error.message.includes(UNABLE_TO_REACH_DATABASE) ||
+					error.message.includes('404') ||
+					error.message.includes('not found') ||
+					error.message.includes('do not have permission'))
 			) {
 				return false
 			}

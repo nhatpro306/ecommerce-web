@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 import { Avatar } from "@/components/ui/avatar";
 import { useGetProductReviews } from "@/hooks/queries";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,8 +19,7 @@ export function ReviewedCard({ productId, limit }: ReviewedCardProps) {
     error: reviewsError,
   } = useGetProductReviews(productId);
 
-
-  const {data: profileData} = useCurrentProfile();
+  const { data: profileData } = useCurrentProfile();
 
   console.log(
     "reviewsError",
@@ -69,9 +66,7 @@ export function ReviewedCard({ productId, limit }: ReviewedCardProps) {
               </Avatar>
               <div className="flex-1">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h4 className="font-medium">
-                     {profileData?.username}
-                  </h4>
+                  <h4 className="font-medium">{profileData?.username}</h4>
                   {RenderStars(review.rating, "sm")}
                   {review.created_at && (
                     <span className="text-muted-foreground text-sm">

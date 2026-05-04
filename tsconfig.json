@@ -14,35 +14,36 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": "src/",
+    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ],
       "@components/*": [
-        "./components/*"
+        "./src/components/*"
       ],
       "@pages/*": [
-        "./pages/*"
+        "./src/pages/*"
       ],
       "@utils/*": [
-        "./utils/*"
+        "./src/utils/*"
       ],
       "@hooks/*": [
-        "./hooks/*"
+        "./src/hooks/*"
       ],
       "@context/*": [
-        "./context/*"
+        "./src/context/*"
       ],
       "@types/*": [
-        "./types/*"
+        "./src/types/*"
       ]
     },
+    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
@@ -57,7 +58,8 @@
     "./dist/types/**/*.ts",
     "./next-env.d.ts",
     "src",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

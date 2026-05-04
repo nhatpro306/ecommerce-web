@@ -188,9 +188,10 @@ export default function AdminOrdersPage() {
               <Filter className="text-muted-foreground h-4 w-4" />
               <Select
                 value={filters.status || "all"}
-                onValueChange={(value) =>
-                  handleFilterChange("status", value === "all" ? "" : value)
-                }
+                onValueChange={(value) => {
+                  const v = value ?? "";
+                  handleFilterChange("status", v === "all" ? "" : v);
+                }}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Status" />
@@ -260,9 +261,11 @@ export default function AdminOrdersPage() {
 
                     <Select
                       value={order.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(order.id, value)
-                      }
+                      onValueChange={(value) => {
+                        if (value != null) {
+                          handleStatusChange(order.id, value);
+                        }
+                      }}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />

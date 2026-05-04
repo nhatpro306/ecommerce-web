@@ -32,3 +32,6 @@ dist
 .cursor
 .env
 
+.agents
+.claude
+.npmrc

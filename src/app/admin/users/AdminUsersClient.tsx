@@ -93,7 +93,10 @@ export function AdminUsersClient({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2">
             <Filter className="text-muted-foreground h-4 w-4" />
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
+            <Select
+              value={selectedRole}
+              onValueChange={(v) => setSelectedRole(v ?? "all")}
+            >
               <SelectTrigger className="w-full sm:w-32">
                 <SelectValue placeholder="Role" />
               </SelectTrigger>

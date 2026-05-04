@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect, ChangeEvent, useRef } from "react";
 import { User } from "@supabase/supabase-js";
 import { EmailChangeModal } from "@/components/EmailChangeModal";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile/profileService";
 

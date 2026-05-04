@@ -3,13 +3,12 @@
 import { motion, AnimatePresence } from "motion/react";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
-import { useProducts, FilterOptions } from '@/hooks/queries'
+import { useProducts, FilterOptions } from "@/hooks/queries";
 import { ProductType } from "@/types";
 import { ErrorState } from "@/components/ErrorState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProductFilter } from "@/components/ProductFilter";
-import { useEffect, useState, useMemo } from "react";
-import { toast } from "sonner";
+import { useState, useMemo } from "react";
 
 // Helper functions (moved from hook to component for simplicity)
 const getCategoryId = (categoryName: string): number | null => {
@@ -110,13 +109,6 @@ export default function ClientProducts() {
 
     return processed;
   }, [products, searchTerm, filters]);
-
-  // Show toast notification for errors
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load products. Please try again.");
-    }
-  }, [error]);
 
   return (
     <ErrorBoundary>
