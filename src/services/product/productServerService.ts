@@ -45,6 +45,28 @@ export const productServerService = {
     }
   },
 
+  async getProductBySlug(slug: string): Promise<ProductType | null> {
+    try {
+      const supabase = await createServerSupabase();
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, category:categories(*)')
+        .or(`slug.eq.${slug},product_id.eq.${slug}`)
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        console.error('Error fetching product by slug:', error);
+        return null;
+      }
+
+      return data as ProductType;
+    } catch (error) {
+      console.error('Error in getProductBySlug:', error);
+      return null;
+    }
+  },
+
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
       const supabase = await createServerSupabase();

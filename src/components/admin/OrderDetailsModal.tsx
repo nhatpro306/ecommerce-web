@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import { format } from "date-fns";
+import { Calendar, MapPin, Package, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,12 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, MapPin, Calendar, Package, DollarSign } from "lucide-react";
 import { OrderWithDetails } from "@/services/admin/adminOrderService";
 import { useOrder } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { format } from "date-fns";
-import Image from "next/image";
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -28,15 +28,15 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case "delivered":
     case "shipped":
-      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      return "bg-green-100 text-green-800";
     case "processing":
-      return "bg-blue-100 text-blue-700 border-blue-200";
+      return "bg-blue-100 text-blue-800";
     case "pending":
-      return "bg-amber-100 text-amber-700 border-amber-200";
+      return "bg-yellow-100 text-yellow-800";
     case "cancelled":
-      return "bg-rose-100 text-rose-700 border-rose-200";
+      return "bg-red-100 text-red-800";
     default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "bg-zinc-100 text-zinc-800";
   }
 };
 
@@ -58,8 +58,7 @@ export function OrderDetailsModal({
   onClose,
   order,
 }: OrderDetailsModalProps) {
-  // Use the query hook to fetch order details
-  const { data: orderDetails, isLoading: loading } = useOrder(
+  const { data: orderDetails, isLoading } = useOrder(
     isOpen && order ? order.id.toString() : "",
   );
 
@@ -67,208 +66,188 @@ export function OrderDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[80vh] max-w-2xl">
+      <DialogContent className="max-h-[84vh] max-w-2xl rounded-none">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase">
             <Package className="h-5 w-5" />
-            Order #{order.id}
+            Đơn hàng #{order.id}
           </DialogTitle>
           <DialogDescription>
-            View detailed order information, customer details, and items
+            Chi tiết khách hàng, địa chỉ giao hàng và sản phẩm trong đơn.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="max-h-[62vh]">
           <div className="space-y-6 pr-4">
-            {/* Order Summary */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Order Date
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    {order.created_at
-                      ? format(
-                          new Date(order.created_at),
-                          "MMM dd, yyyy 'at' HH:mm",
-                        )
-                      : "Unknown date"}
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="border border-zinc-200 p-4">
+                <p className="flex items-center text-sm font-bold uppercase tracking-[0.14em]">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Ngày đặt
+                </p>
+                <p className="mt-2 text-sm text-zinc-600">
+                  {order.created_at
+                    ? format(new Date(order.created_at), "dd/MM/yyyy HH:mm")
+                    : "Chưa có ngày"}
+                </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-slate-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Total Amount
-                  </p>
-                  <p className="text-lg font-bold text-emerald-600">
-                    {formatCurrency(order.total)}
-                  </p>
-                </div>
+              <div className="border border-zinc-200 p-4">
+                <p className="text-sm font-bold uppercase tracking-[0.14em]">
+                  Tổng tiền
+                </p>
+                <p className="mt-2 text-lg font-black">
+                  {formatCurrency(order.total)}
+                </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-slate-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Status</p>
-                  <Badge className={`${getStatusColor(order.status)} border`}>
-                    {mapStatusLabel(order.status)}
-                  </Badge>
-                </div>
+              <div className="border border-zinc-200 p-4">
+                <p className="text-sm font-bold uppercase tracking-[0.14em]">
+                  Trạng thái
+                </p>
+                <Badge className={`mt-2 rounded-none ${getStatusColor(order.status)}`}>
+                  {mapStatusLabel(order.status)}
+                </Badge>
               </div>
 
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-slate-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Payment Method
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    {order.payment_method || "Not specified"}
-                  </p>
-                </div>
+              <div className="border border-zinc-200 p-4">
+                <p className="text-sm font-bold uppercase tracking-[0.14em]">
+                  Thanh toán
+                </p>
+                <p className="mt-2 text-sm text-zinc-600">
+                  {order.payment_method || "Chưa xác định"}
+                </p>
               </div>
             </div>
 
             <Separator />
 
-            {/* Customer Information */}
-            <div>
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+            <section>
+              <h3 className="mb-3 flex items-center gap-2 text-lg font-black uppercase">
                 <User className="h-5 w-5" />
-                Customer Information
+                Khách hàng
               </h3>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Name</p>
-                  <p className="text-sm text-slate-600">
-                    {order.profile?.username || "Not provided"}
+                  <p className="text-sm font-bold">Tên</p>
+                  <p className="text-sm text-zinc-600">
+                    {order.customer_name ||
+                      order.profile?.username ||
+                      "Chưa cung cấp"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Email</p>
-                  <p className="text-sm text-slate-600">
-                    {order.profile?.email || "Not provided"}
+                  <p className="text-sm font-bold">Email</p>
+                  <p className="text-sm text-zinc-600">
+                    {order.customer_email ||
+                      order.profile?.email ||
+                      "Chưa cung cấp"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Số điện thoại</p>
+                  <p className="text-sm text-zinc-600">
+                    {order.customer_phone || "Chưa cung cấp"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Ghi chú</p>
+                  <p className="text-sm text-zinc-600">
+                    {order.customer_note || "Không có"}
                   </p>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <Separator />
-
-            {/* Shipping Address */}
             {order.shipping_address && (
               <>
-                <div>
-                  <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                <Separator />
+                <section>
+                  <h3 className="mb-3 flex items-center gap-2 text-lg font-black uppercase">
                     <MapPin className="h-5 w-5" />
-                    Shipping Address
+                    Địa chỉ giao hàng
                   </h3>
-                  <div className="bg-card rounded-lg border p-4">
-                    <p className="text-foreground font-medium">
-                      {order.shipping_address.street}
-                    </p>
-                    <p className="text-muted-foreground text-sm">
+                  <div className="border border-zinc-200 p-4">
+                    <p className="font-bold">{order.shipping_address.street}</p>
+                    <p className="text-sm text-zinc-600">
                       {order.shipping_address.city},{" "}
                       {order.shipping_address.state}{" "}
                       {order.shipping_address.zip_code}
                     </p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-zinc-600">
                       {order.shipping_address.country}
                     </p>
                   </div>
-                </div>
-                <Separator />
+                </section>
               </>
             )}
 
-            {/* Order Items */}
-            <div>
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+            <Separator />
+
+            <section>
+              <h3 className="mb-3 flex items-center gap-2 text-lg font-black uppercase">
                 <Package className="h-5 w-5" />
-                Order Items
+                Sản phẩm
               </h3>
 
-              {loading ? (
-                <div className="flex h-32 items-center justify-center">
-                  <div className="text-muted-foreground text-sm">
-                    Loading items...
-                  </div>
+              {isLoading ? (
+                <div className="flex h-32 items-center justify-center text-sm text-zinc-500">
+                  Đang tải sản phẩm...
                 </div>
               ) : orderDetails?.order_items ? (
                 <div className="space-y-3">
                   {orderDetails.order_items.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-card flex items-center gap-4 rounded-lg border p-4 shadow-sm"
+                      className="grid grid-cols-[64px_1fr_auto] gap-4 border border-zinc-200 p-4"
                     >
-                      <div className="bg-muted h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg">
+                      <div className="relative h-16 w-16 overflow-hidden bg-zinc-100">
                         {item.product?.image ? (
                           <Image
                             src={item.product.image}
-                            alt={item.product?.title || "Product"}
-                            width={64}
-                            height={64}
-                            className="h-full w-full object-cover"
+                            alt={item.product?.title || "Sản phẩm"}
+                            fill
+                            className="object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
-                            <Package className="text-muted-foreground h-6 w-6" />
+                            <Package className="h-6 w-6 text-zinc-400" />
                           </div>
                         )}
                       </div>
 
-                      <div className="flex-1">
-                        <h4 className="text-foreground font-medium">
-                          {item.product?.title || "Product"}
-                        </h4>
-                        <p className="text-muted-foreground text-sm">
-                          Quantity: {item.quantity}
+                      <div>
+                        <h4 className="font-bold">{item.product?.title}</h4>
+                        <p className="text-sm text-zinc-500">
+                          Số lượng: {item.quantity}
                         </p>
-                        <p className="text-muted-foreground text-sm">
-                          Unit Price: {formatCurrency(item.price)}
+                        <p className="text-sm text-zinc-500">
+                          Size: {item.selected_size || "-"} / Màu:{" "}
+                          {item.selected_color || "-"}
+                        </p>
+                        <p className="text-sm text-zinc-500">
+                          Đơn giá: {formatCurrency(item.price)}
                         </p>
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-foreground font-semibold">
-                          {formatCurrency(item.quantity * item.price)}
-                        </p>
-                      </div>
+                      <p className="font-black">
+                        {formatCurrency(item.quantity * item.price)}
+                      </p>
                     </div>
                   ))}
-
-                  {/* Order Total */}
-                  <div className="bg-card rounded-lg border p-4">
-                    <div className="flex justify-between">
-                      <span className="text-foreground text-lg font-semibold">
-                        Total:
-                      </span>
-                      <span className="text-lg font-bold text-emerald-600">
-                        {formatCurrency(order.total)}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               ) : (
-                <div className="bg-card rounded-lg border p-8 text-center">
-                  <Package className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
-                  <p className="text-muted-foreground">
-                    No items found for this order
-                  </p>
+                <div className="border border-zinc-200 p-8 text-center text-zinc-500">
+                  Không tìm thấy sản phẩm trong đơn hàng.
                 </div>
               )}
-            </div>
+            </section>
           </div>
         </ScrollArea>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button variant="outline" onClick={onClose}>
-            Close
+        <div className="flex justify-end border-t pt-4">
+          <Button variant="outline" className="rounded-none" onClick={onClose}>
+            Đóng
           </Button>
         </div>
       </DialogContent>

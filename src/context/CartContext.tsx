@@ -15,8 +15,9 @@ import { useAuth } from './AuthContext';
 export interface CartItem extends ProductType {
   quantity: number;
   cart_item_id?: number; // Database ID for the cart item
-  selected_size?: string;
-  selected_color?: string;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  variant_info?: Record<string, unknown>;
 }
 
 interface CartContextType {
@@ -25,8 +26,12 @@ interface CartContextType {
     product: ProductType,
     options?: { size?: string; color?: string }
   ) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, amount: number) => void;
+  removeFromCart: (productId: string, cartItemId?: number) => void;
+  updateQuantity: (
+    productId: string,
+    amount: number,
+    cartItemId?: number
+  ) => void;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
@@ -71,6 +76,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ...item.product,
             quantity: item.quantity,
             cart_item_id: item.id,
+            selected_size: item.selected_size,
+            selected_color: item.selected_color,
+            variant_info: item.variant_info,
           }));
 
           setCartItems(formattedItems);
@@ -126,13 +134,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
         activeCartId as number,
         product.product_id,
         product.price,
-        1
+        1,
+        {
+          size: options?.size,
+          color: options?.color,
+          variantInfo: {
+            size: options?.size,
+            color: options?.color,
+          },
+        }
       );
 
       if (result) {
         // Find the item in current cart items
         const existingItemIndex = cartItems.findIndex(
-          (item) => item.product_id === product.product_id
+          (item) =>
+            item.product_id === product.product_id &&
+            (item.selected_size ?? null) === (options?.size ?? null) &&
+            (item.selected_color ?? null) === (options?.color ?? null)
         );
 
         if (existingItemIndex !== -1) {
@@ -152,8 +171,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ...product,
               quantity: 1,
               cart_item_id: result.id,
-              selected_size: options?.size,
-              selected_color: options?.color,
+              selected_size: options?.size ?? null,
+              selected_color: options?.color ?? null,
+              variant_info: result.variant_info,
             },
           ]);
         }
@@ -166,13 +186,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const removeFromCart = async (productId: string) => {
+  const removeFromCart = async (productId: string, cartItemId?: number) => {
     if (!activeCartId) return;
 
     try {
       // Find the cart item
       const itemToRemove = cartItems.find(
-        (item) => item.product_id === productId
+        (item) =>
+          cartItemId
+            ? item.cart_item_id === cartItemId
+            : item.product_id === productId
       );
 
       if (itemToRemove?.cart_item_id) {
@@ -184,7 +207,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (success) {
           // Remove from local state
           setCartItems((prev) =>
-            prev.filter((item) => item.product_id !== productId)
+            prev.filter((item) =>
+              cartItemId
+                ? item.cart_item_id !== cartItemId
+                : item.product_id !== productId
+            )
           );
           toast.success('Item removed from cart');
         }
@@ -195,13 +222,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateQuantity = async (productId: string, amount: number) => {
+  const updateQuantity = async (
+    productId: string,
+    amount: number,
+    cartItemId?: number
+  ) => {
     if (!activeCartId) return;
 
     try {
       // Find the item in cart
       const itemToUpdate = cartItems.find(
-        (item) => item.product_id === productId
+        (item) =>
+          cartItemId
+            ? item.cart_item_id === cartItemId
+            : item.product_id === productId
       );
 
       if (!itemToUpdate || !itemToUpdate.cart_item_id) return;
@@ -210,7 +244,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (newQuantity <= 0) {
         // If new quantity is zero or less, remove the item
-        await removeFromCart(productId);
+        await removeFromCart(productId, cartItemId);
         return;
       }
 
@@ -223,11 +257,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (result) {
         // Update in local state
         setCartItems((prev) =>
-          prev.map((item) =>
-            item.product_id === productId
-              ? { ...item, quantity: newQuantity }
-              : item
-          )
+          prev.map((item) => {
+            const isTarget = cartItemId
+              ? item.cart_item_id === cartItemId
+              : item.product_id === productId;
+
+            return isTarget ? { ...item, quantity: newQuantity } : item;
+          })
         );
       }
     } catch (error) {
