@@ -16,8 +16,8 @@ insert into public.products (title, description, price, stock, category_id, sku,
 select * from (
   values
     (
-      'Saigon Oversized Tee',
-      'Áo thun form rộng streetwear hằng ngày.',
+      'RESEY Oversized Tee',
+      'Áo thun form rộng cho streetwear hằng ngày.',
       450000,
       40,
       'T-Shirts',
@@ -26,7 +26,7 @@ select * from (
       true
     ),
     (
-      'Hanoi Minimal Hoodie',
+      'RESEY Minimal Hoodie',
       'Hoodie nỉ dày, tối giản, giữ form tốt.',
       790000,
       24,
@@ -36,8 +36,8 @@ select * from (
       true
     ),
     (
-      'Vietnam Street Cargo Pants',
-      'Cargo pants utility fit, thoải mái di chuyển.',
+      'RESEY Street Cargo Pants',
+      'Cargo pants utility fit, thoải mái khi di chuyển.',
       920000,
       18,
       'Pants',
@@ -46,7 +46,7 @@ select * from (
       true
     ),
     (
-      'Local Brand Cap',
+      'RESEY Logo Cap',
       'Nón lưỡi trai basic tone đen/trắng.',
       320000,
       60,
@@ -56,7 +56,7 @@ select * from (
       true
     ),
     (
-      'Basic Heavyweight Tee',
+      'RESEY Heavyweight Tee',
       'Áo thun heavy cotton, chất dày, đứng form.',
       520000,
       30,
@@ -66,7 +66,7 @@ select * from (
       true
     ),
     (
-      'Limited Dragon Graphic Tee',
+      'RESEY Dragon Graphic Tee',
       'Graphic tee phiên bản giới hạn.',
       680000,
       12,
@@ -76,8 +76,8 @@ select * from (
       true
     ),
     (
-      'District 1 Boxy Tee',
-      'Boxy tee cảm hứng Sài Gòn trung tâm.',
+      'RESEY Boxy Tee',
+      'Boxy tee với form rộng, gọn và dễ phối đồ.',
       560000,
       22,
       'T-Shirts',
@@ -86,8 +86,8 @@ select * from (
       true
     ),
     (
-      '84 Club Hoodie',
-      'Hoodie local signature của RESEY.',
+      'RESEY Club Hoodie',
+      'Hoodie signature của RESEY.',
       850000,
       14,
       'Hoodies',

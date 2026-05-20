@@ -93,11 +93,11 @@ Tone:
 - Modern
 
 Example copy:
-- "Vietnam Local Streetwear"
+- "RESEY Modern Streetwear"
 - "Made for everyday confidence"
 - "New Drop"
 - "Limited Collection"
-- "Local identity, modern streetwear"
+- "RESEY identity, modern streetwear"
 - "Designed for movement, built for daily wear"
 
 ---
@@ -309,14 +309,14 @@ Order statuses:
 Replace generic demo products with local brand clothing products.
 
 Seed/sample products:
-1. Saigon Oversized Tee
-2. Hanoi Minimal Hoodie
-3. Vietnam Street Cargo Pants
-4. Local Brand Cap
-5. Basic Heavyweight Tee
-6. Limited Dragon Graphic Tee
-7. District 1 Boxy Tee
-8. 84 Club Hoodie
+1. RESEY Oversized Tee
+2. RESEY Minimal Hoodie
+3. RESEY Street Cargo Pants
+4. RESEY Logo Cap
+5. RESEY Heavyweight Tee
+6. RESEY Dragon Graphic Tee
+7. RESEY Boxy Tee
+8. RESEY Club Hoodie
 
 Each product should include:
 - Name
