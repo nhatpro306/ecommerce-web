@@ -1,5 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { ProductType } from '@/types';
+import { findSampleProduct, sampleProducts } from '@/utils/sampleProducts';
 
 export const productServerService = {
   async getProducts(): Promise<ProductType[]> {
@@ -13,13 +14,14 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching products:', error);
-        return [];
+        return sampleProducts;
       }
 
-      return data as ProductType[];
+      const products = (data || []) as ProductType[];
+      return products.length > 0 ? products : sampleProducts;
     } catch (error) {
       console.error('Error in getProducts:', error);
-      return [];
+      return sampleProducts;
     }
   },
 
@@ -35,13 +37,13 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching product:', error);
-        return null;
+        return findSampleProduct(id);
       }
 
-      return data as ProductType;
+      return (data as ProductType) || findSampleProduct(id);
     } catch (error) {
       console.error('Error in getProductById:', error);
-      return null;
+      return findSampleProduct(id);
     }
   },
 
@@ -57,13 +59,13 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching product by slug:', error);
-        return null;
+        return findSampleProduct(slug);
       }
 
-      return data as ProductType;
+      return (data as ProductType) || findSampleProduct(slug);
     } catch (error) {
       console.error('Error in getProductBySlug:', error);
-      return null;
+      return findSampleProduct(slug);
     }
   },
 
@@ -79,13 +81,17 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching products by category:', error);
-        return [];
+        return sampleProducts.filter((product) => product.category_id === categoryId);
       }
 
-      return data as ProductType[];
+      const products = (data || []) as ProductType[];
+      const fallbackProducts = sampleProducts.filter(
+        (product) => product.category_id === categoryId
+      );
+      return products.length > 0 ? products : fallbackProducts;
     } catch (error) {
       console.error('Error in getProductsByCategory:', error);
-      return [];
+      return sampleProducts.filter((product) => product.category_id === categoryId);
     }
   },
 
@@ -101,13 +107,21 @@ export const productServerService = {
 
       if (error) {
         console.error('Error searching products:', error);
-        return [];
+        return sampleProducts.filter((product) =>
+          product.title.toLowerCase().includes(query.toLowerCase())
+        );
       }
 
-      return data as ProductType[];
+      const products = (data || []) as ProductType[];
+      const fallbackProducts = sampleProducts.filter((product) =>
+        product.title.toLowerCase().includes(query.toLowerCase())
+      );
+      return products.length > 0 ? products : fallbackProducts;
     } catch (error) {
       console.error('Error in searchProducts:', error);
-      return [];
+      return sampleProducts.filter((product) =>
+        product.title.toLowerCase().includes(query.toLowerCase())
+      );
     }
   },
 };

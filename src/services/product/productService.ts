@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { ProductType } from '../../types';
 import { isNoRowsError, toUserFacingQueryError } from '@/utils/errorHandling';
+import { findSampleProduct, sampleProducts } from '@/utils/sampleProducts';
 
 export const productService = {
   async getProducts(): Promise<ProductType[]> {
@@ -15,11 +16,11 @@ export const productService = {
         throw toUserFacingQueryError('Products', error);
       }
 
-      return data as ProductType[];
+      const products = (data || []) as ProductType[];
+      return products.length > 0 ? products : sampleProducts;
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : toUserFacingQueryError('Products', {});
+      console.error('Falling back to sample products:', error);
+      return sampleProducts;
     }
   },
 
@@ -39,11 +40,11 @@ export const productService = {
         throw toUserFacingQueryError('Product', error);
       }
 
-      return data as ProductType;
+      return (data as ProductType) || findSampleProduct(id);
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : toUserFacingQueryError('Product', {});
+      const fallbackProduct = findSampleProduct(id);
+      if (fallbackProduct) return fallbackProduct;
+      throw error instanceof Error ? error : toUserFacingQueryError('Product', {});
     }
   },
 
@@ -60,11 +61,14 @@ export const productService = {
         throw toUserFacingQueryError('Products', error);
       }
 
-      return data as ProductType[];
+      const products = (data || []) as ProductType[];
+      const fallbackProducts = sampleProducts.filter(
+        (product) => product.category_id === categoryId
+      );
+      return products.length > 0 ? products : fallbackProducts;
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : toUserFacingQueryError('Products', {});
+      console.error('Falling back to sample category products:', error);
+      return sampleProducts.filter((product) => product.category_id === categoryId);
     }
   },
 };
