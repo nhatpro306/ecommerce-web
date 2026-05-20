@@ -2,7 +2,130 @@ import type { ProductType } from "@/types";
 
 const now = "2026-05-20T00:00:00.000Z";
 
+const teeCategory = { id: 1, name: "T-Shirts", description: "RESEY T-Shirts" };
+const hoodieCategory = { id: 2, name: "Hoodies", description: "RESEY Hoodies" };
+const pantsCategory = { id: 3, name: "Pants", description: "RESEY Pants" };
+const accessoriesCategory = {
+  id: 4,
+  name: "Accessories",
+  description: "RESEY Accessories",
+};
+
 export const sampleProducts: ProductType[] = [
+  {
+    product_id: "resey-washed-tee-brown",
+    slug: "resey-washed-tee-brown",
+    title: "RESEY Washed Tee - Brown",
+    description:
+      "Áo thun wash màu nâu, form boxy rộng, logo chìm và đường ráp lệch tạo điểm nhấn streetwear.",
+    material: "Washed cotton 250gsm",
+    price: 590000,
+    image: "/products/resey-washed-tee-brown-fit-02.jpg",
+    stock: 36,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Brown", "Dust Brown", "Olive"],
+    is_active: true,
+    sku: "RS-TEE-101",
+    category_id: 1,
+    category: teeCategory,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    product_id: "resey-washed-tee-brown-crop-fit",
+    slug: "resey-washed-tee-brown-crop-fit",
+    title: "RESEY Brown Washed Crop Fit",
+    description:
+      "Phiên bản fit ngắn hơn cho outfit layer, chất cotton wash mềm và màu nâu vintage dễ phối.",
+    material: "Washed cotton 240gsm",
+    price: 560000,
+    image: "/products/resey-washed-tee-brown-fit-03.jpg",
+    stock: 28,
+    sizes: ["S", "M", "L"],
+    colors: ["Brown", "Dust Brown"],
+    is_active: true,
+    sku: "RS-TEE-102",
+    category_id: 1,
+    category: teeCategory,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    product_id: "resey-washed-tee-olive",
+    slug: "resey-washed-tee-olive",
+    title: "RESEY Washed Tee - Olive",
+    description:
+      "Áo thun wash màu olive xám, form rộng, hợp phối với quần trắng, denim hoặc cargo.",
+    material: "Washed cotton 250gsm",
+    price: 590000,
+    image: "/products/resey-washed-tee-olive-fit-01.jpg",
+    stock: 32,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Olive", "Dust Gray", "Brown"],
+    is_active: true,
+    sku: "RS-TEE-103",
+    category_id: 1,
+    category: teeCategory,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    product_id: "resey-washed-tee-street-set",
+    slug: "resey-washed-tee-street-set",
+    title: "RESEY Washed Tee Street Set",
+    description:
+      "Set phối áo wash nâu cùng quần ống rộng, phù hợp lookbook và outfit đường phố hằng ngày.",
+    material: "Washed cotton tee / cotton twill pants",
+    price: 1190000,
+    image: "/products/resey-washed-tee-brown-fit-01.jpg",
+    stock: 16,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Brown", "Cream"],
+    is_active: true,
+    sku: "RS-SET-104",
+    category_id: 1,
+    category: teeCategory,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    product_id: "resey-wide-leg-cream-pants",
+    slug: "resey-wide-leg-cream-pants",
+    title: "RESEY Wide Leg Pants - Cream",
+    description:
+      "Quần ống rộng màu cream, dáng rũ, dễ phối với các dòng tee wash của RESEY.",
+    material: "Cotton twill",
+    price: 760000,
+    image: "/products/resey-washed-tee-brown-fit-05.jpg",
+    stock: 20,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Cream", "White"],
+    is_active: true,
+    sku: "RS-PAN-105",
+    category_id: 3,
+    category: pantsCategory,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    product_id: "resey-wide-leg-dust-pants",
+    slug: "resey-wide-leg-dust-pants",
+    title: "RESEY Wide Leg Pants - Dust Gray",
+    description:
+      "Quần ống rộng wash bụi, dáng streetwear mạnh, phối tốt với áo nâu hoặc olive.",
+    material: "Washed cotton twill",
+    price: 790000,
+    image: "/products/resey-washed-tee-brown-fit-04.jpg",
+    stock: 18,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Dust Gray", "Brown"],
+    is_active: true,
+    sku: "RS-PAN-106",
+    category_id: 3,
+    category: pantsCategory,
+    created_at: now,
+    updated_at: now,
+  },
   {
     product_id: "resey-oversized-tee",
     slug: "resey-oversized-tee",
@@ -10,15 +133,14 @@ export const sampleProducts: ProductType[] = [
     description: "Áo thun form rộng cho streetwear hằng ngày.",
     material: "Cotton 240gsm",
     price: 450000,
-    image:
-      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+    image: "/products/resey-washed-tee-brown-fit-02.jpg",
     stock: 40,
     sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "White", "Gray"],
+    colors: ["Black", "White", "Gray", "Brown"],
     is_active: true,
     sku: "SL-TEE-001",
     category_id: 1,
-    category: { id: 1, name: "T-Shirts", description: "RESEY T-Shirts" },
+    category: teeCategory,
     created_at: now,
     updated_at: now,
   },
@@ -37,7 +159,7 @@ export const sampleProducts: ProductType[] = [
     is_active: true,
     sku: "SL-HOO-002",
     category_id: 2,
-    category: { id: 2, name: "Hoodies", description: "RESEY Hoodies" },
+    category: hoodieCategory,
     created_at: now,
     updated_at: now,
   },
@@ -48,15 +170,14 @@ export const sampleProducts: ProductType[] = [
     description: "Cargo pants utility fit, thoải mái khi di chuyển.",
     material: "Cotton twill",
     price: 920000,
-    image:
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80",
+    image: "/products/resey-washed-tee-brown-fit-04.jpg",
     stock: 18,
     sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "White", "Gray"],
+    colors: ["Black", "White", "Gray", "Dust Gray"],
     is_active: true,
     sku: "SL-PAN-003",
     category_id: 3,
-    category: { id: 3, name: "Pants", description: "RESEY Pants" },
+    category: pantsCategory,
     created_at: now,
     updated_at: now,
   },
@@ -75,7 +196,7 @@ export const sampleProducts: ProductType[] = [
     is_active: true,
     sku: "SL-ACC-004",
     category_id: 4,
-    category: { id: 4, name: "Accessories", description: "RESEY Accessories" },
+    category: accessoriesCategory,
     created_at: now,
     updated_at: now,
   },
@@ -86,15 +207,14 @@ export const sampleProducts: ProductType[] = [
     description: "Áo thun heavy cotton, chất dày, đứng form.",
     material: "Heavyweight cotton 260gsm",
     price: 520000,
-    image:
-      "https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=900&q=80",
+    image: "/products/resey-washed-tee-brown-fit-03.jpg",
     stock: 30,
     sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "White", "Gray"],
+    colors: ["Black", "White", "Gray", "Brown"],
     is_active: true,
     sku: "SL-TEE-005",
     category_id: 1,
-    category: { id: 1, name: "T-Shirts", description: "RESEY T-Shirts" },
+    category: teeCategory,
     created_at: now,
     updated_at: now,
   },
@@ -113,7 +233,7 @@ export const sampleProducts: ProductType[] = [
     is_active: true,
     sku: "SL-TEE-006",
     category_id: 1,
-    category: { id: 1, name: "T-Shirts", description: "RESEY T-Shirts" },
+    category: teeCategory,
     created_at: now,
     updated_at: now,
   },
@@ -124,15 +244,14 @@ export const sampleProducts: ProductType[] = [
     description: "Boxy tee với form rộng, gọn và dễ phối đồ.",
     material: "Compact cotton",
     price: 560000,
-    image:
-      "https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=900&q=80",
+    image: "/products/resey-washed-tee-brown-fit-01.jpg",
     stock: 22,
     sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "White", "Gray"],
+    colors: ["Black", "White", "Gray", "Brown"],
     is_active: true,
     sku: "SL-TEE-007",
     category_id: 1,
-    category: { id: 1, name: "T-Shirts", description: "RESEY T-Shirts" },
+    category: teeCategory,
     created_at: now,
     updated_at: now,
   },
@@ -151,17 +270,31 @@ export const sampleProducts: ProductType[] = [
     is_active: true,
     sku: "SL-HOO-008",
     category_id: 2,
-    category: { id: 2, name: "Hoodies", description: "RESEY Hoodies" },
+    category: hoodieCategory,
     created_at: now,
     updated_at: now,
   },
 ];
 
+export function mergeWithSampleProducts(products: ProductType[]): ProductType[] {
+  const existingSkus = new Set(products.map((product) => product.sku).filter(Boolean));
+  const existingIds = new Set(products.map((product) => product.product_id));
+  const missingSamples = sampleProducts.filter(
+    (product) =>
+      !(product.sku && existingSkus.has(product.sku)) &&
+      !existingIds.has(product.product_id),
+  );
+
+  return [...products, ...missingSamples];
+}
+
 export function findSampleProduct(identifier: string): ProductType | null {
   return (
     sampleProducts.find(
       (product) =>
-        product.slug === identifier || product.product_id === identifier,
+        product.slug === identifier ||
+        product.product_id === identifier ||
+        product.sku === identifier,
     ) || null
   );
 }
