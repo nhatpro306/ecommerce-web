@@ -7,6 +7,7 @@ export interface CreateProductData {
   price: number;
   image?: string;
   stock: number;
+  is_active?: boolean;
   sku?: string;
   category_id?: number;
 }
@@ -93,6 +94,7 @@ export const adminProductService = {
         .from("products")
         .insert({
           ...productData,
+          is_active: productData.is_active ?? true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -148,7 +150,7 @@ export const adminProductService = {
     try {
       const { error } = await supabase
         .from("products")
-        .delete()
+        .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq("product_id", productId);
 
       if (error) {

@@ -15,6 +15,7 @@ import ShoppingSkeleton from "@/components/ShoppingSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function CartShoppingPage() {
   const { cartItems, removeFromCart, updateQuantity, subtotal, isLoading } =
@@ -32,25 +33,25 @@ export default function CartShoppingPage() {
         <div className="mb-6 flex items-center">
           <Link href="/" className="text-primary flex items-center">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Shopping
+            Quay lại mua sắm
           </Link>
-          <h1 className="ml-4 text-3xl font-bold">Your Shopping Cart</h1>
+          <h1 className="ml-4 text-3xl font-bold">Giỏ hàng của bạn</h1>
         </div>
         <Card className="mx-auto max-w-md">
           <CardHeader>
-            <CardTitle>Please Log In</CardTitle>
+            <CardTitle>Vui lòng đăng nhập</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">You need to be logged in to view your cart.</p>
+            <p className="mb-4">Bạn cần đăng nhập để xem giỏ hàng.</p>
             <Link href="/signin">
-              <Button className="w-full">Log In</Button>
+              <Button className="w-full">Đăng nhập</Button>
             </Link>
           </CardContent>
           <CardFooter>
             <p className="text-muted-foreground text-sm">
-              Don&apos;t have an account?{" "}
+              Bạn chưa có tài khoản?{" "}
               <Link href="/signup" className="text-primary hover:underline">
-                Sign up
+                Đăng ký
               </Link>
             </p>
           </CardFooter>
@@ -64,16 +65,16 @@ export default function CartShoppingPage() {
       <div className="mb-6 flex items-center">
         <Link href="/" className="text-primary flex items-center">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Shopping
+          Quay lại mua sắm
         </Link>
-        <h1 className="ml-4 text-3xl font-bold">Your Shopping Cart</h1>
+        <h1 className="ml-4 text-3xl font-bold">Giỏ hàng của bạn</h1>
       </div>
 
       {cartItems.length === 0 ? (
         <div className="p-8 text-center">
-          <h2 className="mb-4 text-xl">Your cart is empty</h2>
+          <h2 className="mb-4 text-xl">Giỏ hàng đang trống</h2>
           <Link href="/">
-            <Button className="cursor-pointer">Continue Shopping</Button>
+            <Button className="cursor-pointer">Tiếp tục mua sắm</Button>
           </Link>
         </div>
       ) : (
@@ -96,9 +97,11 @@ export default function CartShoppingPage() {
                     <p className="text-muted-foreground mb-2">
                       {item.description}
                     </p>
-                    <p className="text-lg font-bold">
-                      ${item.price.toFixed(2)}
+                    <p className="text-muted-foreground text-sm">
+                      Size: {item.selected_size || "-"} | Màu:{" "}
+                      {item.selected_color || "-"}
                     </p>
+                    <p className="text-lg font-bold">{formatCurrency(item.price)}</p>
 
                     <div className="mt-4 flex items-center">
                       <Button
@@ -142,28 +145,28 @@ export default function CartShoppingPage() {
           <div className="md:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>Tóm tắt đơn hàng</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>Tạm tính</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>$5.99</span>
+                    <span>Phí vận chuyển</span>
+                    <span>Miễn phí</span>
                   </div>
                   <div className="flex justify-between border-t pt-4 text-lg font-bold">
-                    <span>Total</span>
-                    <span>${(subtotal + 5.99).toFixed(2)}</span>
+                    <span>Tổng cộng</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
                 <Link href="/checkout">
                   <Button className="w-full cursor-pointer">
-                    Proceed to Checkout
+                    Tiến hành thanh toán
                   </Button>
                 </Link>
               </CardFooter>

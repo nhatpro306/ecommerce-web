@@ -10,14 +10,14 @@ import { CheckCircle2 } from "lucide-react";
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const checkoutId = searchParams.get("checkout_id");
+  const orderId = searchParams.get("order_id");
+  const paymentMethod = searchParams.get("payment_method");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Give webhook time to process
     setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 1500);
   }, []);
 
   if (isLoading) {
@@ -25,12 +25,12 @@ function SuccessContent() {
       <div className="bg-background min-h-screen py-12">
         <Card className="mx-auto max-w-md">
           <CardHeader>
-            <CardTitle>Processing your order...</CardTitle>
+            <CardTitle>?ang x? ly ??n hang...</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-8">
             <LoadingSpinner />
             <p className="text-muted-foreground mt-4">
-              Please wait while we confirm your payment and create your order.
+              Vui long ch? trong khi h? th?ng xac nh?n va t?o ??n hang.
             </p>
           </CardContent>
         </Card>
@@ -45,21 +45,21 @@ function SuccessContent() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <CheckCircle2 className="h-10 w-10 text-green-600" />
           </div>
-          <CardTitle className="text-2xl">Thank you for your order!</CardTitle>
+          <CardTitle className="text-2xl">??t hang thanh cong!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2 text-center">
             <p className="text-muted-foreground">
-              Your order has been successfully placed.
+              C?m ?n b?n ?a mua s?m t?i SAIGON LOCAL.
             </p>
-            {checkoutId && (
+            {orderId && (
+              <p className="text-muted-foreground text-sm">Ma ??n hang: #{orderId}</p>
+            )}
+            {paymentMethod === "bank_transfer" && (
               <p className="text-muted-foreground text-sm">
-                Order ID: {checkoutId}
+                N?i dung chuy?n kho?n: ORDER-{orderId}
               </p>
             )}
-            <p className="text-muted-foreground">
-              You will receive a confirmation email shortly.
-            </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button
@@ -67,10 +67,10 @@ function SuccessContent() {
               variant="outline"
               className="cursor-pointer"
             >
-              View My Orders
+              Xem ??n hang
             </Button>
             <Button onClick={() => router.push("/")} className="cursor-pointer">
-              Continue Shopping
+              Ti?p t?c mua s?m
             </Button>
           </div>
         </CardContent>
@@ -84,7 +84,7 @@ function LoadingFallback() {
     <div className="bg-background min-h-screen py-12">
       <Card className="mx-auto max-w-md">
         <CardHeader>
-          <CardTitle>Loading...</CardTitle>
+          <CardTitle>?ang t?i...</CardTitle>
         </CardHeader>
         <CardContent>
           <LoadingSpinner />

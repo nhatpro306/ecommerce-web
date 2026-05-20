@@ -5,8 +5,14 @@ export interface ProductType {
   price: number;
   image?: string;
   stock: number;
+  is_active?: boolean;
   sku?: string;
   category_id?: number;
+  category?: {
+    id?: number;
+    name?: string;
+    description?: string;
+  };
   created_at?: string;
   updated_at?: string;
 }
