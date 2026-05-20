@@ -5,8 +5,7 @@ import { CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthForm } from "@/hooks/useAuthForm";
-import { Eye } from "lucide-react";
-import { EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 export default function SignUpForm() {
@@ -20,14 +19,13 @@ export default function SignUpForm() {
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
     handleSubmit,
-  } = useAuthForm({isSignUp: true});
-  return (
-    
+  } = useAuthForm({ isSignUp: true });
 
+  return (
     <form onSubmit={handleSubmit}>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {error && (
-          <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
+          <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -41,10 +39,11 @@ export default function SignUpForm() {
             value={formData.email}
             onChange={handleChange}
             required
+            className="h-12 rounded-none"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Mật khẩu</Label>
           <div className="relative">
             <Input
               id="password"
@@ -53,10 +52,11 @@ export default function SignUpForm() {
               value={formData.password}
               onChange={handleChange}
               required
+              className="h-12 rounded-none pr-11"
             />
             <button
               type="button"
-              className="hover:bg-accent hover:text-accent-foreground absolute top-0 right-0 inline-flex h-full cursor-pointer items-center justify-center px-3"
+              className="absolute right-0 top-0 inline-flex h-full cursor-pointer items-center justify-center px-3 text-zinc-500 hover:text-zinc-950"
               onClick={togglePasswordVisibility}
               tabIndex={-1}
             >
@@ -66,13 +66,13 @@ export default function SignUpForm() {
                 <Eye className="h-4 w-4" />
               )}
               <span className="sr-only">
-                {showPassword ? "Hide password" : "Show password"}
+                {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               </span>
             </button>
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
           <div className="relative">
             <Input
               id="confirmPassword"
@@ -81,10 +81,11 @@ export default function SignUpForm() {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              className="h-12 rounded-none pr-11"
             />
             <button
               type="button"
-              className="hover:bg-accent hover:text-accent-foreground absolute top-0 right-0 inline-flex h-full cursor-pointer items-center justify-center px-3"
+              className="absolute right-0 top-0 inline-flex h-full cursor-pointer items-center justify-center px-3 text-zinc-500 hover:text-zinc-950"
               onClick={toggleConfirmPasswordVisibility}
               tabIndex={-1}
             >
@@ -95,28 +96,28 @@ export default function SignUpForm() {
               )}
               <span className="sr-only">
                 {showConfirmPassword
-                  ? "Hide confirm password"
-                  : "Show confirm password"}
+                  ? "Ẩn xác nhận mật khẩu"
+                  : "Hiện xác nhận mật khẩu"}
               </span>
             </button>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col">
+      <CardFooter className="flex flex-col gap-4">
         <Button
           type="submit"
-          className="hover:bg-primary/90 w-full cursor-pointer"
+          className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
           disabled={loading}
         >
-          {loading ? "Creating account..." : "Sign Up"}
+          {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
         </Button>
-        <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
+        <div className="text-center text-sm text-zinc-600">
+          Đã có tài khoản?{" "}
           <Link
             href="/signin"
-            className="text-primary hover:text-primary/90 cursor-pointer underline"
+            className="font-semibold text-zinc-950 underline underline-offset-4"
           >
-            Sign in
+            Đăng nhập
           </Link>
         </div>
       </CardFooter>

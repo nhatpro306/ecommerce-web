@@ -21,14 +21,14 @@ export function SignInForm({ message }: { message: string | null }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {error && (
-          <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
+          <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
         {message && (
-          <div className="bg-primary/15 text-primary rounded-md p-3 text-sm">
+          <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
             {message}
           </div>
         )}
@@ -42,16 +42,17 @@ export function SignInForm({ message }: { message: string | null }) {
             value={formData.email}
             onChange={handleChange}
             required
+            className="h-12 rounded-none"
           />
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Mật khẩu</Label>
             <Link
               href="/reset-password"
-              className="text-primary text-sm underline"
+              className="text-sm font-medium text-zinc-700 underline underline-offset-4 hover:text-zinc-950"
             >
-              Forgot password?
+              Quên mật khẩu?
             </Link>
           </div>
           <div className="relative">
@@ -62,10 +63,11 @@ export function SignInForm({ message }: { message: string | null }) {
               value={formData.password}
               onChange={handleChange}
               required
+              className="h-12 rounded-none pr-11"
             />
             <button
               type="button"
-              className="hover:bg-accent hover:text-accent-foreground absolute top-0 right-0 inline-flex h-full cursor-pointer items-center justify-center px-3"
+              className="absolute right-0 top-0 inline-flex h-full cursor-pointer items-center justify-center px-3 text-zinc-500 hover:text-zinc-950"
               onClick={togglePasswordVisibility}
               tabIndex={-1}
             >
@@ -75,27 +77,27 @@ export function SignInForm({ message }: { message: string | null }) {
                 <Eye className="h-4 w-4" />
               )}
               <span className="sr-only">
-                {showPassword ? "Hide password" : "Show password"}
+                {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               </span>
             </button>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col">
+      <CardFooter className="flex flex-col gap-4">
         <Button
           type="submit"
-          className="hover:bg-primary/90 w-full cursor-pointer"
+          className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
           disabled={loading}
         >
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
-        <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
+        <div className="text-center text-sm text-zinc-600">
+          Chưa có tài khoản?{" "}
           <Link
             href="/signup"
-            className="text-primary hover:text-primary/90 cursor-pointer underline"
+            className="font-semibold text-zinc-950 underline underline-offset-4"
           >
-            Sign up
+            Đăng ký
           </Link>
         </div>
       </CardFooter>

@@ -60,18 +60,18 @@ export function useAuthForm({
     setError(null);
 
     if (!formData.email || !formData.password) {
-      setError("Email and password are required");
+      setError("Vui lòng nhập email và mật khẩu.");
       return;
     }
 
     if (isSignUp) {
       if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
+        setError("Mật khẩu xác nhận không khớp.");
         return;
       }
 
       if (formData.password.length < 6) {
-        setError("Password must be at least 6 characters");
+        setError("Mật khẩu phải có ít nhất 6 ký tự.");
         return;
       }
     }
