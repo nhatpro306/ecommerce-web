@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { ProductType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { getProductImage } from "@/utils/productImages";
 import { useProducts } from "@/hooks/queries";
 import { ProductCard } from "@/components/ProductCard";
 
@@ -31,6 +32,7 @@ export default function ProductDetailsClient({
   const availableColors = product.colors?.length
     ? product.colors
     : ["Black", "White", "Gray"];
+  const productImage = getProductImage(product);
 
   const relatedProducts = useMemo(
     () =>
@@ -64,21 +66,13 @@ export default function ProductDetailsClient({
     <div className="bg-white text-zinc-950">
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-2">
         <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
-          {product.image ? (
-            <Image
-              src={product.image}
-              alt={product.title}
-              fill
-              priority
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <span className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-                SAIGON LOCAL
-              </span>
-            </div>
-          )}
+          <Image
+            src={productImage}
+            alt={product.title}
+            fill
+            priority
+            className="object-cover"
+          />
         </div>
 
         <div className="flex flex-col justify-center">

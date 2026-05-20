@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { OrderWithDetails } from "@/services/admin/adminOrderService";
 import { useOrder } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { getProductImage } from "@/utils/productImages";
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -202,18 +203,27 @@ export function OrderDetailsModal({
                       className="grid grid-cols-[64px_1fr_auto] gap-4 border border-zinc-200 p-4"
                     >
                       <div className="relative h-16 w-16 overflow-hidden bg-zinc-100">
-                        {item.product?.image ? (
-                          <Image
-                            src={item.product.image}
-                            alt={item.product?.title || "Sản phẩm"}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Package className="h-6 w-6 text-zinc-400" />
-                          </div>
-                        )}
+                        <Image
+                          src={
+                            item.product
+                              ? getProductImage({
+                                  ...item.product,
+                                  description: "",
+                                  price: item.price,
+                                  stock: 0,
+                                })
+                              : getProductImage({
+                                  product_id: item.product_id,
+                                  title: "Sản phẩm",
+                                  description: "",
+                                  price: item.price,
+                                  stock: 0,
+                                })
+                          }
+                          alt={item.product?.title || "Sản phẩm"}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
 
                       <div>

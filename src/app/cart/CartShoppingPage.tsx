@@ -8,6 +8,7 @@ import ShoppingSkeleton from "@/components/ShoppingSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { getProductImage } from "@/utils/productImages";
 
 export default function CartShoppingPage() {
   const { cartItems, removeFromCart, updateQuantity, subtotal, isLoading } =
@@ -93,7 +94,7 @@ export default function CartShoppingPage() {
                 >
                   <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
                     <Image
-                      src={item.image || "/placeholder.svg"}
+                      src={getProductImage(item)}
                       alt={item.title}
                       fill
                       className="object-cover"
