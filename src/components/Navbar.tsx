@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ShoppingCart, User, LogIn, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,14 @@ export function Navbar() {
         </nav>
 
         <Link href="/" className="flex items-center justify-center">
-          <span className="text-2xl font-black tracking-[0.18em] text-zinc-950">
-            RESEY
-          </span>
+          <Image
+            src="/brand/resey-logo.jpg"
+            alt="RESEY logo"
+            width={92}
+            height={56}
+            priority
+            className="h-11 w-auto object-contain"
+          />
         </Link>
 
         <nav className="hidden flex-1 items-center justify-end gap-5 lg:flex">
