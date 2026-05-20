@@ -7,9 +7,7 @@ const policies = [
   "Hướng dẫn bảo quản sản phẩm",
 ];
 
-const stores = [
-  
-];
+const stores: string[] = ["Online store only"];
 
 export function SiteFooter() {
   return (
@@ -34,22 +32,32 @@ export function SiteFooter() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
             <h2 className="text-3xl font-black tracking-[0.16em]">
-              SAIGON LOCAL
+              RESEY
             </h2>
+
             <p className="mt-4 max-w-md text-sm leading-6 text-zinc-600">
               Vietnamese local streetwear built for daily movement. Minimal
               silhouettes, confident graphics, and practical fits for the city.
             </p>
+
+            <div className="mt-4 space-y-1 text-sm text-zinc-600">
+              <p>Hotline: +81 90-xxxx-xxxx</p>
+              <p>Email: supermanzero30@gmail.com</p>
+            </div>
           </div>
 
           <div>
             <h3 className="text-sm font-bold uppercase tracking-[0.18em]">
               Chính sách
             </h3>
+
             <ul className="mt-4 space-y-2 text-sm text-zinc-600">
               {policies.map((policy) => (
                 <li key={policy}>
-                  <Link href="/products" className="hover:text-zinc-950">
+                  <Link
+                    href="/products"
+                    className="transition hover:text-zinc-950"
+                  >
                     {policy}
                   </Link>
                 </li>
@@ -61,19 +69,18 @@ export function SiteFooter() {
             <h3 className="text-sm font-bold uppercase tracking-[0.18em]">
               Hệ thống cửa hàng
             </h3>
+
             <ul className="mt-4 space-y-2 text-sm text-zinc-600">
               {stores.map((store) => (
                 <li key={store}>{store}</li>
               ))}
-              <li></li>
-              <li>n</li>
             </ul>
           </div>
         </div>
       </div>
 
       <div className="border-t border-zinc-200 px-4 py-4 text-center text-xs uppercase tracking-[0.18em] text-zinc-500">
-        Copyright © 2026 SAIGON LOCAL
+        Copyright © 2026 RESEY
       </div>
     </footer>
   );
