@@ -66,6 +66,17 @@ set
   colors = case
     when sku like 'SL-ACC-%' then array['Black', 'White', 'Beige']::text[]
     else array['Black', 'White', 'Gray']::text[]
+  end,
+  image = case sku
+    when 'SL-TEE-001' then 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80'
+    when 'SL-HOO-002' then 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80'
+    when 'SL-PAN-003' then 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80'
+    when 'SL-ACC-004' then 'https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80'
+    when 'SL-TEE-005' then 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=900&q=80'
+    when 'SL-TEE-006' then 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=80'
+    when 'SL-TEE-007' then 'https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=900&q=80'
+    when 'SL-HOO-008' then 'https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=900&q=80'
+    else image
   end
 where sku in (
   'SL-TEE-001',

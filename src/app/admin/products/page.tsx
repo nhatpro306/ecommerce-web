@@ -27,6 +27,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ProductFormModal } from "@/components/admin/ProductFormModal";
 import { DeleteConfirmModal } from "@/components/admin/DeleteConfirmModal";
+import { getProductImage } from "@/utils/productImages";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
@@ -152,18 +153,12 @@ export default function AdminProductsPage() {
         {filteredProducts.map((product) => (
           <Card key={product.product_id} className="overflow-hidden rounded-none">
             <div className="relative aspect-[3/4] bg-zinc-100">
-              {product.image ? (
-                <Image
-                  src={product.image}
-                  alt={product.title}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="text-muted-foreground flex h-full items-center justify-center">
-                  <Package className="h-12 w-12" />
-                </div>
-              )}
+              <Image
+                src={getProductImage(product)}
+                alt={product.title}
+                fill
+                className="object-cover"
+              />
 
               {/* Stock badge */}
               <div className="absolute top-2 right-2">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye } from "lucide-react";
 import { ProductType } from "@/types";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { getProductImage } from "@/utils/productImages";
 
 interface ProductCardProps {
   product: ProductType;
@@ -13,6 +14,7 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const productPath = `/products/${product.slug || product.product_id}`;
+  const productImage = getProductImage(product);
 
   return (
     <article
@@ -20,21 +22,13 @@ export function ProductCard({ product }: ProductCardProps) {
       className="group cursor-pointer bg-white"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
-        {product.image ? (
-          <Image
-            src={product.image}
-            alt={product.title}
-            fill
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-300">
-            <span className="text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
-              SAIGON LOCAL
-            </span>
-          </div>
-        )}
+        <Image
+          src={productImage}
+          alt={product.title}
+          fill
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition duration-500 group-hover:scale-105"
+        />
 
         <button
           type="button"
