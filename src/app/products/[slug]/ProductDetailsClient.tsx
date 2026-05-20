@@ -77,7 +77,7 @@ export default function ProductDetailsClient({
 
         <div className="flex flex-col justify-center">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-            SAIGON LOCAL
+            RESEY
           </p>
           <h1 className="text-4xl font-black uppercase leading-none md:text-5xl">
             {product.title}

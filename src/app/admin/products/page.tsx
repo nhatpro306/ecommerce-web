@@ -122,7 +122,7 @@ export default function AdminProductsPage() {
           <h1 className="mt-2 text-3xl font-black uppercase tracking-tight">
             Quản lý sản phẩm
           </h1>
-          <p className="text-zinc-500">Quản lý catalog SAIGON LOCAL</p>
+          <p className="text-zinc-500">Quản lý catalog RESEY</p>
         </div>
         <Button
           onClick={() => setShowCreateModal(true)}

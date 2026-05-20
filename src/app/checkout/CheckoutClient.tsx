@@ -34,7 +34,7 @@ export default function CheckoutClient() {
   const bankConfig = useMemo(
     () => ({
       name: process.env.NEXT_PUBLIC_BANK_NAME || "Vietcombank",
-      accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "SAIGON LOCAL",
+      accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "RESEY",
       accountNumber:
         process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
     }),

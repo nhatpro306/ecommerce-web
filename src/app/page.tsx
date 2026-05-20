@@ -24,7 +24,7 @@ export default function Home() {
         <div className="flex items-center bg-zinc-950 px-6 py-16 text-white md:px-12">
           <div className="max-w-xl">
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-zinc-400">
-              SAIGON LOCAL / NEW DROP
+              RESEY / NEW DROP
             </p>
             <h1 className="text-5xl font-black uppercase leading-none tracking-tight md:text-7xl">
               Young City.
@@ -56,7 +56,7 @@ export default function Home() {
         <div className="relative min-h-[420px]">
           <Image
             src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=1400&q=80"
-            alt="SAIGON LOCAL streetwear campaign"
+            alt="RESEY streetwear campaign"
             fill
             priority
             className="object-cover"
@@ -126,7 +126,7 @@ export default function Home() {
               Local identity, modern streetwear.
             </h2>
             <p className="mt-5 leading-7 text-zinc-600">
-              SAIGON LOCAL lấy cảm hứng từ nhịp sống thành phố: tối giản, thực
+              RESEY lấy cảm hứng từ nhịp sống thành phố: tối giản, thực
               dụng và tự tin. Sản phẩm tập trung vào form mặc hằng ngày, chất
               liệu bền và tinh thần local brand Việt Nam.
             </p>

@@ -52,7 +52,7 @@ function SuccessContent() {
         <CardContent className="space-y-6">
           <div className="space-y-2 text-center">
             <p className="text-muted-foreground">
-              Cảm ơn bạn đã mua sắm tại SAIGON LOCAL.
+              Cảm ơn bạn đã mua sắm tại RESEY.
             </p>
             {orderId && (
               <p className="text-muted-foreground text-sm">
