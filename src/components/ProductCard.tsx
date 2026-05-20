@@ -1,17 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ProductType } from "@/types";
+import { formatCurrency } from "@/utils/formatCurrency";
+import { getProductImage } from "@/utils/productImages";
 
 interface ProductCardProps {
   product: ProductType;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const imageUrl = product.image || "/vercel.svg";
+  const imageUrl = getProductImage(product);
   const price = Number(product.price || 0);
+  const productHref = `/products/${product.slug || product.product_id}`;
 
   return (
-    <Link href={`/products/${product.product_id}`} className="group block">
+    <Link href={productHref} className="group block">
       <article className="overflow-hidden border border-zinc-200 bg-white transition hover:shadow-md">
         <div className="relative aspect-[3/4] bg-zinc-100">
           <Image
@@ -29,7 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </h3>
 
           <p className="text-sm font-bold text-zinc-950">
-            ¥{price.toLocaleString()}
+            {formatCurrency(price)}
           </p>
 
           <p className="text-xs text-zinc-500">
