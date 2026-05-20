@@ -19,37 +19,6 @@ export default function CartShoppingPage() {
     return <ShoppingSkeleton />;
   }
 
-  if (!user) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-14 text-center">
-        <p className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-          RESEY
-        </p>
-        <h1 className="mt-3 text-3xl font-black uppercase">
-          Vui lòng đăng nhập
-        </h1>
-        <p className="mx-auto mt-4 max-w-md text-zinc-600">
-          Bạn cần đăng nhập để xem giỏ hàng và tiếp tục thanh toán.
-        </p>
-        <div className="mt-8 flex justify-center gap-3">
-          <Link href="/signin">
-            <Button className="h-12 rounded-none bg-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
-              Đăng nhập
-            </Button>
-          </Link>
-          <Link href="/signup">
-            <Button
-              variant="outline"
-              className="h-12 rounded-none border-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em]"
-            >
-              Đăng ký
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white text-zinc-950">
       <div className="mx-auto max-w-7xl px-4 py-10">
@@ -68,6 +37,11 @@ export default function CartShoppingPage() {
           <h1 className="mt-2 text-3xl font-black uppercase">
             Giỏ hàng của bạn
           </h1>
+          {!user && cartItems.length > 0 && (
+            <p className="mt-3 text-sm text-zinc-600">
+              Bạn có thể xem giỏ hàng trước. Khi checkout, hệ thống sẽ yêu cầu đăng nhập.
+            </p>
+          )}
         </div>
 
         {cartItems.length === 0 ? (
@@ -87,83 +61,89 @@ export default function CartShoppingPage() {
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">
-              {cartItems.map((item) => (
-                <article
-                  key={item.cart_item_id ?? item.product_id}
-                  className="grid grid-cols-[120px_1fr] gap-4 border-b border-zinc-200 pb-5 md:grid-cols-[160px_1fr]"
-                >
-                  <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
-                    <Image
-                      src={getProductImage(item)}
-                      alt={item.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
+              {cartItems.map((item) => {
+                const itemKey = `${item.cart_item_id ?? item.product_id}-${
+                  item.selected_size ?? ""
+                }-${item.selected_color ?? ""}`;
 
-                  <div className="flex flex-col justify-between">
-                    <div>
-                      <h2 className="text-base font-black uppercase tracking-[0.08em]">
-                        {item.title}
-                      </h2>
-                      <p className="mt-2 line-clamp-2 text-sm text-zinc-600">
-                        {item.description}
-                      </p>
-                      <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                        Size: {item.selected_size || "-"} / Màu:{" "}
-                        {item.selected_color || "-"}
-                      </p>
-                      <p className="mt-3 text-sm font-bold">
-                        {formatCurrency(item.price)}
-                      </p>
+                return (
+                  <article
+                    key={itemKey}
+                    className="grid grid-cols-[120px_1fr] gap-4 border-b border-zinc-200 pb-5 md:grid-cols-[160px_1fr]"
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
+                      <Image
+                        src={getProductImage(item)}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
 
-                    <div className="mt-5 flex items-center justify-between">
-                      <div className="inline-flex border border-zinc-300">
-                        <button
-                          type="button"
-                          className="flex h-10 w-10 items-center justify-center"
-                          onClick={() =>
-                            updateQuantity(
-                              item.product_id,
-                              -1,
-                              item.cart_item_id,
-                            )
-                          }
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="flex h-10 w-12 items-center justify-center border-x border-zinc-300 text-sm font-bold">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          className="flex h-10 w-10 items-center justify-center"
-                          onClick={() =>
-                            updateQuantity(
-                              item.product_id,
-                              1,
-                              item.cart_item_id,
-                            )
-                          }
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
+                    <div className="flex flex-col justify-between">
+                      <div>
+                        <h2 className="text-base font-black uppercase tracking-[0.08em]">
+                          {item.title}
+                        </h2>
+                        <p className="mt-2 line-clamp-2 text-sm text-zinc-600">
+                          {item.description}
+                        </p>
+                        <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+                          Size: {item.selected_size || "-"} / Màu:{" "}
+                          {item.selected_color || "-"}
+                        </p>
+                        <p className="mt-3 text-sm font-bold">
+                          {formatCurrency(item.price)}
+                        </p>
                       </div>
 
-                      <button
-                        type="button"
-                        className="text-zinc-500 transition hover:text-red-600"
-                        onClick={() =>
-                          removeFromCart(item.product_id, item.cart_item_id)
-                        }
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      <div className="mt-5 flex items-center justify-between">
+                        <div className="inline-flex border border-zinc-300">
+                          <button
+                            type="button"
+                            className="flex h-10 w-10 items-center justify-center"
+                            onClick={() =>
+                              updateQuantity(
+                                item.product_id,
+                                -1,
+                                item.cart_item_id,
+                              )
+                            }
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="flex h-10 w-12 items-center justify-center border-x border-zinc-300 text-sm font-bold">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            className="flex h-10 w-10 items-center justify-center"
+                            onClick={() =>
+                              updateQuantity(
+                                item.product_id,
+                                1,
+                                item.cart_item_id,
+                              )
+                            }
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="text-zinc-500 transition hover:text-red-600"
+                          onClick={() =>
+                            removeFromCart(item.product_id, item.cart_item_id)
+                          }
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
 
             <aside className="border border-zinc-200 p-5 lg:sticky lg:top-28 lg:self-start">
@@ -182,9 +162,9 @@ export default function CartShoppingPage() {
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
               </div>
-              <Link href="/checkout">
+              <Link href={user ? "/checkout" : "/signin"}>
                 <Button className="mt-5 h-12 w-full rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
-                  Tiến hành thanh toán
+                  {user ? "Tiến hành thanh toán" : "Đăng nhập để checkout"}
                 </Button>
               </Link>
             </aside>

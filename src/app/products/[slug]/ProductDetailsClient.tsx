@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Check, Minus, Plus, RotateCcw, Shield, ShoppingCart, Truck } from "lucide-react";
+import {
+  Check,
+  Minus,
+  Plus,
+  RotateCcw,
+  Shield,
+  ShoppingCart,
+  Truck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { ProductType } from "@/types";
@@ -43,23 +51,22 @@ export default function ProductDetailsClient({
   );
 
   const handleAddToCart = async () => {
-    if (!selectedSize || !selectedColor) {
-      toast.error("Vui lòng chọn size và màu trước khi thêm vào giỏ hàng.");
-      return;
-    }
-
     if (quantity > product.stock) {
       toast.error("Số lượng vượt quá tồn kho hiện tại.");
       return;
     }
 
-    for (let index = 0; index < quantity; index += 1) {
-      addToCart(product, { size: selectedSize, color: selectedColor });
-    }
+    const sizeToAdd = selectedSize || availableSizes[0];
+    const colorToAdd = selectedColor || availableColors[0];
+
+    await addToCart(product, {
+      size: sizeToAdd,
+      color: colorToAdd,
+      quantity,
+    });
 
     setIsAddedToCart(true);
     window.setTimeout(() => setIsAddedToCart(false), 2000);
-    toast.success("Đã thêm vào giỏ hàng.");
   };
 
   return (
@@ -82,16 +89,22 @@ export default function ProductDetailsClient({
           <h1 className="text-4xl font-black uppercase leading-none md:text-5xl">
             {product.title}
           </h1>
-          <p className="mt-5 text-2xl font-bold">{formatCurrency(product.price)}</p>
+          <p className="mt-5 text-2xl font-bold">
+            {formatCurrency(product.price)}
+          </p>
           <p className="mt-5 leading-7 text-zinc-600">{product.description}</p>
 
           <div className="mt-6 border-y border-zinc-200 py-5 text-sm">
             <div className="flex justify-between py-2">
-              <span className="font-bold uppercase tracking-[0.14em]">Chất liệu</span>
+              <span className="font-bold uppercase tracking-[0.14em]">
+                Chất liệu
+              </span>
               <span>{product.material || "Cotton blend"}</span>
             </div>
             <div className="flex justify-between py-2">
-              <span className="font-bold uppercase tracking-[0.14em]">Tồn kho</span>
+              <span className="font-bold uppercase tracking-[0.14em]">
+                Tồn kho
+              </span>
               <span>{product.stock > 0 ? `Còn ${product.stock}` : "Hết hàng"}</span>
             </div>
           </div>
@@ -196,8 +209,12 @@ export default function ProductDetailsClient({
             ].map(([Icon, title, description]) => (
               <div key={String(title)} className="border border-zinc-200 p-4">
                 <Icon className="mb-3 h-5 w-5" />
-                <p className="font-bold uppercase tracking-[0.12em]">{String(title)}</p>
-                <p className="mt-1 text-xs text-zinc-500">{String(description)}</p>
+                <p className="font-bold uppercase tracking-[0.12em]">
+                  {String(title)}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {String(description)}
+                </p>
               </div>
             ))}
           </div>
