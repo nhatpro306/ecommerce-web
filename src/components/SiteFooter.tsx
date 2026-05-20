@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const policies: string[] = [
@@ -33,7 +34,13 @@ export function SiteFooter() {
       <div className="border-t border-zinc-200">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
-            <h2 className="text-3xl font-black tracking-[0.16em]">RESEY</h2>
+            <Image
+              src="/brand/resey-logo.jpg"
+              alt="RESEY logo"
+              width={130}
+              height={90}
+              className="h-20 w-auto object-contain"
+            />
 
             <p className="mt-4 max-w-md text-sm leading-6 text-zinc-600">
               Vietnamese streetwear built for daily movement. Minimal
