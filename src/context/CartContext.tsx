@@ -11,6 +11,10 @@ import * as cartService from '@/services/cart/cartService';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 
+const LOCAL_CART_STORAGE_KEY = 'resey-local-cart';
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 // Define CartItem interface extending ProductType with quantity for UI consumption
 export interface CartItem extends ProductType {
   quantity: number;
@@ -24,8 +28,8 @@ interface CartContextType {
   cartItems: CartItem[];
   addToCart: (
     product: ProductType,
-    options?: { size?: string; color?: string }
-  ) => void;
+    options?: { size?: string; color?: string; quantity?: number }
+  ) => Promise<void>;
   removeFromCart: (productId: string, cartItemId?: number) => void;
   updateQuantity: (
     productId: string,
@@ -40,6 +44,38 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function isSupabaseProductId(productId: string): boolean {
+  return UUID_PATTERN.test(productId);
+}
+
+function getCartItemKey(
+  productId: string,
+  size?: string | null,
+  color?: string | null
+): string {
+  return `${productId}::${size ?? ''}::${color ?? ''}`;
+}
+
+function isLocalCartItem(item: CartItem): boolean {
+  return item.variant_info?.localCart === true || !isSupabaseProductId(item.product_id);
+}
+
+function readLocalCart(): CartItem[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const storedCart = window.localStorage.getItem(LOCAL_CART_STORAGE_KEY);
+    return storedCart ? (JSON.parse(storedCart) as CartItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalCart(items: CartItem[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LOCAL_CART_STORAGE_KEY, JSON.stringify(items));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
@@ -52,10 +88,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadCart() {
       if (!user) {
-        // Clear cart if user is not logged in
-        setCartItems([]);
-        setSubtotal(0);
-        setTotalItems(0);
+        // Guest/sample cart is stored locally so the MVP can run without auth.
+        setCartItems(readLocalCart());
         setActiveCartId(null);
         setIsLoading(false);
         return;
@@ -81,7 +115,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             variant_info: item.variant_info,
           }));
 
-          setCartItems(formattedItems);
+          const localItems = readLocalCart();
+          setCartItems([...formattedItems, ...localItems]);
           setSubtotal(cart.total_price);
           setTotalItems(cart.total_items);
         }
@@ -112,35 +147,82 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = async (
     product: ProductType,
-    options?: { size?: string; color?: string }
+    options?: { size?: string; color?: string; quantity?: number }
   ) => {
-    if (!user) {
-      toast.error('Please login to add items to cart');
+    const quantity = Math.max(1, options?.quantity ?? 1);
+    const selectedSize = options?.size ?? null;
+    const selectedColor = options?.color ?? null;
+    const shouldUseLocalCart = !user || !isSupabaseProductId(product.product_id);
+
+    if (shouldUseLocalCart) {
+      setCartItems((previousItems) => {
+        const targetKey = getCartItemKey(
+          product.product_id,
+          selectedSize,
+          selectedColor
+        );
+        const existingItemIndex = previousItems.findIndex(
+          (item) =>
+            getCartItemKey(
+              item.product_id,
+              item.selected_size,
+              item.selected_color
+            ) === targetKey
+        );
+
+        const nextItems =
+          existingItemIndex === -1
+            ? [
+                ...previousItems,
+                {
+                  ...product,
+                  quantity,
+                  selected_size: selectedSize,
+                  selected_color: selectedColor,
+                  variant_info: {
+                    size: selectedSize,
+                    color: selectedColor,
+                    localCart: true,
+                  },
+                },
+              ]
+            : previousItems.map((item, index) =>
+                index === existingItemIndex
+                  ? { ...item, quantity: item.quantity + quantity }
+                  : item
+              );
+
+        writeLocalCart(nextItems);
+        return nextItems;
+      });
+      toast.success('Added to cart');
       return;
     }
 
-    if (!activeCartId) {
+    let cartId = activeCartId;
+    if (!cartId) {
       const cart = await cartService.createCart();
       if (!cart) {
         toast.error('Failed to create cart');
         return;
       }
-      setActiveCartId(cart.id);
+      cartId = cart.id;
+      setActiveCartId(cartId);
     }
 
     try {
       // Add item to database
       const result = await cartService.addItemToCart(
-        activeCartId as number,
+        cartId,
         product.product_id,
         product.price,
-        1,
+        quantity,
         {
-          size: options?.size,
-          color: options?.color,
+          size: selectedSize ?? undefined,
+          color: selectedColor ?? undefined,
           variantInfo: {
-            size: options?.size,
-            color: options?.color,
+            size: selectedSize,
+            color: selectedColor,
           },
         }
       );
@@ -150,8 +232,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const existingItemIndex = cartItems.findIndex(
           (item) =>
             item.product_id === product.product_id &&
-            (item.selected_size ?? null) === (options?.size ?? null) &&
-            (item.selected_color ?? null) === (options?.color ?? null)
+            (item.selected_size ?? null) === selectedSize &&
+            (item.selected_color ?? null) === selectedColor
         );
 
         if (existingItemIndex !== -1) {
@@ -159,7 +241,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const updatedItems = [...cartItems];
           updatedItems[existingItemIndex] = {
             ...updatedItems[existingItemIndex],
-            quantity: updatedItems[existingItemIndex].quantity + 1,
+            quantity: updatedItems[existingItemIndex].quantity + quantity,
             cart_item_id: result.id,
           };
           setCartItems(updatedItems);
@@ -169,10 +251,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ...cartItems,
             {
               ...product,
-              quantity: 1,
+              quantity,
               cart_item_id: result.id,
-              selected_size: options?.size ?? null,
-              selected_color: options?.color ?? null,
+              selected_size: selectedSize,
+              selected_color: selectedColor,
               variant_info: result.variant_info,
             },
           ]);
@@ -187,8 +269,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (productId: string, cartItemId?: number) => {
-    if (!activeCartId) return;
-
     try {
       // Find the cart item
       const itemToRemove = cartItems.find(
@@ -198,7 +278,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
             : item.product_id === productId
       );
 
-      if (itemToRemove?.cart_item_id) {
+      if (!itemToRemove) return;
+
+      if (isLocalCartItem(itemToRemove) || !itemToRemove.cart_item_id || !activeCartId) {
+        setCartItems((previousItems) => {
+          const nextItems = previousItems.filter((item) => item !== itemToRemove);
+          writeLocalCart(nextItems);
+          return nextItems;
+        });
+        toast.success('Item removed from cart');
+        return;
+      }
+
+      if (itemToRemove.cart_item_id) {
         // Remove from database
         const success = await cartService.removeCartItem(
           itemToRemove.cart_item_id
@@ -227,8 +319,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     amount: number,
     cartItemId?: number
   ) => {
-    if (!activeCartId) return;
-
     try {
       // Find the item in cart
       const itemToUpdate = cartItems.find(
@@ -238,13 +328,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
             : item.product_id === productId
       );
 
-      if (!itemToUpdate || !itemToUpdate.cart_item_id) return;
+      if (!itemToUpdate) return;
 
       const newQuantity = itemToUpdate.quantity + amount;
 
       if (newQuantity <= 0) {
         // If new quantity is zero or less, remove the item
         await removeFromCart(productId, cartItemId);
+        return;
+      }
+
+      if (isLocalCartItem(itemToUpdate) || !itemToUpdate.cart_item_id || !activeCartId) {
+        setCartItems((previousItems) => {
+          const nextItems = previousItems.map((item) => {
+            const isTarget = cartItemId
+              ? item.cart_item_id === cartItemId
+              : item.product_id === productId &&
+                item.selected_size === itemToUpdate.selected_size &&
+                item.selected_color === itemToUpdate.selected_color;
+
+            return isTarget ? { ...item, quantity: newQuantity } : item;
+          });
+          writeLocalCart(nextItems);
+          return nextItems;
+        });
         return;
       }
 
@@ -273,13 +380,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = async () => {
-    if (!activeCartId) return;
+    if (!activeCartId) {
+      setCartItems([]);
+      writeLocalCart([]);
+      return;
+    }
 
     try {
       const success = await cartService.clearCart(activeCartId);
 
       if (success) {
         setCartItems([]);
+        writeLocalCart([]);
         toast.success('Cart cleared');
       }
     } catch (error) {
