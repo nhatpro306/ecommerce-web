@@ -1,6 +1,10 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { ProductType } from '@/types';
-import { findSampleProduct, sampleProducts } from '@/utils/sampleProducts';
+import {
+  findSampleProduct,
+  mergeWithSampleProducts,
+  sampleProducts,
+} from '@/utils/sampleProducts';
 
 export const productServerService = {
   async getProducts(): Promise<ProductType[]> {
@@ -18,7 +22,7 @@ export const productServerService = {
       }
 
       const products = (data || []) as ProductType[];
-      return products.length > 0 ? products : sampleProducts;
+      return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
     } catch (error) {
       console.error('Error in getProducts:', error);
       return sampleProducts;
@@ -85,10 +89,8 @@ export const productServerService = {
       }
 
       const products = (data || []) as ProductType[];
-      const fallbackProducts = sampleProducts.filter(
-        (product) => product.category_id === categoryId
-      );
-      return products.length > 0 ? products : fallbackProducts;
+      const mergedProducts = mergeWithSampleProducts(products);
+      return mergedProducts.filter((product) => product.category_id === categoryId);
     } catch (error) {
       console.error('Error in getProductsByCategory:', error);
       return sampleProducts.filter((product) => product.category_id === categoryId);
@@ -112,11 +114,15 @@ export const productServerService = {
         );
       }
 
-      const products = (data || []) as ProductType[];
+      const products = mergeWithSampleProducts((data || []) as ProductType[]);
       const fallbackProducts = sampleProducts.filter((product) =>
         product.title.toLowerCase().includes(query.toLowerCase())
       );
-      return products.length > 0 ? products : fallbackProducts;
+      return products.length > 0
+        ? products.filter((product) =>
+            product.title.toLowerCase().includes(query.toLowerCase())
+          )
+        : fallbackProducts;
     } catch (error) {
       console.error('Error in searchProducts:', error);
       return sampleProducts.filter((product) =>

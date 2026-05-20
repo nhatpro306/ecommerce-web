@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase/client';
 import { ProductType } from '../../types';
 import { isNoRowsError, toUserFacingQueryError } from '@/utils/errorHandling';
-import { findSampleProduct, sampleProducts } from '@/utils/sampleProducts';
+import {
+  findSampleProduct,
+  mergeWithSampleProducts,
+  sampleProducts,
+} from '@/utils/sampleProducts';
 
 export const productService = {
   async getProducts(): Promise<ProductType[]> {
@@ -17,7 +21,7 @@ export const productService = {
       }
 
       const products = (data || []) as ProductType[];
-      return products.length > 0 ? products : sampleProducts;
+      return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
     } catch (error) {
       console.warn('Using sample products because Supabase products are unavailable:', error);
       return sampleProducts;
@@ -62,10 +66,11 @@ export const productService = {
       }
 
       const products = (data || []) as ProductType[];
-      const fallbackProducts = sampleProducts.filter(
+      const mergedProducts = mergeWithSampleProducts(products);
+      const fallbackProducts = mergedProducts.filter(
         (product) => product.category_id === categoryId
       );
-      return products.length > 0 ? products : fallbackProducts;
+      return fallbackProducts;
     } catch (error) {
       console.warn(
         'Using sample category products because Supabase products are unavailable:',
