@@ -10,16 +10,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProductFilter } from "@/components/ProductFilter";
 import { useState, useMemo } from "react";
 
-// Helper functions (moved from hook to component for simplicity)
-const getCategoryId = (categoryName: string): number | null => {
-  const categoryMap: { [key: string]: number } = {
-    electronics: 3,
-    clothing: 1,
-    accessories: 2,
-  };
-  return categoryMap[categoryName] || null;
-};
-
 // Sort products based on the selected option
 const sortProducts = (
   products: ProductType[],
@@ -54,12 +44,10 @@ const filterProducts = (products: ProductType[], filters: FilterOptions) => {
 
   // Filter by category (only if not 'all')
   if (filters.categoryFilter !== "all") {
-    const categoryId = getCategoryId(filters.categoryFilter);
-    if (categoryId !== null) {
-      filtered = filtered.filter(
-        (product) => product.category_id === categoryId,
-      );
-    }
+    filtered = filtered.filter(
+      (product) =>
+        String(product.category_id ?? "") === String(filters.categoryFilter),
+    );
   }
   // When categoryFilter is 'all', show all categories
 
@@ -110,6 +98,25 @@ export default function ClientProducts() {
     return processed;
   }, [products, searchTerm, filters]);
 
+  const categoryOptions = useMemo(() => {
+    const categoryMap = new Map<string, string>();
+    products.forEach((product) => {
+      if (product.category_id != null) {
+        categoryMap.set(
+          String(product.category_id),
+          product.category?.name || `Category ${product.category_id}`,
+        );
+      }
+    });
+    return [
+      { value: "all", label: "Tất cả danh mục" },
+      ...Array.from(categoryMap.entries()).map(([value, label]) => ({
+        value,
+        label,
+      })),
+    ];
+  }, [products]);
+
   return (
     <ErrorBoundary>
       <>
@@ -122,7 +129,7 @@ export default function ClientProducts() {
         >
           <Input
             type="text"
-            placeholder="Search products..."
+            placeholder="Tìm sản phẩm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
@@ -130,7 +137,11 @@ export default function ClientProducts() {
         </motion.div>
 
         {/* Product Filter */}
-        <ProductFilter filters={filters} onFilterChange={setFilters} />
+        <ProductFilter
+          filters={filters}
+          onFilterChange={setFilters}
+          categoryOptions={categoryOptions}
+        />
 
         {/* Product Count and Reset */}
         <motion.div
@@ -140,8 +151,7 @@ export default function ClientProducts() {
         >
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <span>
-              Showing {processedProducts.length} of {products?.length || 0}{" "}
-              products
+              Hiển thị {processedProducts.length}/{products?.length || 0} sản phẩm
             </span>
           </div>
 
@@ -161,7 +171,7 @@ export default function ClientProducts() {
               }}
               className="bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-1 text-xs transition-colors"
             >
-              Reset All Filters
+              Reset bộ lọc
             </button>
           )}
         </motion.div>
@@ -192,7 +202,7 @@ export default function ClientProducts() {
               >
                 <ErrorState
                   title="Failed to load products"
-                  description="We couldn't load the products. Please try again."
+                  description="Không thể tải danh sách sản phẩm. Vui lòng thử lại."
                   onRetry={retry}
                   error={error}
                   type="network"
@@ -209,14 +219,14 @@ export default function ClientProducts() {
                   title={
                     (products?.length || 0) === 0
                       ? "No products available"
-                      : "No products match your filters"
+                      : "Không có sản phẩm phù hợp"
                   }
                   description={
                     (products?.length || 0) === 0
-                      ? "No products are currently available. Please check back later."
+                      ? "Hiện chưa có sản phẩm nào."
                       : searchTerm.trim() !== ""
-                        ? "Try a different search term or adjust your filters."
-                        : "Try adjusting your filters to see more products."
+                        ? "Thử từ khóa khác hoặc điều chỉnh bộ lọc."
+                        : "Điều chỉnh bộ lọc để xem thêm sản phẩm."
                   }
                   showRetry={false}
                   type="not-found"
@@ -234,7 +244,7 @@ export default function ClientProducts() {
                       }}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 rounded px-4 py-2 transition-colors"
                     >
-                      Clear All Filters
+                      Xóa toàn bộ bộ lọc
                     </button>
                   </div>
                 )}

@@ -85,7 +85,7 @@ export default function AdminProductsPage() {
   const handleDeleteProduct = async (productId: string) => {
     try {
       await adminProductService.deleteProduct(productId);
-      toast.success("Product deleted successfully");
+      toast.success("Product deactivated successfully");
       setDeletingProduct(null);
       fetchProducts();
     } catch (error) {
@@ -304,8 +304,8 @@ export default function AdminProductsPage() {
         isOpen={!!deletingProduct}
         onClose={() => setDeletingProduct(null)}
         onConfirm={() => handleDeleteProduct(deletingProduct!.product_id)}
-        title="Delete Product"
-        description={`Are you sure you want to delete "${deletingProduct?.title}"? This action cannot be undone.`}
+        title="Deactivate Product"
+        description={`Deactivate "${deletingProduct?.title}"? Product will be hidden from storefront.`}
       />
     </div>
   );

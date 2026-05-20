@@ -9,6 +9,7 @@ import { OrderCard } from "@/components/OrderCard";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { ErrorState } from "@/components/ErrorState";
 import Image from "next/image";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -137,7 +138,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="font-medium">
-                          ${product.price.toFixed(2)}
+                          {formatCurrency(product.price)}
                         </span>
                         <Link href={`/products/${product.product_id}`}>
                           <Button size="sm">View Details</Button>
