@@ -1,10 +1,17 @@
 import Link from "next/link";
 
-const policies = [
+const policies: string[] = [
   "Hướng dẫn mua hàng",
   "Chính sách đổi trả",
   "Chính sách giao nhận",
   "Hướng dẫn bảo quản sản phẩm",
+];
+
+const benefits: [string, string][] = [
+  ["Giao hàng miễn phí", "với mọi đơn hàng"],
+  ["Hỗ trợ 24/7", "online / offline"],
+  ["Đổi trả linh hoạt", "trong vòng 7 ngày"],
+  ["Đặt hàng trực tuyến", "COD / chuyển khoản"],
 ];
 
 const stores: string[] = ["Online store only"];
@@ -13,12 +20,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-zinc-200 bg-white">
       <section className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-8 md:grid-cols-4">
-        {[
-          ["Giao hàng miễn phí", "với mọi đơn hàng"],
-          ["Hỗ trợ 24/7", "online / offline"],
-          ["Đổi trả linh hoạt", "trong vòng 7 ngày"],
-          ["Đặt hàng trực tuyến", "COD / chuyển khoản"],
-        ].map(([title, desc]) => (
+        {benefits.map(([title, desc]) => (
           <div key={title} className="border border-zinc-200 p-5 text-center">
             <p className="text-sm font-bold uppercase tracking-[0.16em]">
               {title}
@@ -31,9 +33,7 @@ export function SiteFooter() {
       <div className="border-t border-zinc-200">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
-            <h2 className="text-3xl font-black tracking-[0.16em]">
-              RESEY
-            </h2>
+            <h2 className="text-3xl font-black tracking-[0.16em]">RESEY</h2>
 
             <p className="mt-4 max-w-md text-sm leading-6 text-zinc-600">
               Vietnamese local streetwear built for daily movement. Minimal
