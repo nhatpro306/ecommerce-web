@@ -19,7 +19,7 @@ export const productService = {
       const products = (data || []) as ProductType[];
       return products.length > 0 ? products : sampleProducts;
     } catch (error) {
-      console.error('Falling back to sample products:', error);
+      console.warn('Using sample products because Supabase products are unavailable:', error);
       return sampleProducts;
     }
   },
@@ -67,7 +67,10 @@ export const productService = {
       );
       return products.length > 0 ? products : fallbackProducts;
     } catch (error) {
-      console.error('Falling back to sample category products:', error);
+      console.warn(
+        'Using sample category products because Supabase products are unavailable:',
+        error
+      );
       return sampleProducts.filter((product) => product.category_id === categoryId);
     }
   },
