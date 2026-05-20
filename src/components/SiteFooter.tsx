@@ -8,7 +8,7 @@ const policies: string[] = [
 ];
 
 const benefits: [string, string][] = [
-  ["Giao hàng miễn phí", "với mọi đơn hàng"],
+  ["Giao hàng miễn phí", "với đơn hàng đạt điều kiện"],
   ["Hỗ trợ 24/7", "online / offline"],
   ["Đổi trả linh hoạt", "trong vòng 7 ngày"],
   ["Đặt hàng trực tuyến", "COD / chuyển khoản"],
@@ -36,7 +36,7 @@ export function SiteFooter() {
             <h2 className="text-3xl font-black tracking-[0.16em]">RESEY</h2>
 
             <p className="mt-4 max-w-md text-sm leading-6 text-zinc-600">
-              Vietnamese local streetwear built for daily movement. Minimal
+              Vietnamese streetwear built for daily movement. Minimal
               silhouettes, confident graphics, and practical fits for the city.
             </p>
 

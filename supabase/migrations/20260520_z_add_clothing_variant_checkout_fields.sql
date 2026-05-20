@@ -38,15 +38,37 @@ add column if not exists customer_note text;
 update public.products
 set
   slug = case sku
-    when 'SL-TEE-001' then 'saigon-oversized-tee'
-    when 'SL-HOO-002' then 'hanoi-minimal-hoodie'
-    when 'SL-PAN-003' then 'vietnam-street-cargo-pants'
-    when 'SL-ACC-004' then 'local-brand-cap'
-    when 'SL-TEE-005' then 'basic-heavyweight-tee'
-    when 'SL-TEE-006' then 'limited-dragon-graphic-tee'
-    when 'SL-TEE-007' then 'district-1-boxy-tee'
-    when 'SL-HOO-008' then '84-club-hoodie'
+    when 'SL-TEE-001' then 'resey-oversized-tee'
+    when 'SL-HOO-002' then 'resey-minimal-hoodie'
+    when 'SL-PAN-003' then 'resey-street-cargo-pants'
+    when 'SL-ACC-004' then 'resey-logo-cap'
+    when 'SL-TEE-005' then 'resey-heavyweight-tee'
+    when 'SL-TEE-006' then 'resey-dragon-graphic-tee'
+    when 'SL-TEE-007' then 'resey-boxy-tee'
+    when 'SL-HOO-008' then 'resey-club-hoodie'
     else slug
+  end,
+  title = case sku
+    when 'SL-TEE-001' then 'RESEY Oversized Tee'
+    when 'SL-HOO-002' then 'RESEY Minimal Hoodie'
+    when 'SL-PAN-003' then 'RESEY Street Cargo Pants'
+    when 'SL-ACC-004' then 'RESEY Logo Cap'
+    when 'SL-TEE-005' then 'RESEY Heavyweight Tee'
+    when 'SL-TEE-006' then 'RESEY Dragon Graphic Tee'
+    when 'SL-TEE-007' then 'RESEY Boxy Tee'
+    when 'SL-HOO-008' then 'RESEY Club Hoodie'
+    else title
+  end,
+  description = case sku
+    when 'SL-TEE-001' then 'Áo thun form rộng cho streetwear hằng ngày.'
+    when 'SL-HOO-002' then 'Hoodie nỉ dày, tối giản, giữ form tốt.'
+    when 'SL-PAN-003' then 'Cargo pants utility fit, thoải mái khi di chuyển.'
+    when 'SL-ACC-004' then 'Nón lưỡi trai basic tone đen/trắng.'
+    when 'SL-TEE-005' then 'Áo thun heavy cotton, chất dày, đứng form.'
+    when 'SL-TEE-006' then 'Graphic tee phiên bản giới hạn.'
+    when 'SL-TEE-007' then 'Boxy tee với form rộng, gọn và dễ phối đồ.'
+    when 'SL-HOO-008' then 'Hoodie signature của RESEY.'
+    else description
   end,
   material = case sku
     when 'SL-TEE-001' then 'Cotton 240gsm'
