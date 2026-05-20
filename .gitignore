@@ -35,3 +35,4 @@ dist
 .agents
 .claude
 .npmrc
+.vercel
