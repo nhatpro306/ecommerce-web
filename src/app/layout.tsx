@@ -20,16 +20,16 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "SAIGON LOCAL | Vietnam Local Streetwear",
-    template: "%s | SAIGON LOCAL",
+    default: "RESEY | Vietnam Local Streetwear",
+    template: "%s | RESEY",
   },
   description:
     "Vietnamese local brand streetwear shop with T-shirts, hoodies, pants, accessories, COD checkout, and bank transfer.",
   openGraph: {
-    title: "SAIGON LOCAL",
+    title: "RESEY",
     description: "Local identity, modern Vietnamese streetwear.",
     url: siteUrl,
-    siteName: "SAIGON LOCAL",
+    siteName: "RESEY",
     locale: "vi_VN",
     type: "website",
   },

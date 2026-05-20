@@ -18,7 +18,7 @@ export default function ProductsPage() {
         <div className="absolute inset-0 flex items-end">
           <div className="mx-auto w-full max-w-7xl px-4 pb-10 text-white md:pb-14">
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-zinc-300">
-              NEW DROP / SAIGON LOCAL
+              NEW DROP / RESEY
             </p>
             <h1 className="max-w-3xl text-4xl font-black uppercase leading-none md:text-6xl">
               Streetwear collection

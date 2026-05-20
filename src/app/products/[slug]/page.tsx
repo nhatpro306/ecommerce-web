@@ -24,14 +24,14 @@ export async function generateMetadata({
   }
 
   const description =
-    product.description || "Vietnamese local streetwear by SAIGON LOCAL.";
+    product.description || "Vietnamese local streetwear by RESEY.";
   const productPath = `/products/${product.slug || product.product_id}`;
 
   return {
     title: product.title,
     description,
     openGraph: {
-      title: `${product.title} | SAIGON LOCAL`,
+      title: `${product.title} | RESEY`,
       description,
       url: productPath,
       images: product.image

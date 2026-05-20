@@ -23,7 +23,7 @@ export default function CartShoppingPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-14 text-center">
         <p className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-          SAIGON LOCAL
+          RESEY
         </p>
         <h1 className="mt-3 text-3xl font-black uppercase">
           Vui lòng đăng nhập
@@ -76,7 +76,7 @@ export default function CartShoppingPage() {
               Giỏ hàng đang trống
             </h2>
             <p className="mt-3 text-zinc-600">
-              Chọn sản phẩm SAIGON LOCAL để bắt đầu đơn hàng.
+              Chọn sản phẩm RESEY để bắt đầu đơn hàng.
             </p>
             <Link href="/products">
               <Button className="mt-6 h-12 rounded-none bg-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
