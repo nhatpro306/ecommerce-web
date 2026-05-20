@@ -178,7 +178,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-            SAIGON LOCAL ADMIN
+            RESEY ADMIN
           </p>
           <h1 className="mt-2 text-3xl font-black uppercase">
             Bảng điều khiển

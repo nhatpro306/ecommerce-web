@@ -3,10 +3,10 @@ add column if not exists is_active boolean not null default true;
 
 insert into public.categories (name, description)
 values
-  ('T-Shirts', 'Saigon Local T-Shirts'),
-  ('Hoodies', 'Saigon Local Hoodies'),
-  ('Pants', 'Saigon Local Pants'),
-  ('Accessories', 'Saigon Local Accessories')
+  ('T-Shirts', 'RESEY T-Shirts'),
+  ('Hoodies', 'RESEY Hoodies'),
+  ('Pants', 'RESEY Pants'),
+  ('Accessories', 'RESEY Accessories')
 on conflict do nothing;
 
 with c as (
@@ -87,7 +87,7 @@ select * from (
     ),
     (
       '84 Club Hoodie',
-      'Hoodie local signature của SAIGON LOCAL.',
+      'Hoodie local signature của RESEY.',
       850000,
       14,
       'Hoodies',

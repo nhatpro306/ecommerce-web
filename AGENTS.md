@@ -74,7 +74,7 @@ Style:
 - Black / white / gray / beige color palette
 
 Example brand names:
-- SAIGON LOCAL
+- RESEY
 - VN STREET CLUB
 - MINH LOCAL
 - URBAN SAIGON
@@ -83,7 +83,7 @@ Example brand names:
 Use one simple brand name consistently.
 
 Recommended brand name:
-SAIGON LOCAL
+RESEY
 
 Tone:
 - Minimal
@@ -131,7 +131,7 @@ Bank transfer information should be easy to edit in one config file.
 
 Example:
 - Bank name: Vietcombank
-- Account name: SAIGON LOCAL
+- Account name: RESEY
 - Account number: 0123456789
 - Transfer note: ORDER-{orderId}
 
