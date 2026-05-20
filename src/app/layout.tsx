@@ -32,6 +32,17 @@ export const metadata: Metadata = {
     siteName: "RESEY",
     locale: "vi_VN",
     type: "website",
+    images: [
+      {
+        url: "/brand/resey-logo.jpg",
+        alt: "RESEY logo",
+      },
+    ],
+  },
+  icons: {
+    icon: "/brand/resey-logo.jpg",
+    shortcut: "/brand/resey-logo.jpg",
+    apple: "/brand/resey-logo.jpg",
   },
   robots: {
     index: true,
@@ -46,9 +57,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
-      <head>
-        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-      </head>
+      <head />
       <body className="bg-background min-h-screen">
         <ErrorBoundary>
           <TanStackQueryProvider>
