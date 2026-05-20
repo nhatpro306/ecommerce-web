@@ -36,3 +36,4 @@ dist
 .claude
 .npmrc
 .vercel
+.env*.local
