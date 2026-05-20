@@ -29,11 +29,11 @@ export default function Home() {
             <h1 className="text-5xl font-black uppercase leading-none tracking-tight md:text-7xl">
               Young City.
               <br />
-              Local Uniform.
+              New Uniform.
             </h1>
             <p className="mt-6 max-w-md text-sm leading-7 text-zinc-300">
-              Vietnamese streetwear for everyday movement. Clean silhouettes,
-              strong graphics, and practical fits made for Saigon rhythm.
+              RESEY builds modern streetwear for everyday movement. Clean
+              silhouettes, strong graphics, and practical fits for city life.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/products?sort=latest">
@@ -112,7 +112,7 @@ export default function Home() {
         <div className="relative min-h-[360px] overflow-hidden bg-zinc-100">
           <Image
             src="https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=1200&q=80"
-            alt="Local streetwear detail"
+            alt="RESEY streetwear detail"
             fill
             className="object-cover"
           />
@@ -123,12 +123,12 @@ export default function Home() {
               Thương hiệu
             </p>
             <h2 className="mt-3 text-3xl font-black uppercase">
-              Local identity, modern streetwear.
+              RESEY identity, modern streetwear.
             </h2>
             <p className="mt-5 leading-7 text-zinc-600">
-              RESEY lấy cảm hứng từ nhịp sống thành phố: tối giản, thực
-              dụng và tự tin. Sản phẩm tập trung vào form mặc hằng ngày, chất
-              liệu bền và tinh thần local brand Việt Nam.
+              RESEY lấy cảm hứng từ nhịp sống thành phố: tối giản, thực dụng
+              và tự tin. Sản phẩm tập trung vào form mặc hằng ngày, chất liệu
+              bền và tinh thần streetwear hiện đại.
             </p>
           </div>
         </div>

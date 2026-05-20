@@ -8,7 +8,7 @@ export default function ProductsPage() {
       <section className="relative overflow-hidden">
         <Image
           src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1800&q=80"
-          alt="Vietnamese streetwear collection"
+          alt="RESEY streetwear collection"
           width={1800}
           height={720}
           className="h-[320px] w-full object-cover md:h-[460px]"
@@ -24,7 +24,7 @@ export default function ProductsPage() {
               Streetwear collection
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-200">
-              Local identity, modern streetwear. Thiết kế cho chuyển động hằng
+              RESEY identity, modern streetwear. Thiết kế cho chuyển động hằng
               ngày.
             </p>
           </div>
