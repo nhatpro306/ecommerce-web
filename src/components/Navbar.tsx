@@ -42,12 +42,9 @@ export function Navbar() {
           ))}
         </nav>
 
-        <Link href="/" className="flex flex-col items-center">
+        <Link href="/" className="flex items-center justify-center">
           <span className="text-2xl font-black tracking-[0.18em] text-zinc-950">
-            SAIGON
-          </span>
-          <span className="-mt-1 text-[10px] font-semibold uppercase tracking-[0.45em] text-zinc-500">
-            local
+            RESEY
           </span>
         </Link>
 
@@ -78,31 +75,40 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 cursor-pointer"
-            onClick={() => router.push(user ? "/profile" : "/signin")}
+            onClick={() => router.push("/cart")}
           >
-            {user ? (
-              <User className="h-[1.1rem] w-[1.1rem]" />
-            ) : (
-              <LogIn className="h-[1.1rem] w-[1.1rem]" />
-            )}
-            <span className="sr-only">{user ? "Profile" : "Sign in"}</span>
-          </Button>
-
-          <Link href="/cart">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-9 w-9 cursor-pointer"
-            >
+            <div className="relative">
               <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
               {totalItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-950 text-[10px] font-bold text-white">
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-950 text-[10px] font-bold text-white">
                   {totalItems}
                 </span>
               )}
-              <span className="sr-only">Shopping cart</span>
+            </div>
+            <span className="sr-only">Cart</span>
+          </Button>
+
+          {user ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 cursor-pointer"
+              onClick={() => router.push("/profile")}
+            >
+              <User className="h-[1.1rem] w-[1.1rem]" />
+              <span className="sr-only">Profile</span>
             </Button>
-          </Link>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 cursor-pointer"
+              onClick={() => router.push("/signin")}
+            >
+              <LogIn className="h-[1.1rem] w-[1.1rem]" />
+              <span className="sr-only">Sign in</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>
