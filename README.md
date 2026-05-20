@@ -1,203 +1,384 @@
-Resey - Vietnamese Streetwear E-commerce MVP
-Resey is a mobile-first e-commerce MVP for a Vietnamese local brand / streetwear clothing shop. The project was built by improving an existing Next.js + Supabase e-commerce codebase, not by rebuilding from scratch.
+# Resey — Vietnamese Streetwear E-Commerce Platform
 
-The goal is to show a portfolio-ready full-stack flow: product browsing, cart, variant selection, COD / bank transfer checkout, order storage, admin basics, and Vercel deployment readiness.
+A modern full-stack Vietnamese streetwear e-commerce platform built with Next.js, Supabase, and Tailwind CSS.
 
-Features
-Local brand homepage for Resey
+Resey was developed by extending and redesigning an existing e-commerce codebase into a portfolio-ready local fashion brand platform focused on mobile-first UX, scalable architecture, and production deployment.
 
-Product listing with search, category filter, size filter, color filter, stock filter, sort, URL params
+The project demonstrates a real-world modern commerce workflow including:
 
-Slug-based product detail route: /products/[slug]
+* Product discovery
+* Variant selection
+* Cart persistence
+* COD & bank-transfer checkout
+* Order storage
+* Admin functionality
+* SEO optimization
+* Production deployment with Vercel
 
-Product detail with gallery, size selector, color selector, quantity selector, material, stock status, related products, toast feedback
+---
 
-Cart with selected size/color persistence
+# ✨ Features
 
-Checkout with COD and bank transfer
+## 🏠 Storefront
 
-Order creation with customer name, phone, email, address, note, payment method
+* Vietnamese local brand landing page
+* Mobile-first responsive design
+* Featured collections and categories
+* Optimized user experience for fashion/streetwear
 
-Order items store selected size/color and variant metadata
+---
 
-Best-effort stock reduction after checkout
+## 🛍 Product System
 
-Success page with bank transfer note ORDER-{orderId}
+* Product search
+* Category filtering
+* Size filtering
+* Color filtering
+* In-stock filtering
+* Product sorting
+* URL-based query state
 
-Admin pages from the base repository kept and improved incrementally
+### Product Detail Page
 
-SEO basics: metadata, OpenGraph, robots.txt, sitemap.xml
+Dynamic slug routing:
 
-Runs locally without Stripe or Polar keys
+```bash
+/products/[slug]
+```
 
-Tech Stack
-Next.js App Router
+Includes:
 
-TypeScript
+* Product gallery
+* Size selection
+* Color selection
+* Quantity selector
+* Material information
+* Stock status
+* Related products
+* Toast notifications
+* Responsive mobile layout
 
-Tailwind CSS
+---
 
-shadcn/ui-style components
+## 🛒 Shopping Cart
 
-Supabase Auth + PostgreSQL
+* Persistent cart state
+* Variant-aware cart items
+* Selected size/color saved
+* Quantity editing
+* Real-time subtotal updates
 
-TanStack Query
+---
 
-Sonner toast notifications
+## 💳 Checkout System
 
-Vercel deployment
+### Supported Payment Methods
 
-Folder Structure
-src/app - App Router pages, layouts, API routes, SEO routes
+* Cash on Delivery (COD)
+* Bank Transfer
 
-src/components - shared UI and storefront components
+### Checkout Information
 
-src/context - auth and cart state
+* Customer name
+* Phone number
+* Email
+* Address
+* Order note
+* Payment method
 
-src/services - product, cart, order, address, admin service logic
+### Order Handling
 
-src/lib/supabase - Supabase client/server helpers
+* Stores variant metadata
+* Best-effort inventory reduction
+* Bank transfer instruction page
+* Unique order code:
 
-src/hooks - TanStack Query hooks
+```bash
+ORDER-{orderId}
+```
 
-supabase/migrations - safe SQL migrations and seed data
+---
 
-Environment Variables
-Create .env.local for local development:
+## 🔐 Admin Features
 
-Đoạn mã
+Admin pages from the original repository were preserved and incrementally improved.
+
+Includes:
+
+* Product management basics
+* Order viewing
+* Inventory overview foundation
+* Authentication integration
+
+---
+
+## 🔍 SEO Optimization
+
+* Dynamic metadata
+* OpenGraph support
+* robots.txt
+* sitemap.xml
+* Search-engine friendly routes
+* Clean URL structure
+
+---
+
+# 🧱 Tech Stack
+
+| Technology         | Purpose                      |
+| ------------------ | ---------------------------- |
+| Next.js App Router | Frontend + Server Components |
+| TypeScript         | Type safety                  |
+| Tailwind CSS       | Styling                      |
+| shadcn/ui          | UI components                |
+| Supabase           | Database + Auth              |
+| PostgreSQL         | Data storage                 |
+| TanStack Query     | Async state management       |
+| Sonner             | Toast notifications          |
+| Vercel             | Deployment                   |
+
+---
+
+# 📂 Project Structure
+
+```bash
+src/
+├── app/                 # App Router pages & API routes
+├── components/          # Shared UI components
+├── context/             # Auth & cart providers
+├── hooks/               # TanStack Query hooks
+├── lib/supabase/        # Supabase helpers
+├── services/            # Business logic & DB services
+└── styles/              # Global styling
+
+supabase/
+└── migrations/          # SQL migrations & seed data
+```
+
+---
+
+# ⚙️ Environment Variables
+
+Create `.env.local`
+
+```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 NEXT_PUBLIC_BANK_NAME=Vietcombank
 NEXT_PUBLIC_BANK_ACCOUNT_NAME=Resey
 NEXT_PUBLIC_BANK_ACCOUNT_NUMBER=0123456789
-Note: Do not commit real secrets. Keep .env.example as the public template.
+```
 
-Database Setup
-Create a Supabase project.
+> Never commit real secrets to GitHub.
+> Use `.env.example` as the public template.
 
-Apply the original base schema for this repository.
+---
 
-Run the migrations in supabase/migrations in order.
+# 🗄 Database Setup
 
-Current local brand migrations:
+## 1. Create Supabase Project
 
+Create a new project in Supabase.
+
+---
+
+## 2. Apply Base Schema
+
+Run the original repository schema first.
+
+---
+
+## 3. Run Migrations
+
+Apply migrations in order:
+
+```bash
 20260520_add_product_is_active_and_seed_local_brand.sql
 
 20260520_z_add_clothing_variant_checkout_fields.sql
+```
 
-These migrations add:
+---
 
-products.is_active
+## Current Migration Features
 
-products.slug
+### Product Fields
 
-products.material
+* `products.is_active`
+* `products.slug`
+* `products.material`
+* `products.sizes`
+* `products.colors`
 
-products.sizes
+### Cart Fields
 
-products.colors
+* `cart_items.selected_size`
+* `cart_items.selected_color`
+* `cart_items.variant_info`
 
-cart_items.selected_size
+### Order Fields
 
-cart_items.selected_color
+* `order_items.selected_size`
+* `order_items.selected_color`
+* `order_items.variant_info`
 
-cart_items.variant_info
+### Customer Checkout Fields
 
-order_items.selected_size
+* `orders.customer_name`
+* `orders.customer_phone`
+* `orders.customer_email`
+* `orders.customer_note`
 
-order_items.selected_color
+### Seed Data
 
-order_items.variant_info
+* Vietnamese local brand products
+* Categories
+* Sample inventory
 
-orders.customer_name
+---
 
-orders.customer_phone
+# 🚀 Local Development
 
-orders.customer_email
+Install dependencies:
 
-orders.customer_note
-
-Sample local brand categories and products
-
-Run Locally
-Bash
+```bash
 npm install --legacy-peer-deps
-npm run dev
-Open your browser and navigate to:
+```
 
-Plaintext
+Start development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```bash
 http://localhost:3000
-Quality Checks
-Bash
+```
+
+---
+
+# ✅ Quality Checks
+
+Run before deployment:
+
+```bash
 npm run lint
 npm run build
-Both commands should pass cleanly before attempting deployment.
+```
 
-Payment Strategy
-MVP payment methods:
+Both commands should pass successfully.
 
-COD (Cash on Delivery)
+---
 
-Bank Transfer
+# 💰 Payment Strategy
 
-Bank transfer uses environment variables so shop information can be changed seamlessly without editing checkout code.
+This MVP intentionally focuses on lightweight payment methods for rapid deployment and demonstration.
 
-Legacy Polar/Stripe-related code is kept only for compatibility with the original repository. The main checkout flow does not require Stripe or Polar keys.
+## Included
 
-Future payment options:
-VNPay
+* COD
+* Bank Transfer
 
-Momo
+## Planned Future Integrations
 
-ZaloPay
+* VNPay
+* Momo
+* ZaloPay
+* Stripe
 
-Stripe demo mode
+Legacy Stripe/Polar logic from the original repository remains only for compatibility purposes.
 
-Deploy To Vercel
-Push the repository to GitHub.
+---
 
-Import the GitHub repository into Vercel.
+# 🌐 Deployment
 
-Add the environment variables listed above.
+## Deploy with Vercel
 
-Deploy.
+1. Push repository to GitHub
+2. Import repository into Vercel
+3. Add environment variables
+4. Deploy project
+5. Set:
 
-Set NEXT_PUBLIC_SITE_URL to the production Vercel URL.
+```env
+NEXT_PUBLIC_SITE_URL=https://your-production-url.vercel.app
+```
 
-Connect the deployed app to the correct Supabase project.
+6. Connect production Supabase project
 
-Plaintext
-GitHub ──> Vercel ──> Supabase
-Screenshots
-Add screenshots after final deployment:
+---
 
-Homepage
+## Production Architecture
 
-Products page
+```bash
+GitHub
+   ↓
+Vercel
+   ↓
+Supabase
+```
 
-Product detail page
+---
 
-Cart
+# 📸 Screenshots
 
-Checkout
+Add production screenshots here after deployment:
 
-Admin dashboard
+* Homepage
+* Products page
+* Product detail
+* Cart
+* Checkout
+* Admin dashboard
 
-Future Improvements
-True variant-level inventory table
+---
 
-Better admin product editor for images, material, sizes, and colors
+# 🛣 Future Improvements
 
-Order status timeline
+## Commerce
 
-Supabase Storage or Cloudinary image upload
+* True variant-level inventory
+* Advanced product editor
+* Discount system
+* Wishlist
+* Order tracking
 
-Email order confirmation
+## Infrastructure
 
-VNPay or Momo integration
+* Cloudinary / Supabase Storage uploads
+* Email notifications
+* Analytics dashboard
+* Background jobs
 
-More advanced SEO product metadata
+## SEO & Performance
+
+* Product structured data
+* Dynamic OG images
+* Advanced caching
+* Search optimization
+
+---
+
+# 🎯 Project Goals
+
+This project was built to demonstrate:
+
+* Modern full-stack web development
+* E-commerce architecture
+* Production deployment workflow
+* Database design
+* State management
+* Responsive UI/UX
+* Real-world portfolio quality engineering
+
+---
+
+# 📄 License
+
+This project is intended for educational and portfolio purposes.
