@@ -116,14 +116,14 @@ export default function AdminDashboard() {
       <div className="container mx-auto py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-red-600">Access Denied</CardTitle>
+            <CardTitle className="text-red-600">Không có quyền truy cập</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-4">
-              You don&apos;t have admin privileges to access this page.
+              Tài khoản của bạn không có quyền admin.
             </p>
             <Link href="/dashboard">
-              <Button>Go to User Dashboard</Button>
+              <Button>Về trang người dùng</Button>
             </Link>
           </CardContent>
         </Card>
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="pt-6">
-            <p>Unable to load dashboard data. Please try again later.</p>
+            <p>Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.</p>
           </CardContent>
         </Card>
       </div>
@@ -147,8 +147,8 @@ export default function AdminDashboard() {
     <div className="container mx-auto space-y-6 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user?.email}</p>
+          <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển Admin</h1>
+          <p className="text-muted-foreground">Xin chào, {user?.email}</p>
         </div>
         <Badge variant="secondary" className="bg-primary/15 text-primary">
           <Settings className="mr-1 h-3 w-3" />

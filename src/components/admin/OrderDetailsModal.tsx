@@ -40,6 +40,19 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const mapStatusLabel = (status: string) => {
+  switch (status) {
+    case "processing":
+      return "confirmed";
+    case "shipped":
+      return "shipping";
+    case "delivered":
+      return "completed";
+    default:
+      return status;
+  }
+};
+
 export function OrderDetailsModal({
   isOpen,
   onClose,
@@ -103,7 +116,7 @@ export function OrderDetailsModal({
                 <div>
                   <p className="text-sm font-medium text-slate-700">Status</p>
                   <Badge className={`${getStatusColor(order.status)} border`}>
-                    {order.status}
+                    {mapStatusLabel(order.status)}
                   </Badge>
                 </div>
               </div>

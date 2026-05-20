@@ -34,13 +34,26 @@ import { toast } from "sonner";
 import { OrderDetailsModal } from "@/components/admin/OrderDetailsModal";
 
 const statusOptions = [
-  { value: "all", label: "All Statuses" },
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "all", label: "Tất cả trạng thái" },
+  { value: "pending", label: "pending" },
+  { value: "processing", label: "confirmed" },
+  { value: "shipped", label: "shipping" },
+  { value: "delivered", label: "completed" },
+  { value: "cancelled", label: "cancelled" },
 ];
+
+const mapStatusLabel = (status: string) => {
+  switch (status) {
+    case "processing":
+      return "confirmed";
+    case "shipped":
+      return "shipping";
+    case "delivered":
+      return "completed";
+    default:
+      return status;
+  }
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -256,7 +269,7 @@ export default function AdminOrdersPage() {
 
                   <div className="flex items-center gap-3">
                     <Badge className={getStatusColor(order.status)}>
-                      {order.status}
+                      {mapStatusLabel(order.status)}
                     </Badge>
 
                     <Select
@@ -271,11 +284,11 @@ export default function AdminOrdersPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="processing">Processing</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="pending">pending</SelectItem>
+                        <SelectItem value="processing">confirmed</SelectItem>
+                        <SelectItem value="shipped">shipping</SelectItem>
+                        <SelectItem value="delivered">completed</SelectItem>
+                        <SelectItem value="cancelled">cancelled</SelectItem>
                       </SelectContent>
                     </Select>
 

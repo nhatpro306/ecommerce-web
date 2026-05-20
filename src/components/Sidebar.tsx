@@ -60,9 +60,10 @@ import {
 // Default icons for each category
 const categoryIcons: Record<string, React.ElementType> = {
   All: Home,
-  Clothing: Shirt,
+  "T-Shirts": Shirt,
+  Hoodies: Shirt,
+  Pants: Smartphone,
   Accessories: Watch,
-  Electronics: Smartphone,
 };
 
 export default function Sidebar() {
@@ -93,11 +94,11 @@ export default function Sidebar() {
 
   // Mapping of categories from DB to display with icons and hrefs
   const categoryItems = [
-    { name: "All", icon: Home, href: "/" },
+    { name: "All", icon: Home, href: "/products" },
     ...(categories || []).map((category) => ({
       name: category.name,
       icon: categoryIcons[category.name] || Smartphone,
-      href: `/${category.name.toLowerCase()}`,
+      href: "/products",
     })),
   ];
 
@@ -105,7 +106,7 @@ export default function Sidebar() {
   const displayCategories = user
     ? categoryItems
     : categoryItems.filter((category) =>
-        ["All", "Electronics"].includes(category.name),
+        ["All", "T-Shirts", "Accessories"].includes(category.name),
       );
 
   // Admin navigation items

@@ -32,6 +32,7 @@ interface CreateOrderParams {
   shippingAddress: AddressType;
   totalAmount: number;
   paymentIntentId?: string;
+  paymentMethod?: "cod" | "bank_transfer";
 }
 
 export const orderService = {
@@ -41,6 +42,7 @@ export const orderService = {
     shippingAddress,
     totalAmount,
     paymentIntentId,
+    paymentMethod = "cod",
   }: CreateOrderParams) {
     try {
       // Validate input parameters
@@ -99,6 +101,7 @@ export const orderService = {
             status: "pending",
             payment_id: paymentIntentId,
             shipping_address_id: shippingAddress.id,
+            payment_method: paymentMethod,
           },
         ])
         .select()
@@ -171,6 +174,24 @@ export const orderService = {
         }
 
         throw new Error(`Order items creation failed: ${itemsError.message}`);
+      }
+
+      // Best-effort stock reduction for MVP checkout flow.
+      for (const item of items) {
+        const { data: product } = await supabase
+          .from("products")
+          .select("stock")
+          .eq("product_id", item.product_id)
+          .single();
+
+        const currentStock = product?.stock ?? 0;
+        if (currentStock > 0) {
+          const nextStock = Math.max(0, currentStock - item.quantity);
+          await supabase
+            .from("products")
+            .update({ stock: nextStock })
+            .eq("product_id", item.product_id);
+        }
       }
 
       console.log("Order and items created successfully");

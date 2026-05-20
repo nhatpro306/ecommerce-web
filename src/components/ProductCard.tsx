@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Star, Heart, ShoppingCart, Eye, Badge, Zap } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface ProductCardProps {
   product: ProductType;
@@ -187,17 +188,17 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-foreground text-lg font-bold">
-              ${product.price.toFixed(2)}
+              {formatCurrency(product.price)}
             </span>
             {originalPrice && (
               <span className="text-muted-foreground text-xs line-through">
-                ${originalPrice.toFixed(2)}
+                {formatCurrency(originalPrice)}
               </span>
             )}
           </div>
           {isOnSale && (
             <div className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-xs font-medium">
-              Save ${(originalPrice! - product.price).toFixed(0)}
+              Ti?t ki?m {formatCurrency(originalPrice! - product.price)}
             </div>
           )}
         </div>
@@ -227,3 +228,4 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
+

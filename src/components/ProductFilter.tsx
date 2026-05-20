@@ -14,30 +14,28 @@ import { FilterOptions } from "@/hooks/queries";
 interface ProductFilterProps {
   filters: FilterOptions;
   onFilterChange: (filters: FilterOptions) => void;
+  categoryOptions?: Array<{ value: string; label: string }>;
 }
 
 const sortOptions = [
-  { value: "default", label: "Default" },
-  { value: "price-asc", label: "Price: Low to High" },
-  { value: "price-desc", label: "Price: High to Low" },
-  { value: "name-asc", label: "Name: A to Z" },
-  { value: "name-desc", label: "Name: Z to A" },
+  { value: "default", label: "Mặc định" },
+  { value: "price-asc", label: "Giá tăng dần" },
+  { value: "price-desc", label: "Giá giảm dần" },
+  { value: "name-asc", label: "Tên A-Z" },
+  { value: "name-desc", label: "Tên Z-A" },
 ];
 
 const stockOptions = [
-  { value: "all", label: "All Products" },
-  { value: "in-stock", label: "In Stock" },
-  { value: "out-of-stock", label: "Out of Stock" },
+  { value: "all", label: "Tất cả sản phẩm" },
+  { value: "in-stock", label: "Còn hàng" },
+  { value: "out-of-stock", label: "Hết hàng" },
 ];
 
-const categoryOptions = [
-  { value: "all", label: "All Categories" },
-  { value: "electronics", label: "Electronics" },
-  { value: "clothing", label: "Clothing" },
-  { value: "accessories", label: "Accessories" },
-];
-
-export function ProductFilter({ filters, onFilterChange }: ProductFilterProps) {
+export function ProductFilter({
+  filters,
+  onFilterChange,
+  categoryOptions = [{ value: "all", label: "Tất cả danh mục" }],
+}: ProductFilterProps) {
   const handleSortChange = (value: string | null) => {
     if (value == null) return;
     onFilterChange({
@@ -71,19 +69,19 @@ export function ProductFilter({ filters, onFilterChange }: ProductFilterProps) {
     >
       <div className="flex items-center gap-2 text-sm font-medium">
         <Filter className="h-4 w-4" />
-        <span>Filters:</span>
+        <span>Bộ lọc:</span>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 sm:flex-row">
         {/* Sort Options */}
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
-            Sort by
+            Sắp xếp
           </label>
           <Select value={filters.sortBy} onValueChange={handleSortChange}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SortAsc className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder="Sắp xếp" />
             </SelectTrigger>
             <SelectContent>
               {sortOptions.map((option) => (
@@ -98,11 +96,11 @@ export function ProductFilter({ filters, onFilterChange }: ProductFilterProps) {
         {/* Stock Filter */}
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
-            Stock Status
+            Tồn kho
           </label>
           <Select value={filters.stockFilter} onValueChange={handleStockChange}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder="Stock status" />
+              <SelectValue placeholder="Tồn kho" />
             </SelectTrigger>
             <SelectContent>
               {stockOptions.map((option) => (
@@ -117,14 +115,14 @@ export function ProductFilter({ filters, onFilterChange }: ProductFilterProps) {
         {/* Category Filter */}
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
-            Category
+            Danh mục
           </label>
           <Select
             value={filters.categoryFilter}
             onValueChange={handleCategoryChange}
           >
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder="Danh mục" />
             </SelectTrigger>
             <SelectContent>
               {categoryOptions.map((option) => (

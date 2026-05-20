@@ -15,11 +15,16 @@ import { useAuth } from './AuthContext';
 export interface CartItem extends ProductType {
   quantity: number;
   cart_item_id?: number; // Database ID for the cart item
+  selected_size?: string;
+  selected_color?: string;
 }
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: ProductType) => void;
+  addToCart: (
+    product: ProductType,
+    options?: { size?: string; color?: string }
+  ) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, amount: number) => void;
   clearCart: () => void;
@@ -97,7 +102,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cartItems, isLoading]);
 
-  const addToCart = async (product: ProductType) => {
+  const addToCart = async (
+    product: ProductType,
+    options?: { size?: string; color?: string }
+  ) => {
     if (!user) {
       toast.error('Please login to add items to cart');
       return;
@@ -140,7 +148,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
           // Add new item
           setCartItems([
             ...cartItems,
-            { ...product, quantity: 1, cart_item_id: result.id },
+            {
+              ...product,
+              quantity: 1,
+              cart_item_id: result.id,
+              selected_size: options?.size,
+              selected_color: options?.color,
+            },
           ]);
         }
 
