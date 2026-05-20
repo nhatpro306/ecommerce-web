@@ -49,7 +49,7 @@ export default function AdminProductsPage() {
       setProducts(data);
     } catch (error) {
       console.error("Error fetching products:", error);
-      toast.error("Failed to load products");
+      toast.error("Không thể tải sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -58,12 +58,12 @@ export default function AdminProductsPage() {
   const handleCreateProduct = async (productData: CreateProductData) => {
     try {
       await adminProductService.createProduct(productData);
-      toast.success("Product created successfully");
+      toast.success("Đã tạo sản phẩm");
       setShowCreateModal(false);
       fetchProducts();
     } catch (error) {
       console.error("Error creating product:", error);
-      toast.error("Failed to create product");
+      toast.error("Không thể tạo sản phẩm");
     }
   };
 
@@ -73,24 +73,24 @@ export default function AdminProductsPage() {
   ) => {
     try {
       await adminProductService.updateProduct(productId, productData);
-      toast.success("Product updated successfully");
+      toast.success("Đã cập nhật sản phẩm");
       setEditingProduct(null);
       fetchProducts();
     } catch (error) {
       console.error("Error updating product:", error);
-      toast.error("Failed to update product");
+      toast.error("Không thể cập nhật sản phẩm");
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
     try {
       await adminProductService.deleteProduct(productId);
-      toast.success("Product deactivated successfully");
+      toast.success("Đã ẩn sản phẩm khỏi storefront");
       setDeletingProduct(null);
       fetchProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
-      toast.error("Failed to delete product");
+      toast.error("Không thể ẩn sản phẩm");
     }
   };
 
@@ -112,20 +112,23 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-8">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Product Management
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
+            Admin
+          </p>
+          <h1 className="mt-2 text-3xl font-black uppercase tracking-tight">
+            Quản lý sản phẩm
           </h1>
-          <p className="text-muted-foreground">Manage your product catalog</p>
+          <p className="text-zinc-500">Quản lý catalog SAIGON LOCAL</p>
         </div>
         <Button
           onClick={() => setShowCreateModal(true)}
-          className="cursor-pointer transition-transform hover:scale-105"
+          className="h-11 cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.16em] text-white hover:bg-zinc-800"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Product
+          Thêm sản phẩm
         </Button>
       </div>
 
@@ -135,7 +138,7 @@ export default function AdminProductsPage() {
           <div className="flex items-center space-x-2">
             <Search className="text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search products..."
+              placeholder="Tìm sản phẩm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -145,10 +148,10 @@ export default function AdminProductsPage() {
       </Card>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {filteredProducts.map((product) => (
-          <Card key={product.product_id} className="overflow-hidden">
-            <div className="relative h-48 bg-gray-100">
+          <Card key={product.product_id} className="overflow-hidden rounded-none">
+            <div className="relative aspect-[3/4] bg-zinc-100">
               {product.image ? (
                 <Image
                   src={product.image}
@@ -170,14 +173,14 @@ export default function AdminProductsPage() {
                     className="bg-red-100 text-red-800"
                   >
                     <AlertTriangle className="mr-1 h-3 w-3" />
-                    Low Stock
+                    Sắp hết hàng
                   </Badge>
                 ) : (
                   <Badge
                     variant="secondary"
                     className="bg-green-100 text-green-800"
                   >
-                    In Stock
+                    Còn hàng
                   </Badge>
                 )}
               </div>
@@ -192,7 +195,7 @@ export default function AdminProductsPage() {
                   {formatCurrency(product.price)}
                 </span>
                 <span className="text-muted-foreground text-sm">
-                  Stock: {product.stock}
+                  Tồn kho: {product.stock}
                 </span>
               </div>
             </CardHeader>
@@ -210,12 +213,12 @@ export default function AdminProductsPage() {
                 )}
                 {product.category && (
                   <div className="text-muted-foreground text-xs">
-                    Category: {product.category.name}
+                    Danh mục: {product.category.name}
                   </div>
                 )}
                 {product.total_reviews !== undefined && (
                   <div className="text-muted-foreground text-xs">
-                    Reviews: {product.total_reviews}
+                    Đánh giá: {product.total_reviews}
                     {product.average_rating
                       ? ` (${product.average_rating}★)`
                       : ""}
@@ -224,14 +227,14 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="flex space-x-2">
-                <Link href={`/products/${product.product_id}`}>
+                <Link href={`/products/${product.slug || product.product_id}`}>
                   <Button
                     variant="outline"
                     size="sm"
                     className="hover:bg-accent/80 flex-1 cursor-pointer transition-all hover:scale-105"
                   >
                     <Eye className="mr-2 h-3 w-3" />
-                    View
+                    Xem
                   </Button>
                 </Link>
                 <Button
@@ -241,7 +244,7 @@ export default function AdminProductsPage() {
                   className="hover:bg-accent/80 flex-1 cursor-pointer transition-all hover:scale-105"
                 >
                   <Edit className="mr-2 h-3 w-3" />
-                  Edit
+                  Sửa
                 </Button>
                 <Button
                   variant="outline"
@@ -262,12 +265,12 @@ export default function AdminProductsPage() {
           <CardContent className="py-12 text-center">
             <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
             <h3 className="text-muted-foreground mb-2 text-lg font-medium">
-              No products found
+              Không tìm thấy sản phẩm
             </h3>
             <p className="text-muted-foreground mb-4">
               {searchTerm
-                ? "Try adjusting your search terms."
-                : "Get started by adding your first product."}
+                ? "Thử điều chỉnh từ khóa tìm kiếm."
+                : "Bắt đầu bằng cách thêm sản phẩm đầu tiên."}
             </p>
             {!searchTerm && (
               <Button
@@ -275,7 +278,7 @@ export default function AdminProductsPage() {
                 className="cursor-pointer transition-transform hover:scale-105"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Add Product
+                Thêm sản phẩm
               </Button>
             )}
           </CardContent>
@@ -287,7 +290,7 @@ export default function AdminProductsPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateProduct}
-        title="Create New Product"
+        title="Tạo sản phẩm mới"
       />
 
       <ProductFormModal
@@ -297,15 +300,15 @@ export default function AdminProductsPage() {
           handleUpdateProduct(editingProduct!.product_id, data)
         }
         product={editingProduct}
-        title="Edit Product"
+        title="Sửa sản phẩm"
       />
 
       <DeleteConfirmModal
         isOpen={!!deletingProduct}
         onClose={() => setDeletingProduct(null)}
         onConfirm={() => handleDeleteProduct(deletingProduct!.product_id)}
-        title="Deactivate Product"
-        description={`Deactivate "${deletingProduct?.title}"? Product will be hidden from storefront.`}
+        title="Ẩn sản phẩm"
+        description={`Ẩn "${deletingProduct?.title}" khỏi storefront?`}
       />
     </div>
   );

@@ -6,9 +6,17 @@ import { useState, useMemo } from 'react'
 
 // Filter Options Interface
 export interface FilterOptions {
-  sortBy: 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc' | 'default';
+  sortBy:
+    | 'latest'
+    | 'price-asc'
+    | 'price-desc'
+    | 'name-asc'
+    | 'name-desc'
+    | 'default';
   stockFilter: 'all' | 'in-stock' | 'out-of-stock';
   categoryFilter: string;
+  sizeFilter: string;
+  colorFilter: string;
 }
 
 // Query Keys - Following TanStack Query key factory pattern
@@ -34,6 +42,12 @@ const sortProducts = (
   const sorted = [...products];
 
   switch (sortBy) {
+    case 'latest':
+      return sorted.sort((a, b) => {
+        const first = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const second = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return second - first;
+      });
     case 'price-asc':
       return sorted.sort((a, b) => a.price - b.price);
     case 'price-desc':
@@ -69,6 +83,18 @@ const filterProducts = (
     );
   }
 
+  if (filters.sizeFilter !== 'all') {
+    filtered = filtered.filter((product) =>
+      (product.sizes || []).includes(filters.sizeFilter)
+    );
+  }
+
+  if (filters.colorFilter !== 'all') {
+    filtered = filtered.filter((product) =>
+      (product.colors || []).includes(filters.colorFilter)
+    );
+  }
+
   return filtered;
 };
 
@@ -87,6 +113,8 @@ export function useProducts(options?: UseQueryOptions<ProductType[]>) {
     sortBy: 'default',
     stockFilter: 'all',
     categoryFilter: 'all',
+    sizeFilter: 'all',
+    colorFilter: 'all',
   });
 
   const query = useQuery({
@@ -242,6 +270,8 @@ export function useFilteredProducts(
     sortBy: 'default',
     stockFilter: 'all',
     categoryFilter: 'all',
+    sizeFilter: 'all',
+    colorFilter: 'all',
     ...initialFilters,
   });
 

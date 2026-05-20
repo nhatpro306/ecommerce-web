@@ -1,10 +1,14 @@
 export interface ProductType {
   product_id: string;
+  slug?: string;
   title: string;
   description: string;
+  material?: string;
   price: number;
   image?: string;
   stock: number;
+  sizes?: string[];
+  colors?: string[];
   is_active?: boolean;
   sku?: string;
   category_id?: number;
@@ -23,6 +27,9 @@ export interface CartItemType {
   product_id: string;
   quantity: number;
   price: number;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  variant_info?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   product?: ProductType;
@@ -47,6 +54,9 @@ export interface OrderItemType {
   quantity: number;
   price: number;
   product_id: string;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  variant_info?: Record<string, unknown>;
   product?: {
     product_id: string;
     title: string;
@@ -67,6 +77,10 @@ export interface OrderType {
   status: OrderStatus;
   total: number;
   shipping_address_id: number;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
+  customer_note?: string;
   payment_method?: string;
   payment_id?: string;
   created_at?: string;

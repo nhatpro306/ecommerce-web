@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
+import { Calendar, Eye, Filter, Package, Search, User } from "lucide-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,24 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Search,
-  Filter,
-  Eye,
-  Calendar,
-  DollarSign,
-  Package,
-  User,
-  MapPin,
-} from "lucide-react";
-import {
   adminOrderService,
   OrderFilters,
   OrderWithDetails,
 } from "@/services/admin/adminOrderService";
-import { formatCurrency } from "@/utils/formatCurrency";
-import { format } from "date-fns";
-import { toast } from "sonner";
 import { OrderDetailsModal } from "@/components/admin/OrderDetailsModal";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 const statusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
@@ -67,7 +57,7 @@ const getStatusColor = (status: string) => {
     case "cancelled":
       return "bg-red-100 text-red-800";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-zinc-100 text-zinc-800";
   }
 };
 
@@ -96,7 +86,7 @@ export default function AdminOrdersPage() {
       setTotalOrders(data.total);
     } catch (error) {
       console.error("Error fetching orders:", error);
-      toast.error("Failed to load orders");
+      toast.error("Không thể tải đơn hàng");
     } finally {
       setLoading(false);
     }
@@ -109,37 +99,21 @@ export default function AdminOrdersPage() {
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
       await adminOrderService.updateOrderStatus(orderId, newStatus);
-      toast.success("Order status updated successfully");
+      toast.success("Đã cập nhật trạng thái đơn hàng");
       fetchOrders();
     } catch (error) {
       console.error("Error updating order status:", error);
-      toast.error("Failed to update order status");
+      toast.error("Không thể cập nhật trạng thái");
     }
   };
 
   const handleFilterChange = (key: keyof OrderFilters, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
+    setFilters((previous) => ({
+      ...previous,
       [key]: value || undefined,
     }));
     setCurrentPage(1);
   };
-
-  const handleSearch = () => {
-    if (searchTerm.trim()) {
-      // Search by order ID or customer name/email
-      setFilters((prev) => ({
-        ...prev,
-        // Add search functionality to the service if needed
-      }));
-    } else {
-      const { ...restFilters } = filters;
-      setFilters(restFilters);
-    }
-    setCurrentPage(1);
-  };
-
-  const totalPages = Math.ceil(totalOrders / pageLimit);
 
   const filteredOrders = orders.filter((order) => {
     if (!searchTerm.trim()) return true;
@@ -151,9 +125,11 @@ export default function AdminOrdersPage() {
     );
   });
 
+  const totalPages = Math.ceil(totalOrders / pageLimit);
+
   if (loading && orders.length === 0) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex h-64 items-center justify-center">
           <LoadingSpinner />
         </div>
@@ -162,217 +138,183 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-8">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Order Management
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
+            Admin
+          </p>
+          <h1 className="mt-2 text-3xl font-black uppercase">
+            Quản lý đơn hàng
           </h1>
-          <p className="text-muted-foreground">
-            Manage customer orders and track status
+          <p className="mt-1 text-zinc-500">
+            Theo dõi khách hàng, thanh toán và trạng thái xử lý.
           </p>
         </div>
+        <span className="text-sm font-bold uppercase tracking-[0.14em] text-zinc-500">
+          {totalOrders} đơn hàng
+        </span>
+      </div>
+
+      <div className="grid gap-3 border border-zinc-200 p-4 lg:grid-cols-[1fr_auto]">
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-sm">
-            {totalOrders} total orders
-          </span>
+          <Search className="h-4 w-4 text-zinc-400" />
+          <Input
+            placeholder="Tìm theo mã đơn, tên khách hoặc email..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="rounded-none border-zinc-300"
+          />
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-zinc-400" />
+            <Select
+              value={filters.status || "all"}
+              onValueChange={(value) => {
+                if (value) {
+                  handleFilterChange("status", value === "all" ? "" : value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full rounded-none sm:w-44">
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Input
+            type="date"
+            value={filters.dateFrom || ""}
+            onChange={(event) => handleFilterChange("dateFrom", event.target.value)}
+            className="rounded-none border-zinc-300 sm:w-40"
+          />
+          <Input
+            type="date"
+            value={filters.dateTo || ""}
+            onChange={(event) => handleFilterChange("dateTo", event.target.value)}
+            className="rounded-none border-zinc-300 sm:w-40"
+          />
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex flex-1 items-center space-x-2">
-              <Search className="text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search by order ID, customer name, or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="flex-1"
-              />
-              <Button onClick={handleSearch} variant="outline" size="sm">
-                Search
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter className="text-muted-foreground h-4 w-4" />
-              <Select
-                value={filters.status || "all"}
-                onValueChange={(value) => {
-                  const v = value ?? "";
-                  handleFilterChange("status", v === "all" ? "" : v);
-                }}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Input
-                type="date"
-                placeholder="From date"
-                value={filters.dateFrom || ""}
-                onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-                className="w-40"
-              />
-
-              <Input
-                type="date"
-                placeholder="To date"
-                value={filters.dateTo || ""}
-                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-                className="w-40"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Orders List */}
       <div className="space-y-4">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
-            <Card key={order.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <h3 className="font-semibold">Order #{order.id}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {order.created_at
-                            ? format(new Date(order.created_at), "MMM dd, yyyy")
-                            : "No date"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {order.profile?.username || "Unknown"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          {formatCurrency(order.total)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Badge className={getStatusColor(order.status)}>
-                      {mapStatusLabel(order.status)}
-                    </Badge>
-
-                    <Select
-                      value={order.status}
-                      onValueChange={(value) => {
-                        if (value != null) {
-                          handleStatusChange(order.id, value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">pending</SelectItem>
-                        <SelectItem value="processing">confirmed</SelectItem>
-                        <SelectItem value="shipped">shipping</SelectItem>
-                        <SelectItem value="delivered">completed</SelectItem>
-                        <SelectItem value="cancelled">cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setShowOrderDetails(true);
-                      }}
-                    >
-                      <Eye className="mr-1 h-3 w-3" />
-                      View Details
-                    </Button>
+            <article key={order.id} className="border border-zinc-200 p-5">
+              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                <div>
+                  <h2 className="text-lg font-black uppercase">
+                    Đơn hàng #{order.id}
+                  </h2>
+                  <div className="mt-2 flex flex-wrap gap-4 text-sm text-zinc-600">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {order.created_at
+                        ? format(new Date(order.created_at), "dd/MM/yyyy")
+                        : "Chưa có ngày"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {order.profile?.username || "Khách hàng"}
+                    </span>
+                    <span className="font-bold text-zinc-950">
+                      {formatCurrency(order.total)}
+                    </span>
                   </div>
                 </div>
 
-                {order.shipping_address && (
-                  <div className="mt-3 flex items-center gap-1 text-sm text-gray-600">
-                    <MapPin className="h-3 w-3" />
-                    <span>
-                      {order.shipping_address.city},{" "}
-                      {order.shipping_address.state}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge className={getStatusColor(order.status)}>
+                    {mapStatusLabel(order.status)}
+                  </Badge>
+                  <Select
+                    value={order.status}
+                    onValueChange={(value) => {
+                      if (value) {
+                        handleStatusChange(order.id, value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-36 rounded-none">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">pending</SelectItem>
+                      <SelectItem value="processing">confirmed</SelectItem>
+                      <SelectItem value="shipped">shipping</SelectItem>
+                      <SelectItem value="delivered">completed</SelectItem>
+                      <SelectItem value="cancelled">cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setShowOrderDetails(true);
+                    }}
+                  >
+                    <Eye className="mr-1 h-3 w-3" />
+                    Chi tiết
+                  </Button>
+                </div>
+              </div>
+            </article>
           ))
         ) : (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <h3 className="text-lg font-medium text-gray-600">
-                No orders found
-              </h3>
-              <p className="mt-2 text-gray-500">
-                No orders match your current filters.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="border border-zinc-200 py-12 text-center">
+            <Package className="mx-auto mb-4 h-12 w-12 text-zinc-400" />
+            <h3 className="text-lg font-black uppercase">
+              Không tìm thấy đơn hàng
+            </h3>
+            <p className="mt-2 text-zinc-500">
+              Không có đơn hàng phù hợp với bộ lọc hiện tại.
+            </p>
+          </div>
         )}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">
-                Showing {(currentPage - 1) * pageLimit + 1} to{" "}
-                {Math.min(currentPage * pageLimit, totalOrders)} of{" "}
-                {totalOrders} orders
-              </span>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                >
-                  Previous
-                </Button>
-
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between gap-3 border border-zinc-200 p-4 sm:flex-row sm:items-center">
+          <span className="text-sm text-zinc-500">
+            Hiển thị {(currentPage - 1) * pageLimit + 1} đến{" "}
+            {Math.min(currentPage * pageLimit, totalOrders)} trong {totalOrders}{" "}
+            đơn hàng
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-none"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              Trước
+            </Button>
+            <span className="text-sm">
+              Trang {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-none"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Sau
+            </Button>
+          </div>
+        </div>
       )}
 
-      {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal
           isOpen={showOrderDetails}

@@ -140,7 +140,7 @@ export default function DashboardPage() {
                         <span className="font-medium">
                           {formatCurrency(product.price)}
                         </span>
-                        <Link href={`/products/${product.product_id}`}>
+                        <Link href={`/products/${product.slug || product.product_id}`}>
                           <Button size="sm">View Details</Button>
                         </Link>
                       </div>

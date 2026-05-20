@@ -15,9 +15,11 @@ function SuccessContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   if (isLoading) {
@@ -25,12 +27,12 @@ function SuccessContent() {
       <div className="bg-background min-h-screen py-12">
         <Card className="mx-auto max-w-md">
           <CardHeader>
-            <CardTitle>?ang x? ly ??n hang...</CardTitle>
+            <CardTitle>Đang xử lý đơn hàng...</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-8">
             <LoadingSpinner />
             <p className="text-muted-foreground mt-4">
-              Vui long ch? trong khi h? th?ng xac nh?n va t?o ??n hang.
+              Vui lòng chờ trong khi hệ thống xác nhận và tạo đơn hàng.
             </p>
           </CardContent>
         </Card>
@@ -45,19 +47,21 @@ function SuccessContent() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <CheckCircle2 className="h-10 w-10 text-green-600" />
           </div>
-          <CardTitle className="text-2xl">??t hang thanh cong!</CardTitle>
+          <CardTitle className="text-2xl">Đặt hàng thành công!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2 text-center">
             <p className="text-muted-foreground">
-              C?m ?n b?n ?a mua s?m t?i SAIGON LOCAL.
+              Cảm ơn bạn đã mua sắm tại SAIGON LOCAL.
             </p>
             {orderId && (
-              <p className="text-muted-foreground text-sm">Ma ??n hang: #{orderId}</p>
+              <p className="text-muted-foreground text-sm">
+                Mã đơn hàng: #{orderId}
+              </p>
             )}
             {paymentMethod === "bank_transfer" && (
               <p className="text-muted-foreground text-sm">
-                N?i dung chuy?n kho?n: ORDER-{orderId}
+                Nội dung chuyển khoản: ORDER-{orderId}
               </p>
             )}
           </div>
@@ -67,10 +71,10 @@ function SuccessContent() {
               variant="outline"
               className="cursor-pointer"
             >
-              Xem ??n hang
+              Xem đơn hàng
             </Button>
             <Button onClick={() => router.push("/")} className="cursor-pointer">
-              Ti?p t?c mua s?m
+              Tiếp tục mua sắm
             </Button>
           </div>
         </CardContent>
@@ -84,7 +88,7 @@ function LoadingFallback() {
     <div className="bg-background min-h-screen py-12">
       <Card className="mx-auto max-w-md">
         <CardHeader>
-          <CardTitle>?ang t?i...</CardTitle>
+          <CardTitle>Đang tải...</CardTitle>
         </CardHeader>
         <CardContent>
           <LoadingSpinner />

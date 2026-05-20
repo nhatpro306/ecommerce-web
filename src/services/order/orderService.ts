@@ -6,6 +6,9 @@ interface OrderItemInput {
   product_id: string;
   quantity: number;
   price: number;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  variant_info?: Record<string, unknown>;
 }
 
 /**
@@ -33,6 +36,10 @@ interface CreateOrderParams {
   totalAmount: number;
   paymentIntentId?: string;
   paymentMethod?: "cod" | "bank_transfer";
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerNote?: string;
 }
 
 export const orderService = {
@@ -43,6 +50,10 @@ export const orderService = {
     totalAmount,
     paymentIntentId,
     paymentMethod = "cod",
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerNote,
   }: CreateOrderParams) {
     try {
       // Validate input parameters
@@ -102,6 +113,10 @@ export const orderService = {
             payment_id: paymentIntentId,
             shipping_address_id: shippingAddress.id,
             payment_method: paymentMethod,
+            customer_name: customerName,
+            customer_phone: customerPhone,
+            customer_email: customerEmail || null,
+            customer_note: customerNote || null,
           },
         ])
         .select()
@@ -151,6 +166,9 @@ export const orderService = {
         product_id: item.product_id,
         quantity: item.quantity,
         price: item.price,
+        selected_size: item.selected_size ?? null,
+        selected_color: item.selected_color ?? null,
+        variant_info: item.variant_info ?? {},
       }));
 
       console.log("Creating order items:", orderItems);
