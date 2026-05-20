@@ -1,49 +1,49 @@
-# SAIGON LOCAL - E-commerce MVP (Next.js + Supabase)
+# SAIGON LOCAL - Vietnamese Streetwear E-commerce MVP
 
-## Project Overview
-SAIGON LOCAL is a Vietnamese streetwear e-commerce MVP built on top of an existing Next.js + Supabase foundation.
+SAIGON LOCAL is a mobile-first e-commerce MVP for a Vietnamese local brand / streetwear clothing shop. The project was built by improving an existing Next.js + Supabase e-commerce codebase, not by rebuilding from scratch.
 
-This version focuses on:
-- Mobile-first storefront
-- Product browsing and cart
-- COD + Bank Transfer checkout
-- Order creation and basic admin operations
+The goal is to show a portfolio-ready full-stack flow: product browsing, cart, variant selection, COD / bank transfer checkout, order storage, admin basics, and Vercel deployment readiness.
 
 ## Features
-- Homepage local brand style (`SAIGON LOCAL`)
-- Product listing with search/filter/sort
-- Product detail + quantity + size/color selection (UI level)
-- Cart management
-- Checkout payment methods:
-  - COD
-  - Bank Transfer
-- Order pipeline:
-  - Create `orders`
-  - Create `order_items`
-  - Reduce stock (best effort)
-  - Clear cart
-  - Success page with transfer note `ORDER-{id}`
-- Admin dashboard/products/orders/users
-- Product deactivate flow (soft-hide via `is_active`)
+
+- Local brand homepage for `SAIGON LOCAL`
+- Product listing with search, category filter, size filter, color filter, stock filter, sort, URL params
+- Slug-based product detail route: `/products/[slug]`
+- Product detail with gallery, size selector, color selector, quantity selector, material, stock status, related products, toast feedback
+- Cart with selected size/color persistence
+- Checkout with COD and bank transfer
+- Order creation with customer name, phone, email, address, note, payment method
+- Order items store selected size/color and variant metadata
+- Best-effort stock reduction after checkout
+- Success page with bank transfer note `ORDER-{orderId}`
+- Admin pages from the base repository kept and improved incrementally
+- SEO basics: metadata, OpenGraph, `robots.txt`, `sitemap.xml`
+- Runs locally without Stripe or Polar keys
 
 ## Tech Stack
+
 - Next.js App Router
 - TypeScript
-- Tailwind CSS + shadcn/ui
-- Supabase (Auth + Postgres)
+- Tailwind CSS
+- shadcn/ui-style components
+- Supabase Auth + PostgreSQL
 - TanStack Query
-- Sonner Toast
+- Sonner toast notifications
+- Vercel deployment
 
 ## Folder Structure
-- `src/app` - routes/pages
-- `src/components` - reusable UI components
-- `src/context` - auth/cart context
-- `src/services` - business/service layer
-- `src/lib/supabase` - Supabase client/server setup
-- `supabase/migrations` - SQL migrations
+
+- `src/app` - App Router pages, layouts, API routes, SEO routes
+- `src/components` - shared UI and storefront components
+- `src/context` - auth and cart state
+- `src/services` - product, cart, order, address, admin service logic
+- `src/lib/supabase` - Supabase client/server helpers
+- `src/hooks` - TanStack Query hooks
+- `supabase/migrations` - safe SQL migrations and seed data
 
 ## Environment Variables
-Create `.env.local`:
+
+Create `.env.local` for local development:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -56,50 +56,111 @@ NEXT_PUBLIC_BANK_ACCOUNT_NAME=SAIGON LOCAL
 NEXT_PUBLIC_BANK_ACCOUNT_NUMBER=0123456789
 ```
 
-## Database Setup
-1. Create Supabase project
-2. Run base schema from project docs
-3. Run migration:
-- `supabase/migrations/20260520_add_product_is_active_and_seed_local_brand.sql`
+Do not commit real secrets. Keep `.env.example` as the public template.
 
-This migration:
-- adds `products.is_active`
-- seeds categories + local brand sample products
+## Database Setup
+
+1. Create a Supabase project.
+2. Apply the original base schema for this repository.
+3. Run the migrations in `supabase/migrations` in order.
+
+Current local brand migrations:
+
+- `20260520_add_product_is_active_and_seed_local_brand.sql`
+- `20260520_z_add_clothing_variant_checkout_fields.sql`
+
+These migrations add:
+
+- `products.is_active`
+- `products.slug`
+- `products.material`
+- `products.sizes`
+- `products.colors`
+- `cart_items.selected_size`
+- `cart_items.selected_color`
+- `cart_items.variant_info`
+- `order_items.selected_size`
+- `order_items.selected_color`
+- `order_items.variant_info`
+- `orders.customer_name`
+- `orders.customer_phone`
+- `orders.customer_email`
+- `orders.customer_note`
+- Sample local brand categories and products
 
 ## Run Locally
+
 ```bash
 npm install --legacy-peer-deps
 npm run dev
 ```
 
-Open: `http://localhost:3000`
+Open:
 
-## Build / Quality Check
+```txt
+http://localhost:3000
+```
+
+## Quality Checks
+
 ```bash
 npm run lint
 npm run build
 ```
 
-## Payment Strategy (MVP)
-- Main flow: COD + Bank Transfer
-- Polar/Stripe legacy code is kept for compatibility but not used as main checkout flow
-- VNPay/Momo are out of scope for this MVP
+Both commands should pass before deployment.
 
-## Deploy to Vercel
-1. Push repository to GitHub
-2. Import project on Vercel
-3. Add env vars from `.env.local`
-4. Deploy
+## Payment Strategy
+
+MVP payment methods:
+
+- COD
+- Bank Transfer
+
+Bank transfer uses environment variables so shop information can be changed without editing checkout code.
+
+Legacy Polar/Stripe-related code is kept only for compatibility with the original repository. The main checkout flow does not require Stripe or Polar keys.
+
+Future payment options:
+
+- VNPay
+- Momo
+- ZaloPay
+- Stripe demo mode
+
+## Deploy To Vercel
+
+1. Push the repository to GitHub.
+2. Import the GitHub repository into Vercel.
+3. Add the environment variables listed above.
+4. Deploy.
+5. Set `NEXT_PUBLIC_SITE_URL` to the production Vercel URL.
+6. Connect the deployed app to the correct Supabase project.
+
+Deployment flow:
+
+```txt
+GitHub -> Vercel -> Supabase
+```
 
 ## Screenshots
-- Add homepage screenshot
-- Add products page screenshot
-- Add checkout screenshot
-- Add admin dashboard screenshot
+
+Add screenshots after final deployment:
+
+- Homepage
+- Products page
+- Product detail page
+- Cart
+- Checkout
+- Admin dashboard
 
 ## Future Improvements
-- Full variant schema (size/color/stock by variant)
-- Better order status workflow
-- Upload image pipeline (Supabase Storage/Cloudinary)
-- Checkout fraud validation and phone verification
-- VNPay/Momo integration
+
+- True variant-level inventory table
+- Better admin product editor for images, material, sizes, and colors
+- Order status timeline
+- Supabase Storage or Cloudinary image upload
+- Email order confirmation
+- VNPay or Momo integration
+- More advanced SEO product metadata
+

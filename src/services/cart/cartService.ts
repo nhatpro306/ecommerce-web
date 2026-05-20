@@ -3,6 +3,12 @@ import { ProductType, CartItemType, CartType, CartStatus } from '../../types';
 import { toast } from 'sonner';
 import { getClientUser } from '@/lib/supabase/clientUtils';
 
+export interface CartVariantOptions {
+  size?: string;
+  color?: string;
+  variantInfo?: Record<string, unknown>;
+}
+
 // Get the active cart for the current user
 export async function getActiveCart() {
   try {
@@ -98,6 +104,9 @@ export async function getCartItems(cartId: number) {
         product_id: string;
         quantity: number;
         price: number;
+        selected_size?: string | null;
+        selected_color?: string | null;
+        variant_info?: Record<string, unknown>;
         created_at: string;
         updated_at: string;
         product: ProductType;
@@ -118,15 +127,29 @@ export async function addItemToCart(
   cartId: number,
   productId: string,
   price: number,
-  quantity: number = 1
+  quantity: number = 1,
+  options: CartVariantOptions = {}
 ) {
   try {
-    // Check if the item already exists in the cart
-    const { data: existingItems, error: fetchError } = await supabase
+    const selectedSize = options.size ?? null;
+    const selectedColor = options.color ?? null;
+
+    // Variants must be matched by product + selected size + selected color.
+    let existingItemQuery = supabase
       .from('cart_items')
       .select('*')
       .eq('cart_id', cartId)
       .eq('product_id', productId);
+
+    existingItemQuery = selectedSize
+      ? existingItemQuery.eq('selected_size', selectedSize)
+      : existingItemQuery.is('selected_size', null);
+
+    existingItemQuery = selectedColor
+      ? existingItemQuery.eq('selected_color', selectedColor)
+      : existingItemQuery.is('selected_color', null);
+
+    const { data: existingItems, error: fetchError } = await existingItemQuery;
 
     if (fetchError) {
       console.error('Error checking existing cart item:', fetchError);
@@ -162,6 +185,9 @@ export async function addItemToCart(
           product_id: productId,
           quantity,
           price,
+          selected_size: selectedSize,
+          selected_color: selectedColor,
+          variant_info: options.variantInfo ?? {},
         })
         .select('*')
         .single();

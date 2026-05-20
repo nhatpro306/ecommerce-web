@@ -27,6 +27,9 @@ export async function getCartItems(cartId: number) {
         product_id: string;
         quantity: number;
         price: number;
+        selected_size?: string | null;
+        selected_color?: string | null;
+        variant_info?: Record<string, unknown>;
         created_at: string;
         updated_at: string;
         product: ProductType;

@@ -15,10 +15,28 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
-  title: "E-Commerce",
-  description: "E-Commerce App",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "SAIGON LOCAL | Vietnam Local Streetwear",
+    template: "%s | SAIGON LOCAL",
+  },
+  description:
+    "Vietnamese local brand streetwear shop with T-shirts, hoodies, pants, accessories, COD checkout, and bank transfer.",
+  openGraph: {
+    title: "SAIGON LOCAL",
+    description: "Local identity, modern Vietnamese streetwear.",
+    url: siteUrl,
+    siteName: "SAIGON LOCAL",
+    locale: "vi_VN",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -27,11 +45,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
+    <html lang="vi" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
       <head>
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-        <title>My App</title>
-        <meta name="description" content="My App is a..." />
       </head>
       <body className="bg-background min-h-screen">
         <ErrorBoundary>

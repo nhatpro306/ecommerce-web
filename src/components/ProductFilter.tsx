@@ -15,10 +15,13 @@ interface ProductFilterProps {
   filters: FilterOptions;
   onFilterChange: (filters: FilterOptions) => void;
   categoryOptions?: Array<{ value: string; label: string }>;
+  sizeOptions?: Array<{ value: string; label: string }>;
+  colorOptions?: Array<{ value: string; label: string }>;
 }
 
 const sortOptions = [
   { value: "default", label: "Mặc định" },
+  { value: "latest", label: "Mới nhất" },
   { value: "price-asc", label: "Giá tăng dần" },
   { value: "price-desc", label: "Giá giảm dần" },
   { value: "name-asc", label: "Tên A-Z" },
@@ -35,28 +38,16 @@ export function ProductFilter({
   filters,
   onFilterChange,
   categoryOptions = [{ value: "all", label: "Tất cả danh mục" }],
+  sizeOptions = [{ value: "all", label: "Tất cả size" }],
+  colorOptions = [{ value: "all", label: "Tất cả màu" }],
 }: ProductFilterProps) {
-  const handleSortChange = (value: string | null) => {
-    if (value == null) return;
+  const updateFilter = <Key extends keyof FilterOptions>(
+    key: Key,
+    value: FilterOptions[Key],
+  ) => {
     onFilterChange({
       ...filters,
-      sortBy: value as FilterOptions["sortBy"],
-    });
-  };
-
-  const handleStockChange = (value: string | null) => {
-    if (value == null) return;
-    onFilterChange({
-      ...filters,
-      stockFilter: value as FilterOptions["stockFilter"],
-    });
-  };
-
-  const handleCategoryChange = (value: string | null) => {
-    if (value == null) return;
-    onFilterChange({
-      ...filters,
-      categoryFilter: value as FilterOptions["categoryFilter"],
+      [key]: value,
     });
   };
 
@@ -65,21 +56,25 @@ export function ProductFilter({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-card flex flex-col gap-4 rounded-lg border p-4 sm:flex-row"
+      className="bg-card grid gap-4 rounded-lg border p-4 md:grid-cols-[auto_1fr]"
     >
       <div className="flex items-center gap-2 text-sm font-medium">
         <Filter className="h-4 w-4" />
-        <span>Bộ lọc:</span>
+        <span>Bộ lọc</span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 sm:flex-row">
-        {/* Sort Options */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
             Sắp xếp
           </label>
-          <Select value={filters.sortBy} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+          <Select
+            value={filters.sortBy}
+            onValueChange={(value) =>
+              updateFilter("sortBy", value as FilterOptions["sortBy"])
+            }
+          >
+            <SelectTrigger className="w-full">
               <SortAsc className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Sắp xếp" />
             </SelectTrigger>
@@ -93,13 +88,20 @@ export function ProductFilter({
           </Select>
         </div>
 
-        {/* Stock Filter */}
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
             Tồn kho
           </label>
-          <Select value={filters.stockFilter} onValueChange={handleStockChange}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+          <Select
+            value={filters.stockFilter}
+            onValueChange={(value) =>
+              updateFilter(
+                "stockFilter",
+                value as FilterOptions["stockFilter"],
+              )
+            }
+          >
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Tồn kho" />
             </SelectTrigger>
             <SelectContent>
@@ -112,20 +114,67 @@ export function ProductFilter({
           </Select>
         </div>
 
-        {/* Category Filter */}
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
             Danh mục
           </label>
           <Select
             value={filters.categoryFilter}
-            onValueChange={handleCategoryChange}
+            onValueChange={(value) => {
+              if (value) updateFilter("categoryFilter", value);
+            }}
           >
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Danh mục" />
             </SelectTrigger>
             <SelectContent>
               {categoryOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-muted-foreground text-xs font-medium">
+            Size
+          </label>
+          <Select
+            value={filters.sizeFilter}
+            onValueChange={(value) => {
+              if (value) updateFilter("sizeFilter", value);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Size" />
+            </SelectTrigger>
+            <SelectContent>
+              {sizeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-muted-foreground text-xs font-medium">
+            Màu
+          </label>
+          <Select
+            value={filters.colorFilter}
+            onValueChange={(value) => {
+              if (value) updateFilter("colorFilter", value);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Màu" />
+            </SelectTrigger>
+            <SelectContent>
+              {colorOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

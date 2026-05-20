@@ -1,20 +1,12 @@
 "use client";
 
 import Link from "next/link";
-
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import ShoppingSkeleton from "@/components/ShoppingSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import Image from "next/image";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function CartShoppingPage() {
@@ -26,154 +18,178 @@ export default function CartShoppingPage() {
     return <ShoppingSkeleton />;
   }
 
-  // Show login prompt if user is not authenticated
   if (!user) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="mb-6 flex items-center">
-          <Link href="/" className="text-primary flex items-center">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Quay lại mua sắm
+      <div className="mx-auto max-w-3xl px-4 py-14 text-center">
+        <p className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+          SAIGON LOCAL
+        </p>
+        <h1 className="mt-3 text-3xl font-black uppercase">
+          Vui lòng đăng nhập
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-zinc-600">
+          Bạn cần đăng nhập để xem giỏ hàng và tiếp tục thanh toán.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link href="/signin">
+            <Button className="h-12 rounded-none bg-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
+              Đăng nhập
+            </Button>
           </Link>
-          <h1 className="ml-4 text-3xl font-bold">Giỏ hàng của bạn</h1>
+          <Link href="/signup">
+            <Button
+              variant="outline"
+              className="h-12 rounded-none border-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em]"
+            >
+              Đăng ký
+            </Button>
+          </Link>
         </div>
-        <Card className="mx-auto max-w-md">
-          <CardHeader>
-            <CardTitle>Vui lòng đăng nhập</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Bạn cần đăng nhập để xem giỏ hàng.</p>
-            <Link href="/signin">
-              <Button className="w-full">Đăng nhập</Button>
-            </Link>
-          </CardContent>
-          <CardFooter>
-            <p className="text-muted-foreground text-sm">
-              Bạn chưa có tài khoản?{" "}
-              <Link href="/signup" className="text-primary hover:underline">
-                Đăng ký
-              </Link>
-            </p>
-          </CardFooter>
-        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-6 flex items-center">
-        <Link href="/" className="text-primary flex items-center">
+    <div className="bg-white text-zinc-950">
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <Link
+          href="/products"
+          className="inline-flex items-center text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 hover:text-zinc-950"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Quay lại mua sắm
+          Tiếp tục mua sắm
         </Link>
-        <h1 className="ml-4 text-3xl font-bold">Giỏ hàng của bạn</h1>
-      </div>
 
-      {cartItems.length === 0 ? (
-        <div className="p-8 text-center">
-          <h2 className="mb-4 text-xl">Giỏ hàng đang trống</h2>
-          <Link href="/">
-            <Button className="cursor-pointer">Tiếp tục mua sắm</Button>
-          </Link>
+        <div className="mt-6 border-b border-zinc-200 pb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+            Cart
+          </p>
+          <h1 className="mt-2 text-3xl font-black uppercase">
+            Giỏ hàng của bạn
+          </h1>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="md:col-span-2">
-            {cartItems.map((item) => (
-              <Card key={item.product_id} className="mb-4">
-                <div className="flex flex-col sm:flex-row">
-                  <div className="p-4 sm:w-1/4">
+
+        {cartItems.length === 0 ? (
+          <div className="py-16 text-center">
+            <h2 className="text-2xl font-black uppercase">
+              Giỏ hàng đang trống
+            </h2>
+            <p className="mt-3 text-zinc-600">
+              Chọn sản phẩm SAIGON LOCAL để bắt đầu đơn hàng.
+            </p>
+            <Link href="/products">
+              <Button className="mt-6 h-12 rounded-none bg-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
+                Xem sản phẩm
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <div className="space-y-4 lg:col-span-2">
+              {cartItems.map((item) => (
+                <article
+                  key={item.cart_item_id ?? item.product_id}
+                  className="grid grid-cols-[120px_1fr] gap-4 border-b border-zinc-200 pb-5 md:grid-cols-[160px_1fr]"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
                     <Image
-                      src={item.image || ""}
+                      src={item.image || "/placeholder.svg"}
                       alt={item.title}
-                      width={100}
-                      height={100}
-                      className="h-auto w-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   </div>
-                  <CardContent className="flex-1 p-4">
-                    <CardTitle className="mb-2 text-xl">{item.title}</CardTitle>
-                    <p className="text-muted-foreground mb-2">
-                      {item.description}
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      Size: {item.selected_size || "-"} | Màu:{" "}
-                      {item.selected_color || "-"}
-                    </p>
-                    <p className="text-lg font-bold">{formatCurrency(item.price)}</p>
 
-                    <div className="mt-4 flex items-center">
-                      <Button
-                        type="button"
-                        className="border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 w-9 cursor-pointer rounded-md border p-0 shadow-xs"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          updateQuantity(item.product_id, -1);
-                        }}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="mx-3">{item.quantity}</span>
-                      <Button
-                        type="button"
-                        className="border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 w-9 cursor-pointer rounded-md border p-0 shadow-xs"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          updateQuantity(item.product_id, 1);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        className="text-destructive hover:bg-accent hover:text-accent-foreground ml-4 cursor-pointer"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          removeFromCart(item.product_id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  <div className="flex flex-col justify-between">
+                    <div>
+                      <h2 className="text-base font-black uppercase tracking-[0.08em]">
+                        {item.title}
+                      </h2>
+                      <p className="mt-2 line-clamp-2 text-sm text-zinc-600">
+                        {item.description}
+                      </p>
+                      <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+                        Size: {item.selected_size || "-"} / Màu:{" "}
+                        {item.selected_color || "-"}
+                      </p>
+                      <p className="mt-3 text-sm font-bold">
+                        {formatCurrency(item.price)}
+                      </p>
                     </div>
-                  </CardContent>
-                </div>
-              </Card>
-            ))}
-          </div>
 
-          <div className="md:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tóm tắt đơn hàng</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Tạm tính</span>
-                    <span>{formatCurrency(subtotal)}</span>
+                    <div className="mt-5 flex items-center justify-between">
+                      <div className="inline-flex border border-zinc-300">
+                        <button
+                          type="button"
+                          className="flex h-10 w-10 items-center justify-center"
+                          onClick={() =>
+                            updateQuantity(
+                              item.product_id,
+                              -1,
+                              item.cart_item_id,
+                            )
+                          }
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="flex h-10 w-12 items-center justify-center border-x border-zinc-300 text-sm font-bold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          className="flex h-10 w-10 items-center justify-center"
+                          onClick={() =>
+                            updateQuantity(
+                              item.product_id,
+                              1,
+                              item.cart_item_id,
+                            )
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="text-zinc-500 transition hover:text-red-600"
+                        onClick={() =>
+                          removeFromCart(item.product_id, item.cart_item_id)
+                        }
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Phí vận chuyển</span>
-                    <span>Miễn phí</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-4 text-lg font-bold">
-                    <span>Tổng cộng</span>
-                    <span>{formatCurrency(subtotal)}</span>
-                  </div>
+                </article>
+              ))}
+            </div>
+
+            <aside className="border border-zinc-200 p-5 lg:sticky lg:top-28 lg:self-start">
+              <h2 className="text-lg font-black uppercase">Tóm tắt đơn hàng</h2>
+              <div className="mt-5 space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>Tạm tính</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Link href="/checkout">
-                  <Button className="w-full cursor-pointer">
-                    Tiến hành thanh toán
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
+                <div className="flex justify-between">
+                  <span>Phí vận chuyển</span>
+                  <span>Miễn phí</span>
+                </div>
+                <div className="flex justify-between border-t border-zinc-200 pt-4 text-lg font-black">
+                  <span>Tổng cộng</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+              </div>
+              <Link href="/checkout">
+                <Button className="mt-5 h-12 w-full rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
+                  Tiến hành thanh toán
+                </Button>
+              </Link>
+            </aside>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
