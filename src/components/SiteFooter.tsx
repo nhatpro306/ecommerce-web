@@ -8,9 +8,7 @@ const policies = [
 ];
 
 const stores = [
-  "44 Nguyễn Trãi, Quận 1, TP.HCM",
-  "26 Lý Tự Trọng, Quận 1, TP.HCM",
-  "180 Đê La Thành, Hà Nội",
+  
 ];
 
 export function SiteFooter() {
@@ -67,8 +65,8 @@ export function SiteFooter() {
               {stores.map((store) => (
                 <li key={store}>{store}</li>
               ))}
-              <li>Hotline: 0357 420 420</li>
-              <li>hello@saigonlocal.vn</li>
+              <li></li>
+              <li>n</li>
             </ul>
           </div>
         </div>
