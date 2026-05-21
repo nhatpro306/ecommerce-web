@@ -137,6 +137,17 @@ Open:
 http://localhost:3000
 ```
 
+
+## Supabase Health Check
+
+After setting `.env.local`, verify that the keys and required tables are usable:
+
+```bash
+npm run check:supabase
+```
+
+If the anon key is too short or the command returns `PGRST125`, copy the anon public key again from Supabase Project Settings > API and rerun the command.
+
 ## Quality Checks
 
 Run before pushing or deploying:
@@ -188,6 +199,7 @@ npm run build
 ## License
 
 Educational and portfolio project.
+
 
 
 

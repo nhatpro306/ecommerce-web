@@ -12,7 +12,8 @@
     "version:minor": "npm version minor",
     "version:major": "npm version major",
     "version:check": "npm version",
-    "precommit": "npm run lint && npm run build"
+    "precommit": "npm run lint && npm run build",
+    "check:supabase": "node scripts/check-supabase.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
