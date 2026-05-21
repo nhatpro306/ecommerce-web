@@ -315,7 +315,16 @@ export function ProductFormModal({
         is_active: variant.is_active,
       }));
 
-      await syncAdminProductVariantsAction(savedProduct.product_id, variantPayload);
+      const syncedVariants = await syncAdminProductVariantsAction(
+        savedProduct.product_id,
+        variantPayload,
+      );
+
+      if (variantPayload.length > 0 && syncedVariants.length === 0) {
+        toast.info(
+          "Sản phẩm đã lưu bằng tồn kho cơ bản. Variant size/màu sẽ hoạt động khi database có bảng product_variants.",
+        );
+      }
 
       if (selectedFiles.length > 0) {
         try {

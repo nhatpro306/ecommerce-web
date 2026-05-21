@@ -21,6 +21,17 @@ export interface AdminVariantInput {
   is_active: boolean;
 }
 
+function isMissingVariantTableError(error: { code?: string; message?: string }) {
+  const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+  return (
+    message.includes("product_variants") ||
+    message.includes("schema cache") ||
+    message.includes("does not exist") ||
+    message.includes("pgrst200") ||
+    message.includes("42p01")
+  );
+}
+
 export async function createAdminProductAction(
   productData: CreateProductData,
 ): Promise<ProductType> {
@@ -115,6 +126,11 @@ export async function syncAdminProductVariantsAction(
     .eq("product_id", productId);
 
   if (fetchError) {
+    if (isMissingVariantTableError(fetchError)) {
+      revalidatePath("/admin/products");
+      revalidatePath("/products");
+      return [];
+    }
     throw new Error(fetchError.message);
   }
 
@@ -132,6 +148,11 @@ export async function syncAdminProductVariantsAction(
       .in("id", idsToDeactivate);
 
     if (deactivateError) {
+      if (isMissingVariantTableError(deactivateError)) {
+        revalidatePath("/admin/products");
+        revalidatePath("/products");
+        return [];
+      }
       throw new Error(deactivateError.message);
     }
   }
@@ -148,6 +169,11 @@ export async function syncAdminProductVariantsAction(
     .select();
 
   if (error) {
+    if (isMissingVariantTableError(error)) {
+      revalidatePath("/admin/products");
+      revalidatePath("/products");
+      return [];
+    }
     throw new Error(error.message);
   }
 
