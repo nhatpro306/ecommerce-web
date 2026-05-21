@@ -1,4 +1,4 @@
-import { createServerSupabase } from '@/lib/supabase/server';
+﻿import { createServerSupabase } from '@/lib/supabase/server';
 import { ProductType } from '@/types';
 import {
   findSampleProduct,
@@ -60,7 +60,7 @@ export const productServerService = {
       const supabase = await createServerSupabase();
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(*)')
+        .select('*, category:categories(*), variants:product_variants(*)')
         .or(`slug.eq.${slug},product_id.eq.${slug}`)
         .eq('is_active', true)
         .single();
@@ -145,3 +145,4 @@ export const productServerService = {
     }
   },
 };
+

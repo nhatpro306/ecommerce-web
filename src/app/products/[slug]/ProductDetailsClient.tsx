@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
@@ -34,12 +34,33 @@ export default function ProductDetailsClient({
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
 
-  const availableSizes = product.sizes?.length
-    ? product.sizes
-    : ["S", "M", "L", "XL"];
-  const availableColors = product.colors?.length
-    ? product.colors
-    : ["Black", "White", "Gray"];
+  const activeVariants = useMemo(
+    () => product.variants?.filter((variant) => variant.is_active) || [],
+    [product.variants],
+  );
+  const availableSizes = activeVariants.length
+    ? Array.from(new Set(activeVariants.map((variant) => variant.size)))
+    : product.sizes?.length
+      ? product.sizes
+      : ["S", "M", "L", "XL"];
+  const availableColors = activeVariants.length
+    ? Array.from(
+        new Set(
+          activeVariants
+            .filter((variant) => !selectedSize || variant.size === selectedSize)
+            .map((variant) => variant.color),
+        ),
+      )
+    : product.colors?.length
+      ? product.colors
+      : ["Black", "White", "Gray"];
+  const selectedVariant = activeVariants.find(
+    (variant) =>
+      variant.size === (selectedSize || availableSizes[0]) &&
+      variant.color === (selectedColor || availableColors[0]),
+  );
+  const currentStock = selectedVariant?.stock ?? product.stock;
+  const currentPrice = selectedVariant?.price_override ?? product.price;
   const productImage = getProductImage(product);
 
   const relatedProducts = useMemo(
@@ -51,7 +72,7 @@ export default function ProductDetailsClient({
   );
 
   const handleAddToCart = async () => {
-    if (quantity > product.stock) {
+    if (quantity > currentStock) {
       toast.error("Số lượng vượt quá tồn kho hiện tại.");
       return;
     }
@@ -63,6 +84,7 @@ export default function ProductDetailsClient({
       size: sizeToAdd,
       color: colorToAdd,
       quantity,
+      variantId: selectedVariant?.id,
     });
 
     setIsAddedToCart(true);
@@ -90,29 +112,29 @@ export default function ProductDetailsClient({
             {product.title}
           </h1>
           <p className="mt-5 text-2xl font-bold">
-            {formatCurrency(product.price)}
+            {formatCurrency(currentPrice)}
           </p>
           <p className="mt-5 leading-7 text-zinc-600">{product.description}</p>
 
           <div className="mt-6 border-y border-zinc-200 py-5 text-sm">
             <div className="flex justify-between py-2">
               <span className="font-bold uppercase tracking-[0.14em]">
-                Chất liệu
+                Ch蘯･t li盻㎡
               </span>
               <span>{product.material || "Cotton blend"}</span>
             </div>
             <div className="flex justify-between py-2">
               <span className="font-bold uppercase tracking-[0.14em]">
-                Tồn kho
+                T盻渡 kho
               </span>
-              <span>{product.stock > 0 ? `Còn ${product.stock}` : "Hết hàng"}</span>
+              <span>{currentStock > 0 ? `Còn ${currentStock}` : "Hết hàng"}</span>
             </div>
           </div>
 
           <div className="mt-6 space-y-5">
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Chọn size
+                Ch盻肱 size
               </h2>
               <div className="flex flex-wrap gap-2">
                 {availableSizes.map((size) => (
@@ -134,7 +156,7 @@ export default function ProductDetailsClient({
 
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Chọn màu
+                Ch盻肱 mﾃu
               </h2>
               <div className="flex flex-wrap gap-2">
                 {availableColors.map((color) => (
@@ -156,7 +178,7 @@ export default function ProductDetailsClient({
 
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Số lượng
+                S盻・lﾆｰ盻｣ng
               </h2>
               <div className="inline-flex border border-zinc-300">
                 <button
@@ -172,7 +194,7 @@ export default function ProductDetailsClient({
                 <button
                   type="button"
                   onClick={() =>
-                    setQuantity((value) => Math.min(product.stock, value + 1))
+                    setQuantity((value) => Math.min(currentStock, value + 1))
                   }
                   className="flex h-12 w-12 items-center justify-center"
                 >
@@ -184,18 +206,17 @@ export default function ProductDetailsClient({
             <Button
               size="lg"
               className="h-14 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
-              disabled={product.stock <= 0}
+              disabled={currentStock <= 0}
               onClick={handleAddToCart}
             >
               {isAddedToCart ? (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Đã thêm vào giỏ
-                </>
+                  ﾄ静｣ thﾃｪm vﾃo gi盻・                </>
               ) : (
                 <>
                   <ShoppingCart className="mr-2 h-4 w-4" />
-                  Thêm vào giỏ - {formatCurrency(product.price * quantity)}
+                  Thﾃｪm vﾃo gi盻・- {formatCurrency(currentPrice * quantity)}
                 </>
               )}
             </Button>
@@ -203,9 +224,9 @@ export default function ProductDetailsClient({
 
           <div className="mt-8 grid gap-3 text-sm sm:grid-cols-3">
             {[
-              [Truck, "Giao nhanh", "Nội thành 1-2 ngày"],
-              [Shield, "Thanh toán", "COD / chuyển khoản"],
-              [RotateCcw, "Đổi trả", "Trong vòng 7 ngày"],
+              [Truck, "Giao nhanh", "N盻冓 thﾃnh 1-2 ngﾃy"],
+              [Shield, "Thanh toﾃ｡n", "COD / chuy盻ハ kho蘯｣n"],
+              [RotateCcw, "ﾄ雪ｻ品 tr蘯｣", "Trong vﾃｲng 7 ngﾃy"],
             ].map(([Icon, title, description]) => (
               <div key={String(title)} className="border border-zinc-200 p-4">
                 <Icon className="mb-3 h-5 w-5" />
@@ -225,18 +246,18 @@ export default function ProductDetailsClient({
         <div className="grid gap-6 border-y border-zinc-200 py-8 md:grid-cols-2">
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              Mô tả sản phẩm
+              Mﾃｴ t蘯｣ s蘯｣n ph蘯ｩm
             </h2>
             <p className="mt-4 leading-7 text-zinc-600">{product.description}</p>
           </div>
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              Bảng size
+              B蘯｣ng size
             </h2>
             <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
               <div className="font-bold">Size</div>
-              <div className="font-bold">Ngực</div>
-              <div className="font-bold">Dài áo</div>
+              <div className="font-bold">Ng盻ｱc</div>
+              <div className="font-bold">Dﾃi ﾃ｡o</div>
               <div className="font-bold">Vai</div>
               <div>S</div>
               <div>52</div>
@@ -256,7 +277,7 @@ export default function ProductDetailsClient({
               <div>54</div>
             </div>
             <p className="mt-3 text-xs text-zinc-500">
-              Đơn vị: cm, sai số 1-2cm.
+              ﾄ脆｡n v盻・ cm, sai s盻・1-2cm.
             </p>
           </div>
         </div>
@@ -264,7 +285,7 @@ export default function ProductDetailsClient({
 
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 border-b border-zinc-200 pb-4">
-          <h2 className="text-2xl font-black uppercase">Sản phẩm liên quan</h2>
+          <h2 className="text-2xl font-black uppercase">S蘯｣n ph蘯ｩm liﾃｪn quan</h2>
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
           {relatedProducts.map((item) => (
@@ -275,3 +296,5 @@ export default function ProductDetailsClient({
     </div>
   );
 }
+
+

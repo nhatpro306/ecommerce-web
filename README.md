@@ -9,7 +9,7 @@ A production-oriented clothing e-commerce project built with Next.js, TypeScript
 - Product detail page with image, material, size/color selection, quantity, related products
 - Variant-aware cart with guest/local cart support
 - COD and bank transfer checkout
-- Admin dashboard, products, orders, and users
+- Admin dashboard, products, orders, users, and store settings
 - Server-side protected admin mutations
 - Supabase RLS policies and migration scripts
 - Vercel deployment support
@@ -59,6 +59,11 @@ NEXT_PUBLIC_BANK_ACCOUNT_NUMBER=0123456789
 
 # Development only. Keep false in production.
 NEXT_PUBLIC_USE_DEMO_DATA=false
+
+# Optional server-side email notifications
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+SELLER_NOTIFICATION_EMAIL=
 ```
 
 Production safety rule: do not set `NEXT_PUBLIC_USE_DEMO_DATA=true` on Vercel production. Demo products are only for local development when Supabase is unavailable.
@@ -166,16 +171,22 @@ npm run build
 4. Run Supabase migrations before testing checkout/admin.
 5. Deploy.
 
+## Implemented Production Admin Improvements
+
+- Variant manager UI with size, color, SKU, stock, price override, and active toggle
+- Store settings admin page for brand, contact, bank transfer, and shipping settings
+- Optional Resend email notifications for seller/customer when an order is created
+- Low-stock counters and admin warnings
+
 ## Future Improvements
 
-- Full variant manager UI
-- Store settings admin page
-- Email notifications with Resend
-- Low-stock dashboard
 - Product SEO fields
 - Print/export order layout
+- Generate Supabase TypeScript types from the live project
 - Remove unused Polar legacy code after confirming it is no longer needed
 
 ## License
 
 Educational and portfolio project.
+
+
