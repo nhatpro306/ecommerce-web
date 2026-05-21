@@ -13,6 +13,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DemoBanner } from "@/components/DemoBanner";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -94,7 +95,7 @@ export default function RootLayout({
             },
           }}
         />
-        
+        <Analytics />
       </body>
     </html>
   );
