@@ -1,5 +1,5 @@
-import { supabase } from "@/lib/supabase/client";
-import { ProductType } from "@/types";
+﻿import { supabase } from "@/lib/supabase/client";
+import { ProductImageType, ProductType, ProductVariantType } from "@/types";
 
 export interface CreateProductData {
   title: string;
@@ -21,17 +21,21 @@ export interface ProductWithDetails extends ProductType {
     id: number;
     name: string;
   };
+  images?: ProductImageType[];
+  variants?: ProductVariantType[];
   total_reviews?: number;
   average_rating?: number;
 }
 
 /**
- * Admin service for product management
- * Requires admin privileges for all operations
+ * Admin service for product reads. Mutations are routed through server actions
+ * so admin permissions are enforced server-side.
  */
 export const adminProductService = {
   /**
-   * Get all products with additional details for admin view
+   * Get all products with additional details for admin view.
+   * Variant/image reads are best-effort so older databases still load until the
+   * inventory migration is applied.
    */
   async getAllProducts(): Promise<ProductWithDetails[]> {
     try {
@@ -39,12 +43,12 @@ export const adminProductService = {
         .from("products")
         .select(
           `
-					*,
-					categories!products_category_id_fkey (
-						id,
-						name
-					)
-				`,
+          *,
+          categories!products_category_id_fkey (
+            id,
+            name
+          )
+        `,
         )
         .order("created_at", { ascending: false });
 
@@ -53,9 +57,16 @@ export const adminProductService = {
         throw error;
       }
 
-      // Get review statistics for each product
+      const products = data || [];
+      const productIds = products.map((product) => product.product_id);
+
+      const [variantsByProduct, imagesByProduct] = await Promise.all([
+        this.getVariantsByProduct(productIds),
+        this.getImagesByProduct(productIds),
+      ]);
+
       const productsWithStats = await Promise.all(
-        (data || []).map(async (product) => {
+        products.map(async (product) => {
           const { data: reviewStats } = await supabase
             .from("reviews")
             .select("rating")
@@ -72,6 +83,8 @@ export const adminProductService = {
           return {
             ...product,
             category: product.categories,
+            images: imagesByProduct[product.product_id] || [],
+            variants: variantsByProduct[product.product_id] || [],
             total_reviews: totalReviews,
             average_rating: Number(averageRating.toFixed(1)),
           };
@@ -85,8 +98,61 @@ export const adminProductService = {
     }
   },
 
+  async getVariantsByProduct(
+    productIds: string[],
+  ): Promise<Record<string, ProductVariantType[]>> {
+    if (productIds.length === 0) return {};
+
+    const { data, error } = await supabase
+      .from("product_variants")
+      .select("*")
+      .in("product_id", productIds)
+      .order("size", { ascending: true });
+
+    if (error) {
+      console.warn("Product variants are not available yet:", error.message);
+      return {};
+    }
+
+    return (data || []).reduce<Record<string, ProductVariantType[]>>(
+      (acc, variant) => {
+        acc[variant.product_id] = acc[variant.product_id] || [];
+        acc[variant.product_id].push(variant);
+        return acc;
+      },
+      {},
+    );
+  },
+
+  async getImagesByProduct(
+    productIds: string[],
+  ): Promise<Record<string, ProductImageType[]>> {
+    if (productIds.length === 0) return {};
+
+    const { data, error } = await supabase
+      .from("product_images")
+      .select("*")
+      .in("product_id", productIds)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.warn("Product images are not available yet:", error.message);
+      return {};
+    }
+
+    return (data || []).reduce<Record<string, ProductImageType[]>>(
+      (acc, image) => {
+        acc[image.product_id] = acc[image.product_id] || [];
+        acc[image.product_id].push(image);
+        return acc;
+      },
+      {},
+    );
+  },
+
   /**
-   * Create a new product
+   * Create a new product. Kept for compatibility; admin pages should use server
+   * actions for writes.
    */
   async createProduct(productData: CreateProductData): Promise<ProductType> {
     try {
@@ -113,9 +179,6 @@ export const adminProductService = {
     }
   },
 
-  /**
-   * Update an existing product
-   */
   async updateProduct(
     productId: string,
     productData: UpdateProductData,
@@ -143,9 +206,6 @@ export const adminProductService = {
     }
   },
 
-  /**
-   * Delete a product
-   */
   async deleteProduct(productId: string): Promise<boolean> {
     try {
       const { error } = await supabase
@@ -165,9 +225,6 @@ export const adminProductService = {
     }
   },
 
-  /**
-   * Update product stock
-   */
   async updateStock(productId: string, newStock: number): Promise<ProductType> {
     try {
       const { data, error } = await supabase
@@ -192,9 +249,6 @@ export const adminProductService = {
     }
   },
 
-  /**
-   * Get products with low stock (below threshold)
-   */
   async getLowStockProducts(threshold: number = 10): Promise<ProductType[]> {
     try {
       const { data, error } = await supabase
@@ -215,25 +269,19 @@ export const adminProductService = {
     }
   },
 
-  /**
-   * Get product analytics data
-   */
   async getProductAnalytics() {
     try {
-      // Get total products count
       const { count: totalProducts } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true });
 
-      // Get products by category
       const { data: categoryCounts } = await supabase.from("products").select(`
-					category_id,
-					categories!products_category_id_fkey (
-						name
-					)
-				`);
+        category_id,
+        categories!products_category_id_fkey (
+          name
+        )
+      `);
 
-      // Count products by category
       const categoryStats = (categoryCounts || []).reduce<
         Record<string, number>
       >((acc, product) => {
@@ -249,13 +297,11 @@ export const adminProductService = {
         return acc;
       }, {});
 
-      // Get low stock count
       const { count: lowStockCount } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
         .lt("stock", 10);
 
-      // Get total inventory value
       const { data: products } = await supabase
         .from("products")
         .select("price, stock");
@@ -282,9 +328,6 @@ export const adminProductService = {
     }
   },
 
-  /**
-   * Bulk update products
-   */
   async bulkUpdateProducts(
     updates: Array<{ productId: string; data: UpdateProductData }>,
   ): Promise<boolean> {
