@@ -17,6 +17,21 @@ interface CustomerStat {
   totalSpent: number;
 }
 
+interface OrderJoinRow extends OrderType {
+  profiles?: {
+    username: string;
+    email: string;
+  } | null;
+  addresses?: {
+    street: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    country: string;
+  } | null;
+  order_items?: OrderItemRow[];
+}
+
 export interface OrderWithDetails extends Omit<OrderType, "order_items"> {
   profile?: {
     username: string;
@@ -64,6 +79,163 @@ function applyOrderFilters<T extends { eq: Function; gte: Function; lte: Functio
   if (filters.maxAmount) nextQuery = nextQuery.lte("total", filters.maxAmount) as T;
 
   return nextQuery;
+}
+
+function isJoinOrPolicyError(error: { code?: string; message?: string } | null) {
+  const message = `${error?.code || ""} ${error?.message || ""}`.toLowerCase();
+  return (
+    message.includes("pgrst200") ||
+    message.includes("schema cache") ||
+    message.includes("relationship") ||
+    message.includes("permission denied") ||
+    message.includes("row-level security") ||
+    message.includes("profiles") ||
+    message.includes("addresses") ||
+    message.includes("order_items") ||
+    message.includes("products")
+  );
+}
+
+function mapJoinedOrder(order: OrderJoinRow): OrderWithDetails {
+  return {
+    ...order,
+    profile: order.profiles || undefined,
+    shipping_address: order.addresses || undefined,
+    order_items: order.order_items?.map((item): OrderItemType => {
+      const { products, ...orderItem } = item;
+      return {
+        ...orderItem,
+        product: normalizeOrderItemProduct(products),
+      };
+    }),
+  };
+}
+
+function normalizeOrderItemProduct(
+  products: OrderItemRow["products"] | OrderItemRow["products"][],
+): OrderItemType["product"] {
+  const product = Array.isArray(products) ? products[0] : products;
+  return product || undefined;
+}
+
+async function attachBestEffortOrderDetails(
+  orders: OrderWithDetails[],
+): Promise<OrderWithDetails[]> {
+  if (orders.length === 0) return orders;
+
+  const orderIds = orders.map((order) => order.id);
+  const userIds = Array.from(new Set(orders.map((order) => order.user_id).filter(Boolean)));
+  const addressIds = Array.from(
+    new Set(
+      orders
+        .map((order) => order.shipping_address_id)
+        .filter((id): id is number => Number.isFinite(Number(id))),
+    ),
+  );
+
+  const [itemsResult, profilesResult, addressesResult] = await Promise.all([
+    supabase
+      .from("order_items")
+      .select(
+        `
+        id,
+        order_id,
+        product_id,
+        variant_id,
+        quantity,
+        price,
+        selected_size,
+        selected_color,
+        product_title_snapshot,
+        product_image_snapshot,
+        sku_snapshot,
+        size_snapshot,
+        color_snapshot,
+        products (
+          product_id,
+          title,
+          image
+        )
+      `,
+      )
+      .in("order_id", orderIds),
+    userIds.length > 0
+      ? supabase.from("profiles").select("profile_id, username, email").in("profile_id", userIds)
+      : Promise.resolve({ data: [], error: null }),
+    addressIds.length > 0
+      ? supabase
+          .from("addresses")
+          .select("id, street, city, state, zip_code, country")
+          .in("id", addressIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  let itemsByOrder: Record<number, OrderItemType[]> = {};
+  if (!itemsResult.error) {
+    itemsByOrder = ((itemsResult.data || []) as unknown as OrderItemRow[]).reduce(
+      (acc, item) => {
+        const { products, ...orderItem } = item;
+        acc[item.order_id] = acc[item.order_id] || [];
+        acc[item.order_id].push({
+          ...orderItem,
+          product: normalizeOrderItemProduct(products),
+        });
+        return acc;
+      },
+      {} as Record<number, OrderItemType[]>,
+    );
+  } else {
+    console.warn("Admin orders: order item details unavailable:", itemsResult.error.message);
+  }
+
+  const profilesById = !profilesResult.error
+    ? ((profilesResult.data || []) as Array<{
+        profile_id: string;
+        username: string;
+        email: string;
+      }>).reduce(
+        (acc, profile) => {
+          acc[profile.profile_id] = {
+            username: profile.username,
+            email: profile.email,
+          };
+          return acc;
+        },
+        {} as Record<string, { username: string; email: string }>,
+      )
+    : {};
+
+  if (profilesResult.error) {
+    console.warn("Admin orders: customer profile details unavailable:", profilesResult.error.message);
+  }
+
+  const addressesById = !addressesResult.error
+    ? ((addressesResult.data || []) as Array<{
+        id: number;
+        street: string;
+        city: string;
+        state: string;
+        zip_code: string;
+        country: string;
+      }>).reduce(
+        (acc, address) => {
+          acc[address.id] = address;
+          return acc;
+        },
+        {} as Record<number, OrderWithDetails["shipping_address"]>,
+      )
+    : {};
+
+  if (addressesResult.error) {
+    console.warn("Admin orders: shipping address details unavailable:", addressesResult.error.message);
+  }
+
+  return orders.map((order) => ({
+    ...order,
+    profile: profilesById[order.user_id] || order.profile,
+    shipping_address: addressesById[order.shipping_address_id] || order.shipping_address,
+    order_items: itemsByOrder[order.id] || order.order_items || [],
+  }));
 }
 
 /**
@@ -125,19 +297,28 @@ export const adminOrderService = {
         .range((page - 1) * limit, page * limit - 1);
 
       if (error) {
+        if (isJoinOrPolicyError(error)) {
+          let basicQuery = supabase.from("orders").select("*");
+          basicQuery = applyOrderFilters(basicQuery, filters);
+          const { data: basicData, error: basicError } = await basicQuery
+            .order("created_at", { ascending: false })
+            .range((page - 1) * limit, page * limit - 1);
+
+          if (basicError) {
+            throw basicError;
+          }
+
+          const basicOrders = (basicData || []) as OrderWithDetails[];
+          return {
+            orders: await attachBestEffortOrderDetails(basicOrders),
+            total: count || basicOrders.length,
+          };
+        }
         console.error("Error fetching all orders:", error);
         throw error;
       }
 
-      const orders: OrderWithDetails[] = (data || []).map((order) => ({
-        ...order,
-        profile: order.profiles,
-        shipping_address: order.addresses,
-        order_items: (order.order_items as OrderItemRow[] | undefined)?.map((item) => ({
-          ...item,
-          product: item.products,
-        })),
-      }));
+      const orders = ((data || []) as OrderJoinRow[]).map(mapJoinedOrder);
 
       return {
         orders,
@@ -193,19 +374,27 @@ export const adminOrderService = {
         .single();
 
       if (error) {
+        if (isJoinOrPolicyError(error)) {
+          const { data: basicData, error: basicError } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
+
+          if (basicError) {
+            throw basicError;
+          }
+
+          const [orderWithDetails] = await attachBestEffortOrderDetails([
+            basicData as OrderWithDetails,
+          ]);
+          return orderWithDetails || null;
+        }
         console.error("Error fetching order details:", error);
         throw error;
       }
 
-      return {
-        ...data,
-        profile: data.profiles,
-        shipping_address: data.addresses,
-        order_items: (data.order_items as OrderItemRow[] | undefined)?.map((item) => ({
-          ...item,
-          product: item.products,
-        })),
-      } as OrderWithDetails;
+      return mapJoinedOrder(data as OrderJoinRow);
     } catch (err) {
       console.error("Failed to get order details:", err);
       return null;

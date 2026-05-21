@@ -27,6 +27,10 @@ function productSelect(select = FULL_PRODUCT_SELECT) {
   return supabase.from('products').select(select);
 }
 
+function onlyVisibleProducts<T extends { or: Function }>(query: T): T {
+  return query.or('is_active.eq.true,is_active.is.null') as T;
+}
+
 async function runProductQuery<T>(
   buildQuery: (select: string) => PromiseLike<{ data: T; error: { code?: string; message?: string } | null }>,
   timeoutMessage: string,
@@ -53,8 +57,8 @@ export const productService = {
   async getProducts(): Promise<ProductType[]> {
     try {
       const { data, error } = await runProductQuery(
-        (select) => productSelect(select).eq('is_active', true).order('title'),
-        'Kh?ng th? t?i s?n ph?m. K?t n?i Supabase ph?n h?i qu? l?u.',
+        (select) => onlyVisibleProducts(productSelect(select)).order('title'),
+        'Không thể tải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
@@ -78,8 +82,8 @@ export const productService = {
   async getProductById(id: string): Promise<ProductType | null> {
     try {
       const { data, error } = await runProductQuery(
-        (select) => productSelect(select).eq('product_id', id).eq('is_active', true).single(),
-        'Kh?ng th? t?i chi ti?t s?n ph?m. K?t n?i Supabase ph?n h?i qu? l?u.',
+        (select) => onlyVisibleProducts(productSelect(select).eq('product_id', id)).single(),
+        'Không thể tải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
@@ -100,8 +104,8 @@ export const productService = {
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
       const { data, error } = await runProductQuery(
-        (select) => productSelect(select).eq('category_id', categoryId).eq('is_active', true).order('title'),
-        'Kh?ng th? t?i s?n ph?m theo danh m?c. K?t n?i Supabase ph?n h?i qu? l?u.',
+        (select) => onlyVisibleProducts(productSelect(select).eq('category_id', categoryId)).order('title'),
+        'Không thể tải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
