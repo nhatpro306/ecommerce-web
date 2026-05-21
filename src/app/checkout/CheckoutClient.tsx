@@ -23,6 +23,8 @@ interface BankConfig {
 
 type PaymentMethod = "cod" | "bank_transfer";
 
+const VIETNAMESE_PHONE_PATTERN = /^0\d{9}$/;
+
 export default function CheckoutClient() {
   const router = useRouter();
   const { user } = useAuth();
@@ -34,10 +36,10 @@ export default function CheckoutClient() {
     fullName: "",
     phone: "",
     email: "",
-    street: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    detailedAddress: "",
+    ward: "",
+    district: "",
+    provinceCity: "",
     note: "",
   });
 
@@ -72,12 +74,15 @@ export default function CheckoutClient() {
     [storeBankConfig],
   );
 
+  const isPhoneValid = VIETNAMESE_PHONE_PATTERN.test(form.phone.trim());
   const canSubmit =
     form.fullName.trim() &&
     form.phone.trim() &&
-    form.street.trim() &&
-    form.city.trim() &&
-    form.zipCode.trim() &&
+    isPhoneValid &&
+    form.detailedAddress.trim() &&
+    form.ward.trim() &&
+    form.district.trim() &&
+    form.provinceCity.trim() &&
     cartItems.length > 0;
 
   const submitOrder = async () => {
@@ -87,21 +92,30 @@ export default function CheckoutClient() {
     }
 
     if (!canSubmit) {
-      toast.error("Vui lòng nhập đủ thông tin bắt buộc.");
+      toast.error(
+        isPhoneValid
+          ? "Vui lòng nhập đủ thông tin giao hàng bắt buộc."
+          : "Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số.",
+      );
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const streetAddress = [
+        form.detailedAddress.trim(),
+        form.ward.trim(),
+      ].join(", ");
+
       const savedAddress = await addressService.saveAddress({
         userId: user.id,
         address: {
           id: 0,
           user_id: user.id,
-          street: form.street,
-          city: form.city,
-          state: form.state,
-          zip_code: form.zipCode,
+          street: streetAddress,
+          city: form.district.trim(),
+          state: form.provinceCity.trim(),
+          zip_code: "00000",
           country: "Vietnam",
           is_default: false,
         },
@@ -148,7 +162,7 @@ export default function CheckoutClient() {
       }
 
       router.push(
-        `/checkout/success?order_id=${order.id}&payment_method=${paymentMethod}`,
+        `/checkout/success?order_id=${order.id}&payment_method=${paymentMethod}&total=${order.total}`,
       );
     } catch (error) {
       console.error(error);
@@ -170,7 +184,7 @@ export default function CheckoutClient() {
         <section className="lg:col-span-2">
           <div className="border-b border-zinc-200 pb-5">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-              Checkout
+              Thanh toán
             </p>
             <h1 className="mt-2 text-3xl font-black uppercase">
               Thông tin giao hàng
@@ -204,38 +218,52 @@ export default function CheckoutClient() {
             />
             <Input
               className={inputClass}
-              placeholder="Địa chỉ *"
-              value={form.street}
+              placeholder="Địa chỉ chi tiết (số nhà, tên đường) *"
+              value={form.detailedAddress}
               onChange={(event) =>
-                setForm((previous) => ({ ...previous, street: event.target.value }))
+                setForm((previous) => ({
+                  ...previous,
+                  detailedAddress: event.target.value,
+                }))
               }
             />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <Input
                 className={inputClass}
+                placeholder="Phường/Xã *"
+                value={form.ward}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, ward: event.target.value }))
+                }
+              />
+              <Input
+                className={inputClass}
                 placeholder="Quận/Huyện *"
-                value={form.city}
+                value={form.district}
                 onChange={(event) =>
-                  setForm((previous) => ({ ...previous, city: event.target.value }))
+                  setForm((previous) => ({
+                    ...previous,
+                    district: event.target.value,
+                  }))
                 }
               />
               <Input
                 className={inputClass}
-                placeholder="Tỉnh/TP"
-                value={form.state}
+                placeholder="Tỉnh/Thành phố *"
+                value={form.provinceCity}
                 onChange={(event) =>
-                  setForm((previous) => ({ ...previous, state: event.target.value }))
-                }
-              />
-              <Input
-                className={inputClass}
-                placeholder="Mã bưu chính *"
-                value={form.zipCode}
-                onChange={(event) =>
-                  setForm((previous) => ({ ...previous, zipCode: event.target.value }))
+                  setForm((previous) => ({
+                    ...previous,
+                    provinceCity: event.target.value,
+                  }))
                 }
               />
             </div>
+            {form.phone && !isPhoneValid && (
+              <p className="text-sm text-red-600">
+                Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số.
+              </p>
+            )}
             <Input
               className={inputClass}
               placeholder="Ghi chú"

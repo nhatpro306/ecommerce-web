@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/client";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface BankConfig {
   name: string;
@@ -20,6 +21,7 @@ function SuccessContent() {
   const router = useRouter();
   const orderId = searchParams.get("order_id");
   const paymentMethod = searchParams.get("payment_method");
+  const total = Number(searchParams.get("total") || 0);
   const [isLoading, setIsLoading] = useState(true);
   const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
 
@@ -61,6 +63,10 @@ function SuccessContent() {
       },
     [storeBankConfig],
   );
+  const paymentMethodLabel =
+    paymentMethod === "bank_transfer"
+      ? "Chuyển khoản ngân hàng"
+      : "Thanh toán khi nhận hàng (COD)";
 
   if (isLoading) {
     return (
@@ -93,6 +99,14 @@ function SuccessContent() {
           <div className="space-y-2 text-center">
             <p className="text-zinc-500">Cảm ơn bạn đã mua sắm tại RESEY.</p>
             {orderId && <p className="text-sm text-zinc-500">Mã đơn hàng: #{orderId}</p>}
+            {total > 0 && (
+              <p className="text-sm text-zinc-500">
+                Tổng thanh toán: {formatCurrency(total)}
+              </p>
+            )}
+            <p className="text-sm text-zinc-500">
+              Phương thức thanh toán: {paymentMethodLabel}
+            </p>
           </div>
 
           {paymentMethod === "bank_transfer" && (
@@ -104,6 +118,11 @@ function SuccessContent() {
               <p className="mt-3 font-bold">Nội dung: ORDER-{orderId}</p>
             </div>
           )}
+
+          <div className="border border-zinc-200 p-4 text-sm text-zinc-600">
+            RESEY đã nhận thông tin đặt hàng. Shop sẽ liên hệ với bạn qua số
+            điện thoại đã cung cấp để xác nhận đơn trước khi giao.
+          </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button
