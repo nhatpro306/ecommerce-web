@@ -1,4 +1,4 @@
-export interface ProductType {
+﻿export interface ProductType {
   product_id: string;
   slug?: string;
   title: string;
@@ -12,6 +12,7 @@ export interface ProductType {
   is_active?: boolean;
   sku?: string;
   category_id?: number;
+  variants?: ProductVariantType[];
   category?: {
     id?: number;
     name?: string;
@@ -170,3 +171,5 @@ export interface StoreSettingsType {
   free_shipping_threshold?: number | null;
   updated_at?: string;
 }
+
+

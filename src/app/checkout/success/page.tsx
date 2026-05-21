@@ -1,11 +1,19 @@
-"use client";
+﻿"use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
+
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase/client";
+
+interface BankConfig {
+  name: string;
+  accountName: string;
+  accountNumber: string;
+}
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -13,6 +21,7 @@ function SuccessContent() {
   const orderId = searchParams.get("order_id");
   const paymentMethod = searchParams.get("payment_method");
   const [isLoading, setIsLoading] = useState(true);
+  const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -22,17 +31,48 @@ function SuccessContent() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
+  useEffect(() => {
+    async function loadStoreSettings() {
+      const { data, error } = await supabase
+        .from("store_settings")
+        .select("bank_name, bank_account_name, bank_account_number")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error || !data) return;
+
+      setStoreBankConfig({
+        name: data.bank_name || "Vietcombank",
+        accountName: data.bank_account_name || "RESEY",
+        accountNumber: data.bank_account_number || "0123456789",
+      });
+    }
+
+    loadStoreSettings();
+  }, []);
+
+  const bankConfig = useMemo(
+    () =>
+      storeBankConfig || {
+        name: process.env.NEXT_PUBLIC_BANK_NAME || "Vietcombank",
+        accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "RESEY",
+        accountNumber:
+          process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
+      },
+    [storeBankConfig],
+  );
+
   if (isLoading) {
     return (
-      <div className="bg-background min-h-screen py-12">
-        <Card className="mx-auto max-w-md">
+      <div className="min-h-screen bg-white py-12">
+        <Card className="mx-auto max-w-md rounded-none">
           <CardHeader>
             <CardTitle>Đang xử lý đơn hàng...</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-8">
             <LoadingSpinner />
-            <p className="text-muted-foreground mt-4">
-              Vui lòng chờ trong khi hệ thống xác nhận và tạo đơn hàng.
+            <p className="mt-4 text-zinc-500">
+              Vui lòng chờ trong khi hệ thống xác nhận đơn hàng.
             </p>
           </CardContent>
         </Card>
@@ -41,39 +81,42 @@ function SuccessContent() {
   }
 
   return (
-    <div className="bg-background min-h-screen py-12">
-      <Card className="mx-auto max-w-md">
+    <div className="min-h-screen bg-white py-12">
+      <Card className="mx-auto max-w-lg rounded-none">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <CheckCircle2 className="h-10 w-10 text-green-600" />
           </div>
-          <CardTitle className="text-2xl">Đặt hàng thành công!</CardTitle>
+          <CardTitle className="text-2xl uppercase">Đặt hàng thành công</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2 text-center">
-            <p className="text-muted-foreground">
-              Cảm ơn bạn đã mua sắm tại RESEY.
-            </p>
-            {orderId && (
-              <p className="text-muted-foreground text-sm">
-                Mã đơn hàng: #{orderId}
-              </p>
-            )}
-            {paymentMethod === "bank_transfer" && (
-              <p className="text-muted-foreground text-sm">
-                Nội dung chuyển khoản: ORDER-{orderId}
-              </p>
-            )}
+            <p className="text-zinc-500">Cảm ơn bạn đã mua sắm tại RESEY.</p>
+            {orderId && <p className="text-sm text-zinc-500">Mã đơn hàng: #{orderId}</p>}
           </div>
+
+          {paymentMethod === "bank_transfer" && (
+            <div className="border border-zinc-200 bg-zinc-50 p-4 text-sm">
+              <p className="font-bold uppercase tracking-[0.12em]">Thông tin chuyển khoản</p>
+              <p className="mt-3">Ngân hàng: {bankConfig.name}</p>
+              <p>Chủ tài khoản: {bankConfig.accountName}</p>
+              <p>Số tài khoản: {bankConfig.accountNumber}</p>
+              <p className="mt-3 font-bold">Nội dung: ORDER-{orderId}</p>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button
               onClick={() => router.push("/profile")}
               variant="outline"
-              className="cursor-pointer"
+              className="cursor-pointer rounded-none"
             >
               Xem đơn hàng
             </Button>
-            <Button onClick={() => router.push("/")} className="cursor-pointer">
+            <Button
+              onClick={() => router.push("/")}
+              className="cursor-pointer rounded-none bg-zinc-950 text-white hover:bg-zinc-800"
+            >
               Tiếp tục mua sắm
             </Button>
           </div>
@@ -85,8 +128,8 @@ function SuccessContent() {
 
 function LoadingFallback() {
   return (
-    <div className="bg-background min-h-screen py-12">
-      <Card className="mx-auto max-w-md">
+    <div className="min-h-screen bg-white py-12">
+      <Card className="mx-auto max-w-md rounded-none">
         <CardHeader>
           <CardTitle>Đang tải...</CardTitle>
         </CardHeader>
