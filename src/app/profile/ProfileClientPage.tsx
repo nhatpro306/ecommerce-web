@@ -181,7 +181,7 @@ export default function ProfileClientPage({
         onUpdateEmail={handleUpdateEmail}
       />
 
-      <h2 className="mb-4 text-2xl font-bold">My Orders</h2>
+      <h2 className="mb-4 text-2xl font-bold">Đơn hàng của tôi</h2>
 
       {orders.length === 0 ? (
         <EmptyOrdersState onBrowseProducts={() => router.push("/")} />

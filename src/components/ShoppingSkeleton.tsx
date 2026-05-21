@@ -16,9 +16,9 @@ export default function ShoppingSkeleton() {
       <div className="mb-6 flex items-center">
         <Link href="/" className="text-primary flex items-center">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Shopping
+          Quay lại mua sắm
         </Link>
-        <h1 className="ml-4 text-3xl font-bold">Your Shopping Cart</h1>
+        <h1 className="ml-4 text-3xl font-bold">Giỏ hàng của bạn</h1>
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
@@ -47,7 +47,7 @@ export default function ShoppingSkeleton() {
         <div className="md:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              <CardTitle>Tóm tắt đơn hàng</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">

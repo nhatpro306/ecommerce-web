@@ -22,26 +22,36 @@ import { useQuery } from "@tanstack/react-query";
 // Column helper for strongly typed columns
 const columnHelper = createColumnHelper<OrderType>();
 
+const orderStatusLabels: Record<string, string> = {
+  pending: "Chờ xác nhận",
+  processing: "Đang xử lý",
+  confirmed: "Đã xác nhận",
+  shipped: "Đang giao",
+  delivered: "Đã giao",
+  completed: "Hoàn thành",
+  cancelled: "Đã hủy",
+};
+
 // Column definitions
 const columns = [
   columnHelper.accessor("id", {
-    header: "Order ID",
+    header: "Mã đơn",
     cell: (info) => info.getValue(),
   }),
   columnHelper.accessor("created_at", {
-    header: "Date",
+    header: "Ngày đặt",
     cell: (info) => {
       const date = info.getValue();
-      return date ? format(new Date(date), "MMM dd, yyyy") : "N/A";
+      return date ? format(new Date(date), "dd/MM/yyyy") : "Chưa có";
     },
     sortingFn: "datetime",
   }),
   columnHelper.accessor("total", {
-    header: "Amount",
+    header: "Tổng tiền",
     cell: (info) => formatCurrency(info.getValue()),
   }),
   columnHelper.accessor("status", {
-    header: "Status",
+    header: "Trạng thái",
     cell: (info) => {
       const status = info.getValue();
       return (
@@ -58,7 +68,7 @@ const columns = [
                     : "bg-gray-100 text-gray-800"
           }`}
         >
-          {status}
+          {orderStatusLabels[status] || status}
         </span>
       );
     },
@@ -111,14 +121,14 @@ export function OrdersTable() {
 
   // Loading state
   if (isLoading) {
-    return <div className="py-4 text-center">Loading orders...</div>;
+    return <div className="py-4 text-center">Đang tải đơn hàng...</div>;
   }
 
   // Error state
   if (error) {
     return (
       <div className="py-4 text-center text-red-500">
-        Error loading orders: {error.message}
+        Không thể tải đơn hàng: {error.message}
       </div>
     );
   }
@@ -127,9 +137,9 @@ export function OrdersTable() {
   if (orders.length === 0) {
     return (
       <div className="rounded-lg bg-gray-50 py-8 text-center">
-        <h3 className="text-lg font-medium text-gray-600">No orders yet</h3>
+        <h3 className="text-lg font-medium text-gray-600">Chưa có đơn hàng</h3>
         <p className="mt-2 text-gray-500">
-          When you place orders, they will appear here.
+          Khi bạn đặt hàng, đơn hàng sẽ hiển thị tại đây.
         </p>
       </div>
     );
@@ -193,15 +203,15 @@ export function OrdersTable() {
             disabled={!table.getCanPreviousPage()}
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Previous
+            Trước
           </Button>
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-700">
-              Page{" "}
+              Trang{" "}
               <span className="font-medium">
                 {table.getState().pagination.pageIndex + 1}
               </span>{" "}
-              of <span className="font-medium">{table.getPageCount()}</span>
+              / <span className="font-medium">{table.getPageCount()}</span>
             </span>
           </div>
           <Button
@@ -210,7 +220,7 @@ export function OrdersTable() {
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            Sau
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

@@ -265,14 +265,14 @@ export function UserDetailsModal({
               </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Tóm tắt đơn hàng */}
             {(displayUser.total_orders || 0) > 0 && (
               <>
                 <Separator />
                 <div>
                   <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
                     <ShoppingCart className="h-5 w-5" />
-                    Order Summary
+                    Tóm tắt đơn hàng
                   </h3>
                   <div className="rounded-lg border p-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -281,7 +281,7 @@ export function UserDetailsModal({
                           {displayUser.total_orders || 0}
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Total Orders
+                          Tổng đơn hàng
                         </p>
                       </div>
                       <div className="text-center">
@@ -289,7 +289,7 @@ export function UserDetailsModal({
                           {formatCurrency(displayUser.total_spent || 0)}
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Total Spent
+                          Tổng chi tiêu
                         </p>
                       </div>
                       <div className="text-center">
@@ -302,7 +302,7 @@ export function UserDetailsModal({
                             : formatCurrency(0)}
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Average Order
+                          Giá trị trung bình
                         </p>
                       </div>
                     </div>
