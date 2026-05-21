@@ -17,11 +17,11 @@ function getImageExtension(file: File): string {
 
 export function validateProductImageFile(file: File): string | null {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    return "Only JPEG, PNG, and WebP images are allowed.";
+    return "Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP.";
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return "Product image must be 5MB or smaller.";
+    return "Ảnh sản phẩm phải nhỏ hơn hoặc bằng 5MB.";
   }
 
   return null;
@@ -62,6 +62,17 @@ export async function uploadAndAttachProductImages(
   primaryIndex = 0,
 ): Promise<UploadedProductImage[]> {
   const uploadedImages: UploadedProductImage[] = [];
+
+  if (files.length > 0) {
+    const { error: resetPrimaryError } = await supabase
+      .from("product_images")
+      .update({ is_primary: false })
+      .eq("product_id", productId);
+
+    if (resetPrimaryError) {
+      throw new Error(resetPrimaryError.message);
+    }
+  }
 
   for (const [index, file] of files.entries()) {
     const uploaded = await uploadProductImage(productId, file);
