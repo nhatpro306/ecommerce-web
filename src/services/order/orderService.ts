@@ -1,9 +1,11 @@
-import { AddressType, OrderType, OrderStatus } from "@/types";
+import { AddressType, OrderStatus } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { getActiveCart } from "@/services/cart/cartService";
 
 interface OrderItemInput {
   product_id: string;
+  variant_id?: string | null;
   quantity: number;
   price: number;
   selected_size?: string | null;
@@ -70,149 +72,48 @@ export const orderService = {
         throw new Error("Total amount must be greater than 0");
       }
 
-      console.log("Creating order with params:", {
-        userId,
-        itemsCount: items.length,
-        totalAmount,
-        shippingAddressId: shippingAddress.id,
-        paymentIntentId,
-      });
-
-      // Idempotency: if a paymentId exists, try to find an existing order first
-      let existingOrder: OrderType | null = null;
-      if (paymentIntentId) {
-        const { data: foundOrders, error: findError } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("payment_id", paymentIntentId)
-          .eq("user_id", userId)
-          .limit(1);
-        if (
-          !findError &&
-          Array.isArray(foundOrders) &&
-          foundOrders.length > 0
-        ) {
-          existingOrder = foundOrders[0];
-        }
-      }
-
-      if (existingOrder) {
-        console.log(
-          "Existing order found for payment_id, returning existing order",
-        );
-        return existingOrder;
-      }
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert([
-          {
-            user_id: userId,
-            total: totalAmount,
-            status: "pending",
-            payment_id: paymentIntentId,
+      const activeCart = await getActiveCart();
+      const { data: orderId, error: checkoutError } = await supabase.rpc(
+        "create_order_checkout",
+        {
+          payload: {
+            cart_id: activeCart?.id,
             shipping_address_id: shippingAddress.id,
             payment_method: paymentMethod,
+            payment_id: paymentIntentId,
             customer_name: customerName,
             customer_phone: customerPhone,
             customer_email: customerEmail || null,
             customer_note: customerNote || null,
+            items: items.map((item) => ({
+              product_id: item.product_id,
+              variant_id: item.variant_id,
+              quantity: item.quantity,
+              selected_size: item.selected_size,
+              selected_color: item.selected_color,
+            })),
           },
-        ])
-        .select()
+        },
+      );
+
+      if (checkoutError) {
+        const message = checkoutError.message.includes("Not enough stock")
+          ? "Một sản phẩm vừa hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng."
+          : checkoutError.message;
+        toast.error(message);
+        throw new Error(message);
+      }
+
+      const { data: order, error: orderFetchError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", orderId as number)
         .single();
 
-      if (orderError) {
-        // Handle duplicate key (unique constraint) gracefully by fetching existing
-        const maybeCode = orderError?.code;
-        if (maybeCode === "23505" && paymentIntentId) {
-          const { data: foundOrders } = await supabase
-            .from("orders")
-            .select("*")
-            .eq("payment_id", paymentIntentId)
-            .eq("user_id", userId)
-            .limit(1);
-          if (Array.isArray(foundOrders) && foundOrders.length > 0) {
-            console.warn(
-              "Duplicate payment_id detected. Returning existing order",
-            );
-            return foundOrders[0];
-          }
-        }
-
-        console.error("Order creation error", {
-          message: orderError?.message,
-          code: orderError?.code,
-          details: orderError?.details,
-          hint: orderError?.hint,
-        });
-        toast.error(
-          `Failed to create order: ${orderError?.message ?? "Unknown error"}`,
-        );
-        throw new Error(
-          `Order creation failed: ${orderError?.message ?? "Unknown error"}`,
-        );
+      if (orderFetchError || !order) {
+        throw new Error(orderFetchError?.message || "Order was created but could not be loaded");
       }
 
-      if (!order) {
-        throw new Error("Order was not created - no data returned");
-      }
-
-      console.log("Order created successfully:", order);
-
-      // Create order items
-      const orderItems = items.map((item) => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price,
-        selected_size: item.selected_size ?? null,
-        selected_color: item.selected_color ?? null,
-        variant_info: item.variant_info ?? {},
-      }));
-
-      console.log("Creating order items:", orderItems);
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) {
-        console.error("Order items creation error:", itemsError);
-        toast.error(`Failed to create order items: ${itemsError.message}`);
-
-        // Try to clean up the order if items creation failed
-        try {
-          await supabase.from("orders").delete().eq("id", order.id);
-        } catch (cleanupError) {
-          console.error(
-            "Failed to cleanup order after items error:",
-            cleanupError,
-          );
-        }
-
-        throw new Error(`Order items creation failed: ${itemsError.message}`);
-      }
-
-      // Best-effort stock reduction for MVP checkout flow.
-      for (const item of items) {
-        const { data: product } = await supabase
-          .from("products")
-          .select("stock")
-          .eq("product_id", item.product_id)
-          .single();
-
-        const currentStock = product?.stock ?? 0;
-        if (currentStock > 0) {
-          const nextStock = Math.max(0, currentStock - item.quantity);
-          await supabase
-            .from("products")
-            .update({ stock: nextStock })
-            .eq("product_id", item.product_id);
-        }
-      }
-
-      console.log("Order and items created successfully");
       return order;
     } catch (error) {
       console.error("Error in createOrder:", error);
