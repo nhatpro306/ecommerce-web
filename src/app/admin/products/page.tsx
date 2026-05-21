@@ -1,43 +1,76 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Package,
   AlertTriangle,
+  Edit,
   Eye,
+  Package,
+  Plus,
+  Search,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
+
+import { DeleteConfirmModal } from "@/components/admin/DeleteConfirmModal";
+import { ProductFormModal } from "@/components/admin/ProductFormModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   adminProductService,
-  ProductWithDetails,
   CreateProductData,
+  ProductWithDetails,
   UpdateProductData,
 } from "@/services/admin/adminProductService";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { toast } from "sonner";
-import Image from "next/image";
-import Link from "next/link";
-import { ProductFormModal } from "@/components/admin/ProductFormModal";
-import { DeleteConfirmModal } from "@/components/admin/DeleteConfirmModal";
 import { getProductImage } from "@/utils/productImages";
+
 import {
   createAdminProductAction,
   deactivateAdminProductAction,
   updateAdminProductAction,
 } from "./actions";
 
+type StatusFilter = "all" | "active" | "inactive";
+
+function getTotalStock(product: ProductWithDetails) {
+  const activeVariants = product.variants?.filter((variant) => variant.is_active);
+  if (activeVariants && activeVariants.length > 0) {
+    return activeVariants.reduce((total, variant) => total + variant.stock, 0);
+  }
+
+  return product.stock || 0;
+}
+
+function getPrimaryImage(product: ProductWithDetails) {
+  const primaryImage = product.images?.find((image) => image.is_primary);
+  return primaryImage?.url || product.images?.[0]?.url || getProductImage(product);
+}
+
+function getVariantSummary(product: ProductWithDetails) {
+  const variants = product.variants || [];
+  if (variants.length === 0) {
+    return product.sizes?.length || product.colors?.length
+      ? `${product.sizes?.length || 0} size / ${product.colors?.length || 0} màu`
+      : "Chưa có variant";
+  }
+
+  const activeCount = variants.filter((variant) => variant.is_active).length;
+  return `${activeCount}/${variants.length} variant đang bán`;
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithDetails | null>(null);
@@ -100,11 +133,60 @@ export default function AdminProductsPage() {
     }
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const categories = useMemo(() => {
+    return Array.from(
+      new Set(
+        products
+          .map((product) => product.category?.name)
+          .filter((category): category is string => Boolean(category)),
+      ),
+    ).sort();
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const totalStock = getTotalStock(product);
+      const isActive = product.is_active !== false;
+      const skuText = [
+        product.sku,
+        ...(product.variants || []).map((variant) => variant.sku),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const searchableText = [
+        product.title,
+        product.description,
+        product.category?.name,
+        skuText,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (normalizedSearch && !searchableText.includes(normalizedSearch)) {
+        return false;
+      }
+
+      if (statusFilter === "active" && !isActive) return false;
+      if (statusFilter === "inactive" && isActive) return false;
+      if (categoryFilter !== "all" && product.category?.name !== categoryFilter) {
+        return false;
+      }
+      if (lowStockOnly && totalStock > 5) return false;
+
+      return true;
+    });
+  }, [categoryFilter, lowStockOnly, products, searchTerm, statusFilter]);
+
+  const totalProducts = products.length;
+  const activeProducts = products.filter((product) => product.is_active !== false).length;
+  const lowStockProducts = products.filter((product) => getTotalStock(product) <= 5).length;
+  const totalInventory = products.reduce(
+    (total, product) => total + getTotalStock(product),
+    0,
   );
 
   if (loading) {
@@ -119,15 +201,17 @@ export default function AdminProductsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-            Admin
+            RESEY Admin
           </p>
           <h1 className="mt-2 text-3xl font-black uppercase tracking-tight">
             Quản lý sản phẩm
           </h1>
-          <p className="text-zinc-500">Quản lý catalog RESEY</p>
+          <p className="text-zinc-500">
+            Theo dõi catalog, tồn kho variant và trạng thái bán hàng.
+          </p>
         </div>
         <Button
           onClick={() => setShowCreateModal(true)}
@@ -138,145 +222,203 @@ export default function AdminProductsPage() {
         </Button>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-2">
-            <Search className="text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Tìm sản phẩm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="rounded-none">
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Tổng sản phẩm</p>
+            <p className="mt-2 text-2xl font-black">{totalProducts}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none">
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Đang bán</p>
+            <p className="mt-2 text-2xl font-black">{activeProducts}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none">
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Sắp hết hàng</p>
+            <p className="mt-2 text-2xl font-black">{lowStockProducts}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none">
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Tổng tồn kho</p>
+            <p className="mt-2 text-2xl font-black">{totalInventory}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="rounded-none">
+        <CardContent className="space-y-4 p-4">
+          <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Input
+                placeholder="Tìm theo tên, SKU, danh mục..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="rounded-none pl-9"
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+              className="h-10 rounded-none border border-zinc-200 bg-white px-3 text-sm"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Đang bán</option>
+              <option value="inactive">Đã ẩn</option>
+            </select>
+
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+              className="h-10 rounded-none border border-zinc-200 bg-white px-3 text-sm"
+            >
+              <option value="all">Tất cả danh mục</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+
+            <label className="flex h-10 items-center gap-2 border border-zinc-200 px-3 text-sm">
+              <input
+                type="checkbox"
+                checked={lowStockOnly}
+                onChange={(event) => setLowStockOnly(event.target.checked)}
+              />
+              Chỉ sắp hết hàng
+            </label>
           </div>
         </CardContent>
       </Card>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {filteredProducts.map((product) => (
-          <Card key={product.product_id} className="overflow-hidden rounded-none">
-            <div className="relative aspect-[3/4] bg-zinc-100">
-              <Image
-                src={getProductImage(product)}
-                alt={product.title}
-                fill
-                className="object-cover"
-              />
+      <Card className="overflow-hidden rounded-none">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[960px] text-left text-sm">
+            <thead className="border-b bg-zinc-50 text-xs uppercase tracking-[0.14em] text-zinc-500">
+              <tr>
+                <th className="px-4 py-3 font-bold">Sản phẩm</th>
+                <th className="px-4 py-3 font-bold">Danh mục</th>
+                <th className="px-4 py-3 font-bold">Giá</th>
+                <th className="px-4 py-3 font-bold">Tồn kho</th>
+                <th className="px-4 py-3 font-bold">Variant</th>
+                <th className="px-4 py-3 font-bold">Trạng thái</th>
+                <th className="px-4 py-3 text-right font-bold">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {filteredProducts.map((product) => {
+                const totalStock = getTotalStock(product);
+                const isLowStock = totalStock <= 5;
+                const isActive = product.is_active !== false;
 
-              {/* Stock badge */}
-              <div className="absolute top-2 right-2">
-                {product.stock <= 5 ? (
-                  <Badge
-                    variant="destructive"
-                    className="bg-red-100 text-red-800"
-                  >
-                    <AlertTriangle className="mr-1 h-3 w-3" />
-                    Sắp hết hàng
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant="secondary"
-                    className="bg-green-100 text-green-800"
-                  >
-                    Còn hàng
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <CardHeader>
-              <CardTitle className="line-clamp-2 text-lg">
-                {product.title}
-              </CardTitle>
-              <div className="flex items-center justify-between">
-                <span className="text-primary text-2xl font-bold">
-                  {formatCurrency(product.price)}
-                </span>
-                <span className="text-muted-foreground text-sm">
-                  Tồn kho: {product.stock}
-                </span>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">
-                {product.description}
-              </p>
-
-              <div className="mb-4 space-y-2">
-                {product.sku && (
-                  <div className="text-muted-foreground text-xs">
-                    SKU: {product.sku}
-                  </div>
-                )}
-                {product.category && (
-                  <div className="text-muted-foreground text-xs">
-                    Danh mục: {product.category.name}
-                  </div>
-                )}
-                {product.total_reviews !== undefined && (
-                  <div className="text-muted-foreground text-xs">
-                    Đánh giá: {product.total_reviews}
-                    {product.average_rating
-                      ? ` (${product.average_rating}★)`
-                      : ""}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex space-x-2">
-                <Link href={`/products/${product.slug || product.product_id}`}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-accent/80 flex-1 cursor-pointer transition-all hover:scale-105"
-                  >
-                    <Eye className="mr-2 h-3 w-3" />
-                    Xem
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingProduct(product)}
-                  className="hover:bg-accent/80 flex-1 cursor-pointer transition-all hover:scale-105"
-                >
-                  <Edit className="mr-2 h-3 w-3" />
-                  Sửa
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeletingProduct(product)}
-                  className="cursor-pointer text-red-600 transition-all hover:scale-105 hover:bg-red-50 hover:text-red-700"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                return (
+                  <tr key={product.product_id} className="bg-white hover:bg-zinc-50">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden bg-zinc-100">
+                          <Image
+                            src={getPrimaryImage(product)}
+                            alt={product.title}
+                            fill
+                            sizes="48px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="line-clamp-1 font-bold text-zinc-950">
+                            {product.title}
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            SKU: {product.sku || product.variants?.[0]?.sku || "Chưa có"}
+                          </p>
+                          <p className="mt-1 line-clamp-1 text-xs text-zinc-400">
+                            {product.slug || product.product_id}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      {product.category?.name || "Chưa phân loại"}
+                    </td>
+                    <td className="px-4 py-4 font-bold">
+                      {formatCurrency(product.price)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold">{totalStock}</span>
+                        {isLowStock && (
+                          <Badge className="rounded-none bg-red-100 text-red-700 hover:bg-red-100">
+                            <AlertTriangle className="mr-1 h-3 w-3" />
+                            Thấp
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      {getVariantSummary(product)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <Badge
+                        className={
+                          isActive
+                            ? "rounded-none bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                            : "rounded-none bg-zinc-200 text-zinc-600 hover:bg-zinc-200"
+                        }
+                      >
+                        {isActive ? "Đang bán" : "Đã ẩn"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/products/${product.slug || product.product_id}`}>
+                          <Button variant="outline" size="sm" className="rounded-none">
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingProduct(product)}
+                          className="rounded-none"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDeletingProduct(product)}
+                          className="rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {filteredProducts.length === 0 && !loading && (
-        <Card>
+        <Card className="rounded-none">
           <CardContent className="py-12 text-center">
-            <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-            <h3 className="text-muted-foreground mb-2 text-lg font-medium">
-              Không tìm thấy sản phẩm
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm
-                ? "Thử điều chỉnh từ khóa tìm kiếm."
+            <Package className="mx-auto mb-4 h-12 w-12 text-zinc-400" />
+            <h3 className="mb-2 text-lg font-bold">Không tìm thấy sản phẩm</h3>
+            <p className="mb-4 text-zinc-500">
+              {searchTerm || categoryFilter !== "all" || lowStockOnly
+                ? "Thử đổi bộ lọc hoặc từ khóa tìm kiếm."
                 : "Bắt đầu bằng cách thêm sản phẩm đầu tiên."}
             </p>
-            {!searchTerm && (
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                className="cursor-pointer transition-transform hover:scale-105"
-              >
+            {!searchTerm && categoryFilter === "all" && !lowStockOnly && (
+              <Button onClick={() => setShowCreateModal(true)} className="rounded-none">
                 <Plus className="mr-2 h-4 w-4" />
                 Thêm sản phẩm
               </Button>
@@ -285,7 +427,6 @@ export default function AdminProductsPage() {
         </Card>
       )}
 
-      {/* Modals */}
       <ProductFormModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -296,9 +437,7 @@ export default function AdminProductsPage() {
       <ProductFormModal
         isOpen={!!editingProduct}
         onClose={() => setEditingProduct(null)}
-        onSubmit={(data) =>
-          handleUpdateProduct(editingProduct!.product_id, data)
-        }
+        onSubmit={(data) => handleUpdateProduct(editingProduct!.product_id, data)}
         product={editingProduct}
         title="Sửa sản phẩm"
       />
@@ -308,7 +447,7 @@ export default function AdminProductsPage() {
         onClose={() => setDeletingProduct(null)}
         onConfirm={() => handleDeleteProduct(deletingProduct!.product_id)}
         title="Ẩn sản phẩm"
-        description={`Ẩn "${deletingProduct?.title}" khỏi storefront?`}
+        description={`Ẩn "${deletingProduct?.title}" khỏi storefront? Sản phẩm sẽ không bị xóa khỏi database.`}
       />
     </div>
   );
