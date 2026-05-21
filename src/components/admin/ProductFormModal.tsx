@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   AdminVariantInput,
@@ -317,16 +318,23 @@ export function ProductFormModal({
       await syncAdminProductVariantsAction(savedProduct.product_id, variantPayload);
 
       if (selectedFiles.length > 0) {
-        const uploadedImages = await uploadAndAttachProductImages(
-          savedProduct.product_id,
-          selectedFiles,
-          primaryImageIndex,
-        );
-        const uploadedPrimaryImage = uploadedImages[primaryImageIndex]?.url;
-        if (uploadedPrimaryImage) {
-          await updateAdminProductAction(savedProduct.product_id, {
-            image: uploadedPrimaryImage,
-          });
+        try {
+          const uploadedImages = await uploadAndAttachProductImages(
+            savedProduct.product_id,
+            selectedFiles,
+            primaryImageIndex,
+          );
+          const uploadedPrimaryImage = uploadedImages[primaryImageIndex]?.url;
+          if (uploadedPrimaryImage) {
+            await updateAdminProductAction(savedProduct.product_id, {
+              image: uploadedPrimaryImage,
+            });
+          }
+        } catch (uploadError) {
+          console.error("Product image upload failed:", uploadError);
+          toast.warning(
+            "Sản phẩm đã được lưu, nhưng upload ảnh thất bại. Vui lòng thử upload lại.",
+          );
         }
       }
 
