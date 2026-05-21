@@ -47,12 +47,17 @@ interface ProductFormModalProps {
 
 interface FormData {
   title: string;
+  slug: string;
   description: string;
+  material: string;
   price: string;
   image: string;
   stock: string;
   sku: string;
   category_id: string;
+  sizes: string;
+  colors: string;
+  is_active: boolean;
 }
 
 interface VariantDraft {
@@ -73,6 +78,22 @@ const defaultVariant = (): VariantDraft => ({
   price_override: "",
   is_active: true,
 });
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function parseList(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 function buildInitialVariants(product?: ProductWithDetails | null): VariantDraft[] {
   if (!product) return [defaultVariant()];
@@ -114,12 +135,17 @@ export function ProductFormModal({
 }: ProductFormModalProps) {
   const [formData, setFormData] = useState<FormData>({
     title: "",
+    slug: "",
     description: "",
+    material: "",
     price: "",
     image: "",
     stock: "",
     sku: "",
     category_id: "no-category",
+    sizes: "",
+    colors: "",
+    is_active: true,
   });
   const [variants, setVariants] = useState<VariantDraft[]>([defaultVariant()]);
   const [loading, setLoading] = useState(false);
@@ -139,22 +165,32 @@ export function ProductFormModal({
     if (product) {
       setFormData({
         title: product.title || "",
+        slug: product.slug || "",
         description: product.description || "",
+        material: product.material || "",
         price: product.price?.toString() || "",
         image: product.image || "",
         stock: product.stock?.toString() || "",
         sku: product.sku || "",
         category_id: product.category_id?.toString() || "no-category",
+        sizes: product.sizes?.join(", ") || "",
+        colors: product.colors?.join(", ") || "",
+        is_active: product.is_active !== false,
       });
     } else {
       setFormData({
         title: "",
+        slug: "",
         description: "",
+        material: "",
         price: "",
         image: "",
         stock: "",
         sku: "",
         category_id: "no-category",
+        sizes: "S, M, L, XL",
+        colors: "Brown, Green, Black",
+        is_active: true,
       });
     }
 
@@ -182,6 +218,9 @@ export function ProductFormModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) newErrors.title = "Tên sản phẩm là bắt buộc";
+    if (formData.slug.trim() && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(formData.slug.trim())) {
+      newErrors.slug = "Slug chỉ dùng chữ thường, số và dấu gạch ngang";
+    }
     if (!formData.description.trim()) newErrors.description = "Mô tả là bắt buộc";
 
     const price = Number.parseFloat(formData.price);
@@ -230,12 +269,26 @@ export function ProductFormModal({
     setLoading(true);
     try {
       const productStock = getVariantTotalStock();
+      const variantSizes = Array.from(
+        new Set(variants.map((variant) => variant.size.trim()).filter(Boolean)),
+      );
+      const variantColors = Array.from(
+        new Set(variants.map((variant) => variant.color.trim()).filter(Boolean)),
+      );
       const submitData: CreateProductData = {
         title: formData.title.trim(),
+        slug: formData.slug.trim() || slugify(formData.title),
         description: formData.description.trim(),
+        material: formData.material.trim() || undefined,
         price: Number.parseFloat(formData.price),
         image: formData.image.trim() || undefined,
         stock: productStock,
+        sizes: parseList(formData.sizes).length > 0 ? parseList(formData.sizes) : variantSizes,
+        colors:
+          parseList(formData.colors).length > 0
+            ? parseList(formData.colors)
+            : variantColors,
+        is_active: formData.is_active,
         sku: formData.sku.trim() || undefined,
         category_id:
           formData.category_id && formData.category_id !== "no-category"
@@ -297,6 +350,10 @@ export function ProductFormModal({
     if (errors[field]) {
       setErrors((previous) => ({ ...previous, [field]: "" }));
     }
+  };
+
+  const handleCheckedChange = (field: keyof FormData, value: boolean) => {
+    setFormData((previous) => ({ ...previous, [field]: value }));
   };
 
   const handleVariantChange = (
@@ -365,6 +422,33 @@ export function ProductFormModal({
                 className={errors.title ? "border-rose-500" : ""}
               />
               {errors.title && <p className="mt-1 text-sm text-rose-600">{errors.title}</p>}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="slug">Slug URL</Label>
+                <Input
+                  id="slug"
+                  value={formData.slug}
+                  onChange={(event) => handleInputChange("slug", event.target.value)}
+                  onBlur={() =>
+                    handleInputChange("slug", slugify(formData.slug || formData.title))
+                  }
+                  placeholder="resey-washed-tee"
+                  className={errors.slug ? "border-rose-500" : ""}
+                />
+                {errors.slug && <p className="mt-1 text-sm text-rose-600">{errors.slug}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="material">Chất liệu</Label>
+                <Input
+                  id="material"
+                  value={formData.material}
+                  onChange={(event) => handleInputChange("material", event.target.value)}
+                  placeholder="Cotton washed 260gsm"
+                />
+              </div>
             </div>
 
             <div>
@@ -441,6 +525,42 @@ export function ProductFormModal({
                 )}
               </div>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="sizes">Sizes</Label>
+                <Input
+                  id="sizes"
+                  value={formData.sizes}
+                  onChange={(event) => handleInputChange("sizes", event.target.value)}
+                  placeholder="S, M, L, XL"
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Nhập cách nhau bằng dấu phẩy. Variant bên dưới vẫn là nguồn tồn kho chính.
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="colors">Màu</Label>
+                <Input
+                  id="colors"
+                  value={formData.colors}
+                  onChange={(event) => handleInputChange("colors", event.target.value)}
+                  placeholder="Brown, Green, Black"
+                />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(event) =>
+                  handleCheckedChange("is_active", event.target.checked)
+                }
+              />
+              Hiển thị sản phẩm trên storefront
+            </label>
           </section>
 
           <section className="space-y-4 border border-zinc-200 p-4">
