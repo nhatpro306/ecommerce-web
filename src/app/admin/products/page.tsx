@@ -64,6 +64,11 @@ function getVariantSummary(product: ProductWithDetails) {
   return `${activeCount}/${variants.length} variant đang bán`;
 }
 
+function summarizeList(values?: string[]) {
+  if (!values || values.length === 0) return "Chưa có";
+  return values.join(", ");
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -299,12 +304,14 @@ export default function AdminProductsPage() {
 
       <Card className="overflow-hidden rounded-none">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-left text-sm">
+          <table className="w-full min-w-[1120px] text-left text-sm">
             <thead className="border-b bg-zinc-50 text-xs uppercase tracking-[0.14em] text-zinc-500">
               <tr>
                 <th className="px-4 py-3 font-bold">Sản phẩm</th>
                 <th className="px-4 py-3 font-bold">Danh mục</th>
                 <th className="px-4 py-3 font-bold">Giá</th>
+                <th className="px-4 py-3 font-bold">Size</th>
+                <th className="px-4 py-3 font-bold">Màu</th>
                 <th className="px-4 py-3 font-bold">Tồn kho</th>
                 <th className="px-4 py-3 font-bold">Variant</th>
                 <th className="px-4 py-3 font-bold">Trạng thái</th>
@@ -348,6 +355,12 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-4 py-4 font-bold">
                       {formatCurrency(product.price)}
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      {summarizeList(product.sizes)}
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      {summarizeList(product.colors)}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">

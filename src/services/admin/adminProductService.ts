@@ -3,10 +3,14 @@ import { ProductImageType, ProductType, ProductVariantType } from "@/types";
 
 export interface CreateProductData {
   title: string;
+  slug?: string;
   description: string;
+  material?: string;
   price: number;
   image?: string;
   stock: number;
+  sizes?: string[];
+  colors?: string[];
   is_active?: boolean;
   sku?: string;
   category_id?: number;
