@@ -5,11 +5,13 @@ import { ProductType } from "@/types";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabasePublicKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let products: ProductType[] = [];
 
-  if (supabaseUrl && supabaseAnonKey) {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  if (supabaseUrl && supabasePublicKey) {
+    const supabase = createClient(supabaseUrl, supabasePublicKey, {
       auth: { persistSession: false },
     });
 

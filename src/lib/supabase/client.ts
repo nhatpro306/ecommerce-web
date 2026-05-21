@@ -2,20 +2,14 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
+import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
-// Environment variables for client-side usage (must be prefixed with NEXT_PUBLIC_)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing Supabase environment variables");
-  throw new Error("Missing Supabase environment variables");
-}
+const { url: supabaseUrl, key: supabaseKey } = getSupabasePublicEnv();
 
 // Create the Supabase client with additional options for browser usage
 export const supabase = createBrowserClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  supabaseUrl,
+  supabaseKey,
   {
     realtime: {
       params: {
@@ -39,9 +33,11 @@ export const supabase = createBrowserClient<Database>(
 export const supabaseAuth = supabase.auth;
 
 export function createClientSupabase() {
+  const { url, key } = getSupabasePublicEnv();
+
   return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       realtime: {
         params: {
