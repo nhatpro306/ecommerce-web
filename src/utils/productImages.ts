@@ -1,37 +1,35 @@
 import { ProductType } from "@/types";
 
 const skuImages: Record<string, string> = {
-  "RS-TEE-101": "/products/resey-washed-tee-brown-fit-02.jpg",
-  "RS-TEE-102": "/products/resey-washed-tee-brown-fit-03.jpg",
-  "RS-TEE-103": "/products/resey-washed-tee-olive-fit-01.jpg",
-  "RS-SET-104": "/products/resey-washed-tee-brown-fit-01.jpg",
+  "RS-TEE-101": "/images/products/brown-tee-fallback.jpg",
+  "RS-TEE-102": "/images/products/black-tee-fallback.jpg",
+  "RS-TEE-103": "/images/products/olive-tee-fallback.jpg",
+  "RS-SET-104": "/images/brand-story.jpg",
   "RS-PAN-105": "/products/resey-washed-tee-brown-fit-05.jpg",
-  "RS-PAN-106": "/products/resey-washed-tee-brown-fit-04.jpg",
-  "SL-TEE-001": "/products/resey-washed-tee-brown-fit-02.jpg",
-  "SL-HOO-002":
-    "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80",
-  "SL-PAN-003": "/products/resey-washed-tee-brown-fit-04.jpg",
-  "SL-ACC-004":
-    "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80",
-  "SL-TEE-005": "/products/resey-washed-tee-brown-fit-03.jpg",
-  "SL-TEE-006":
-    "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=80",
-  "SL-TEE-007": "/products/resey-washed-tee-brown-fit-01.jpg",
-  "SL-HOO-008":
-    "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=900&q=80",
+  "RS-PAN-106": "/images/hero-resey.jpg",
+  "SL-TEE-001": "/images/products/black-tee-fallback.jpg",
+  "SL-HOO-002": "/images/products/olive-tee-fallback.jpg",
+  "SL-PAN-003": "/images/hero-resey.jpg",
+  "SL-ACC-004": "/images/brand-story.jpg",
+  "SL-TEE-005": "/images/products/brown-tee-fallback.jpg",
+  "SL-TEE-006": "/images/products/black-tee-fallback.jpg",
+  "SL-TEE-007": "/images/brand-story.jpg",
+  "SL-HOO-008": "/images/products/olive-tee-fallback.jpg",
 };
 
 const categoryImages: Record<string, string> = {
-  "T-Shirts": "/products/resey-washed-tee-brown-fit-02.jpg",
-  Hoodies:
-    "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80",
-  Pants: "/products/resey-washed-tee-brown-fit-04.jpg",
-  Accessories:
-    "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80",
+  "T-Shirts": "/images/products/black-tee-fallback.jpg",
+  Hoodies: "/images/products/olive-tee-fallback.jpg",
+  Pants: "/images/hero-resey.jpg",
+  Accessories: "/images/brand-story.jpg",
 };
 
 export function getProductImage(product: ProductType): string {
+  const primaryImage = product.images?.find((image) => image.is_primary);
+
   return (
+    primaryImage?.url ||
+    product.images?.[0]?.url ||
     product.image ||
     (product.sku ? skuImages[product.sku] : undefined) ||
     (product.category?.name ? categoryImages[product.category.name] : undefined) ||

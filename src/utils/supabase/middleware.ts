@@ -35,8 +35,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect routes that require authentication
-  const protectedPaths = ['/profile', '/checkout'];
+  // Protect routes that require authentication.
+  const protectedPaths = ['/profile', '/checkout', '/admin'];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
@@ -47,6 +47,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(
       new URL(`/signin?returnTo=${returnTo}`, request.url)
     );
+  }
+
+  if (request.nextUrl.pathname.startsWith('/admin') && user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_active')
+      .eq('profile_id', user.id)
+      .maybeSingle();
+
+    if (profile?.role !== 'admin' || profile?.is_active === false) {
+      return NextResponse.redirect(new URL('/profile', request.url));
+    }
   }
 
   return response;

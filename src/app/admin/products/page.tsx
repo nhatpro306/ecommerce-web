@@ -302,7 +302,83 @@ export default function AdminProductsPage() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden rounded-none">
+      <div className="grid gap-4 md:hidden">
+        {filteredProducts.map((product) => {
+          const totalStock = getTotalStock(product);
+          const isLowStock = totalStock <= 5;
+          const isActive = product.is_active !== false;
+
+          return (
+            <Card key={product.product_id} className="overflow-hidden rounded-none">
+              <CardContent className="space-y-4 p-4">
+                <div className="flex gap-4">
+                  <div className="relative h-28 w-20 flex-shrink-0 overflow-hidden bg-zinc-100">
+                    <Image
+                      src={getPrimaryImage(product)}
+                      alt={product.title}
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-base font-black text-zinc-950">
+                      {product.title}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-600">
+                      {product.category?.name || "Chưa phân loại"}
+                    </p>
+                    <p className="mt-2 text-base font-black text-black">
+                      {formatCurrency(product.price)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="border border-zinc-200 p-3">
+                    <p className="text-xs font-bold uppercase text-zinc-500">Tồn kho</p>
+                    <p className="mt-1 font-black">{totalStock}</p>
+                    {isLowStock && <p className="mt-1 text-xs font-bold text-red-600">Sắp hết hàng</p>}
+                  </div>
+                  <div className="border border-zinc-200 p-3">
+                    <p className="text-xs font-bold uppercase text-zinc-500">Trạng thái</p>
+                    <p className="mt-1 font-black">{isActive ? "Đang bán" : "Tạm ẩn"}</p>
+                  </div>
+                </div>
+
+                <div className="text-sm text-zinc-700">
+                  <p>Size: {summarizeList(product.sizes)}</p>
+                  <p>Màu: {summarizeList(product.colors)}</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <Link href={`/products/${product.slug || product.product_id}`}>
+                    <Button variant="outline" className="h-10 w-full rounded-none">
+                      Xem
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingProduct(product)}
+                    className="h-10 rounded-none"
+                  >
+                    Sửa
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeletingProduct(product)}
+                    className="h-10 rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    Ẩn
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Card className="hidden overflow-hidden rounded-none md:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1120px] text-left text-sm">
             <thead className="border-b bg-zinc-50 text-xs uppercase tracking-[0.14em] text-zinc-500">
@@ -326,14 +402,14 @@ export default function AdminProductsPage() {
 
                 return (
                   <tr key={product.product_id} className="bg-white hover:bg-zinc-50">
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-6">
                       <div className="flex items-center gap-3">
-                        <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden bg-zinc-100">
+                        <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden bg-zinc-100">
                           <Image
                             src={getPrimaryImage(product)}
                             alt={product.title}
                             fill
-                            sizes="48px"
+                            sizes="72px"
                             className="object-cover"
                           />
                         </div>
@@ -365,10 +441,15 @@ export default function AdminProductsPage() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <span className="font-bold">{totalStock}</span>
-                        {isLowStock && (
+                      {isLowStock && totalStock > 0 && (
                           <Badge className="rounded-none bg-red-100 text-red-700 hover:bg-red-100">
                             <AlertTriangle className="mr-1 h-3 w-3" />
-                            Thấp
+                            Sắp hết hàng
+                          </Badge>
+                        )}
+                        {totalStock === 0 && (
+                          <Badge className="rounded-none bg-zinc-950 text-white hover:bg-zinc-950">
+                            Hết hàng
                           </Badge>
                         )}
                       </div>
@@ -384,7 +465,7 @@ export default function AdminProductsPage() {
                             : "rounded-none bg-zinc-200 text-zinc-600 hover:bg-zinc-200"
                         }
                       >
-                        {isActive ? "Đang bán" : "Đã ẩn"}
+                        {isActive ? "Đang bán" : "Tạm ẩn"}
                       </Badge>
                     </td>
                     <td className="px-4 py-4">
@@ -392,6 +473,7 @@ export default function AdminProductsPage() {
                         <Link href={`/products/${product.slug || product.product_id}`}>
                           <Button variant="outline" size="sm" className="rounded-none">
                             <Eye className="h-3 w-3" />
+                            Xem
                           </Button>
                         </Link>
                         <Button
@@ -401,6 +483,7 @@ export default function AdminProductsPage() {
                           className="rounded-none"
                         >
                           <Edit className="h-3 w-3" />
+                          Sửa
                         </Button>
                         <Button
                           variant="outline"
@@ -409,6 +492,7 @@ export default function AdminProductsPage() {
                           className="rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
+                          Ẩn
                         </Button>
                       </div>
                     </td>

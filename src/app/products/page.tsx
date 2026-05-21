@@ -18,7 +18,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     <div className="bg-white text-zinc-950">
       <section className="relative overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1800&q=80"
+          src="/images/hero-resey.jpg"
           alt="Bộ sưu tập streetwear RESEY"
           width={1800}
           height={720}

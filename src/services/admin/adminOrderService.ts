@@ -89,6 +89,26 @@ export const adminOrderService = {
           state,
           zip_code,
           country
+        ),
+        order_items (
+          id,
+          order_id,
+          product_id,
+          variant_id,
+          quantity,
+          price,
+          selected_size,
+          selected_color,
+          product_title_snapshot,
+          product_image_snapshot,
+          sku_snapshot,
+          size_snapshot,
+          color_snapshot,
+          products (
+            product_id,
+            title,
+            image
+          )
         )
       `);
 
@@ -113,6 +133,10 @@ export const adminOrderService = {
         ...order,
         profile: order.profiles,
         shipping_address: order.addresses,
+        order_items: (order.order_items as OrderItemRow[] | undefined)?.map((item) => ({
+          ...item,
+          product: item.products,
+        })),
       }));
 
       return {

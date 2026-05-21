@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { ProductType } from '../../types';
-import { isNoRowsError, toUserFacingQueryError } from '@/utils/errorHandling';
+import { toUserFacingQueryError } from '@/utils/errorHandling';
 import {
   findSampleProduct,
   mergeWithSampleProducts,
@@ -10,25 +10,58 @@ import { useDemoData } from '@/utils/demoData';
 import { withTimeout } from '@/utils/withTimeout';
 
 const PRODUCT_QUERY_TIMEOUT_MS = 8000;
+const FULL_PRODUCT_SELECT = '*, category:categories(*), images:product_images(*), variants:product_variants(*)';
+const BASIC_PRODUCT_SELECT = '*, category:categories(*)';
+
+function isMissingProductRelation(error: { code?: string; message?: string } | null) {
+  const message = `${error?.code || ''} ${error?.message || ''}`.toLowerCase();
+  return (
+    message.includes('pgrst200') ||
+    message.includes('product_images') ||
+    message.includes('product_variants') ||
+    message.includes('schema cache')
+  );
+}
+
+function productSelect(select = FULL_PRODUCT_SELECT) {
+  return supabase.from('products').select(select);
+}
+
+async function runProductQuery<T>(
+  buildQuery: (select: string) => PromiseLike<{ data: T; error: { code?: string; message?: string } | null }>,
+  timeoutMessage: string,
+) {
+  const result = await withTimeout(
+    buildQuery(FULL_PRODUCT_SELECT),
+    PRODUCT_QUERY_TIMEOUT_MS,
+    timeoutMessage,
+  );
+
+  if (!result.error || !isMissingProductRelation(result.error)) {
+    return result;
+  }
+
+  return withTimeout(
+    buildQuery(BASIC_PRODUCT_SELECT),
+    PRODUCT_QUERY_TIMEOUT_MS,
+    timeoutMessage,
+  );
+}
+
 
 export const productService = {
   async getProducts(): Promise<ProductType[]> {
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('products')
-          .select('*, category:categories(*)')
-          .eq('is_active', true)
-          .order('title'),
-        PRODUCT_QUERY_TIMEOUT_MS,
-        'Không thể tải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+      const { data, error } = await runProductQuery(
+        (select) => productSelect(select).eq('is_active', true).order('title'),
+        'Kh?ng th? t?i s?n ph?m. K?t n?i Supabase ph?n h?i qu? l?u.',
       );
 
       if (error) {
         throw toUserFacingQueryError('Products', error);
       }
 
-      const products = (data || []) as ProductType[];
+      const products = (data || []) as unknown as ProductType[];
       if (useDemoData) {
         return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
       }
@@ -44,25 +77,19 @@ export const productService = {
 
   async getProductById(id: string): Promise<ProductType | null> {
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('products')
-          .select('*, category:categories(*)')
-          .eq('product_id', id)
-          .eq('is_active', true)
-          .single(),
-        PRODUCT_QUERY_TIMEOUT_MS,
-        'Không thể tải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+      const { data, error } = await runProductQuery(
+        (select) => productSelect(select).eq('product_id', id).eq('is_active', true).single(),
+        'Kh?ng th? t?i chi ti?t s?n ph?m. K?t n?i Supabase ph?n h?i qu? l?u.',
       );
 
       if (error) {
-        if (isNoRowsError(error)) {
+        if (error.code === 'PGRST116') {
           return null;
         }
         throw toUserFacingQueryError('Product', error);
       }
 
-      return (data as ProductType) || (useDemoData ? findSampleProduct(id) : null);
+      return (data as unknown as ProductType) || (useDemoData ? findSampleProduct(id) : null);
     } catch (error) {
       const fallbackProduct = useDemoData ? findSampleProduct(id) : null;
       if (fallbackProduct) return fallbackProduct;
@@ -72,15 +99,9 @@ export const productService = {
 
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('products')
-          .select('*, category:categories(*)')
-          .eq('category_id', categoryId)
-          .eq('is_active', true)
-          .order('title'),
-        PRODUCT_QUERY_TIMEOUT_MS,
-        'Không thể tải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
+      const { data, error } = await runProductQuery(
+        (select) => productSelect(select).eq('category_id', categoryId).eq('is_active', true).order('title'),
+        'Kh?ng th? t?i s?n ph?m theo danh m?c. K?t n?i Supabase ph?n h?i qu? l?u.',
       );
 
       if (error) {
@@ -88,12 +109,9 @@ export const productService = {
       }
 
       const products = useDemoData
-        ? mergeWithSampleProducts((data || []) as ProductType[])
-        : ((data || []) as ProductType[]);
-      const fallbackProducts = products.filter(
-        (product) => product.category_id === categoryId
-      );
-      return fallbackProducts;
+        ? mergeWithSampleProducts((data || []) as unknown as ProductType[])
+        : ((data || []) as unknown as ProductType[]);
+      return products.filter((product) => product.category_id === categoryId);
     } catch (error) {
       if (useDemoData) {
         console.warn(

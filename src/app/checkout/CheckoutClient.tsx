@@ -11,7 +11,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/lib/supabase/client";
 import { addressService } from "@/services/address/addressService";
-import { getActiveCart } from "@/services/cart/cartService";
 import { orderService } from "@/services/order/orderService";
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -87,7 +86,7 @@ export default function CheckoutClient() {
 
   const submitOrder = async () => {
     if (!user) {
-      toast.error("Vui lòng đăng nhập để checkout.");
+      toast.error("Vui lòng đăng nhập để thanh toán.");
       return;
     }
 
@@ -156,10 +155,7 @@ export default function CheckoutClient() {
         console.warn("Order notification failed:", notificationError);
       }
 
-      const activeCart = await getActiveCart();
-      if (activeCart) {
-        await clearCart();
-      }
+      await clearCart();
 
       router.push(
         `/checkout/success?order_id=${order.id}&payment_method=${paymentMethod}&total=${order.total}`,

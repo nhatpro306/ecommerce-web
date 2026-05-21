@@ -13,6 +13,7 @@
   sku?: string;
   category_id?: number;
   variants?: ProductVariantType[];
+  images?: ProductImageType[];
   category?: {
     id?: number;
     name?: string;

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ProductDetailsClient from "./ProductDetailsClient";
 import { productServerService } from "@/services/product/productServerService";
@@ -24,8 +24,9 @@ export async function generateMetadata({
   }
 
   const description =
-    product.description || "Vietnamese local streetwear by RESEY.";
+    product.description || "Streetwear Việt Nam bởi RESEY.";
   const productPath = `/products/${product.slug || product.product_id}`;
+  const productImage = product.images?.find((image) => image.is_primary)?.url || product.image;
 
   return {
     title: product.title,
@@ -34,10 +35,10 @@ export async function generateMetadata({
       title: `${product.title} | RESEY`,
       description,
       url: productPath,
-      images: product.image
+      images: productImage
         ? [
             {
-              url: product.image,
+              url: productImage,
               alt: product.title,
             },
           ]

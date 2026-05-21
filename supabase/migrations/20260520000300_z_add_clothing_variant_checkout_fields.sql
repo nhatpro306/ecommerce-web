@@ -1,4 +1,4 @@
-alter table if exists public.products
+﻿alter table if exists public.products
 add column if not exists slug text,
 add column if not exists material text,
 add column if not exists sizes text[] not null default array[]::text[],
@@ -60,14 +60,14 @@ set
     else title
   end,
   description = case sku
-    when 'SL-TEE-001' then 'Áo thun form rộng cho streetwear hằng ngày.'
-    when 'SL-HOO-002' then 'Hoodie nỉ dày, tối giản, giữ form tốt.'
-    when 'SL-PAN-003' then 'Cargo pants utility fit, thoải mái khi di chuyển.'
-    when 'SL-ACC-004' then 'Nón lưỡi trai basic tone đen/trắng.'
-    when 'SL-TEE-005' then 'Áo thun heavy cotton, chất dày, đứng form.'
-    when 'SL-TEE-006' then 'Graphic tee phiên bản giới hạn.'
-    when 'SL-TEE-007' then 'Boxy tee với form rộng, gọn và dễ phối đồ.'
-    when 'SL-HOO-008' then 'Hoodie signature của RESEY.'
+    when 'SL-TEE-001' then 'ﾃ｛ thun form r盻冢g cho streetwear h蘯ｱng ngﾃy.'
+    when 'SL-HOO-002' then 'Hoodie n盻・dﾃy, t盻訴 gi蘯｣n, gi盻ｯ form t盻奏.'
+    when 'SL-PAN-003' then 'Cargo pants utility fit, tho蘯｣i mﾃ｡i khi di chuy盻ハ.'
+    when 'SL-ACC-004' then 'Nﾃｳn lﾆｰ盻｡i trai basic tone ﾄ粗n/tr蘯ｯng.'
+    when 'SL-TEE-005' then 'ﾃ｛ thun heavy cotton, ch蘯･t dﾃy, ﾄ黛ｻｩng form.'
+    when 'SL-TEE-006' then 'Graphic tee phiﾃｪn b蘯｣n gi盻嬖 h蘯｡n.'
+    when 'SL-TEE-007' then 'Boxy tee v盻嬖 form r盻冢g, g盻肱 vﾃ d盻・ph盻訴 ﾄ黛ｻ・'
+    when 'SL-HOO-008' then 'Hoodie signature c盻ｧa RESEY.'
     else description
   end,
   material = case sku
@@ -90,14 +90,14 @@ set
     else array['Black', 'White', 'Gray']::text[]
   end,
   image = case sku
-    when 'SL-TEE-001' then 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80'
-    when 'SL-HOO-002' then 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80'
-    when 'SL-PAN-003' then 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80'
-    when 'SL-ACC-004' then 'https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80'
-    when 'SL-TEE-005' then 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=900&q=80'
-    when 'SL-TEE-006' then 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=80'
-    when 'SL-TEE-007' then 'https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=900&q=80'
-    when 'SL-HOO-008' then 'https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=900&q=80'
+    when 'SL-TEE-001' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-HOO-002' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-PAN-003' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-ACC-004' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-TEE-005' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-TEE-006' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-TEE-007' then '/images/products/black-tee-fallback.jpg'
+    when 'SL-HOO-008' then '/images/products/black-tee-fallback.jpg'
     else image
   end
 where sku in (
@@ -110,3 +110,4 @@ where sku in (
   'SL-TEE-007',
   'SL-HOO-008'
 );
+

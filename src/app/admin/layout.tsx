@@ -37,14 +37,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="container mx-auto py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-red-600">Access Denied</CardTitle>
+            <CardTitle className="text-red-600">Không có quyền truy cập</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-4">
-              You don&apos;t have admin privileges to access this page.
+              Tài khoản của bạn không có quyền admin để truy cập trang này.
             </p>
-            <Link href="/dashboard">
-              <Button>Go to User Dashboard</Button>
+            <Link href="/profile">
+              <Button>Về trang tài khoản</Button>
             </Link>
           </CardContent>
         </Card>

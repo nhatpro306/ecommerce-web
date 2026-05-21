@@ -29,7 +29,7 @@ import { updateAdminOrderStatusAction } from "./actions";
 const statusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
   { value: "pending", label: "Chờ xác nhận" },
-  { value: "processing", label: "Đã xác nhận" },
+  { value: "processing", label: "Đang đóng gói" },
   { value: "shipped", label: "Đang giao" },
   { value: "delivered", label: "Hoàn thành" },
   { value: "cancelled", label: "Đã hủy" },
@@ -44,7 +44,7 @@ const paymentLabels: Record<string, string> = {
 const mapStatusLabel = (status: string) => {
   switch (status) {
     case "processing":
-      return "Đã xác nhận";
+      return "Đang đóng gói";
     case "shipped":
       return "Đang giao";
     case "delivered":
@@ -72,6 +72,32 @@ const getStatusColor = (status: string) => {
       return "bg-zinc-100 text-zinc-800 hover:bg-zinc-100";
   }
 };
+
+function getPaymentStatusLabel(order: OrderWithDetails) {
+  if (order.payment_method === "bank_transfer") return "Đang kiểm tra";
+  if (order.payment_method === "cod") return "Chưa thanh toán";
+  return "Chưa thanh toán";
+}
+
+function getProductSummary(order: OrderWithDetails) {
+  const items = order.order_items || [];
+  if (items.length === 0) return "Chưa có sản phẩm";
+
+  const firstItem = items[0];
+  const firstTitle =
+    firstItem.product_title_snapshot || firstItem.product?.title || "Sản phẩm";
+  const variantText = [
+    firstItem.color_snapshot || firstItem.selected_color,
+    firstItem.size_snapshot || firstItem.selected_size,
+    firstItem.sku_snapshot,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
+  return `${firstTitle}${variantText ? ` (${variantText})` : ""}${
+    items.length > 1 ? ` +${items.length - 1} sản phẩm` : ""
+  }`;
+}
 
 function getCustomerName(order: OrderWithDetails) {
   return order.customer_name || order.profile?.username || "Khách hàng";
@@ -268,13 +294,15 @@ export default function AdminOrdersPage() {
 
       <div className="overflow-hidden border border-zinc-200">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-left text-sm">
+          <table className="w-full min-w-[1200px] text-left text-sm">
             <thead className="border-b bg-zinc-50 text-xs uppercase tracking-[0.14em] text-zinc-500">
               <tr>
                 <th className="px-4 py-3 font-bold">Đơn hàng</th>
                 <th className="px-4 py-3 font-bold">Khách hàng</th>
+                <th className="px-4 py-3 font-bold">Sản phẩm</th>
                 <th className="px-4 py-3 font-bold">Địa chỉ</th>
                 <th className="px-4 py-3 font-bold">Thanh toán</th>
+                <th className="px-4 py-3 font-bold">TT thanh toán</th>
                 <th className="px-4 py-3 font-bold">Tổng tiền</th>
                 <th className="px-4 py-3 font-bold">Trạng thái</th>
                 <th className="px-4 py-3 text-right font-bold">Thao tác</th>
@@ -299,11 +327,17 @@ export default function AdminOrdersPage() {
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">{getCustomerContact(order)}</p>
                   </td>
+                  <td className="max-w-[260px] px-4 py-4 text-zinc-700">
+                    <p className="line-clamp-2 font-semibold">{getProductSummary(order)}</p>
+                  </td>
                   <td className="max-w-[260px] px-4 py-4 text-zinc-600">
                     <p className="line-clamp-2">{getAddressText(order)}</p>
                   </td>
                   <td className="px-4 py-4 text-zinc-600">
                     {paymentLabels[order.payment_method || ""] || order.payment_method || "Chưa chọn"}
+                  </td>
+                  <td className="px-4 py-4 text-zinc-600">
+                    {getPaymentStatusLabel(order)}
                   </td>
                   <td className="px-4 py-4 font-black">
                     {formatCurrency(order.total)}
@@ -324,7 +358,7 @@ export default function AdminOrdersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending">Chờ xác nhận</SelectItem>
-                          <SelectItem value="processing">Đã xác nhận</SelectItem>
+                          <SelectItem value="processing">Đang đóng gói</SelectItem>
                           <SelectItem value="shipped">Đang giao</SelectItem>
                           <SelectItem value="delivered">Hoàn thành</SelectItem>
                           <SelectItem value="cancelled">Đã hủy</SelectItem>
