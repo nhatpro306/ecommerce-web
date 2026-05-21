@@ -38,11 +38,13 @@ export default function ProductDetailsClient({
     () => product.variants?.filter((variant) => variant.is_active) || [],
     [product.variants],
   );
+
   const availableSizes = activeVariants.length
     ? Array.from(new Set(activeVariants.map((variant) => variant.size)))
     : product.sizes?.length
       ? product.sizes
       : ["S", "M", "L", "XL"];
+
   const availableColors = activeVariants.length
     ? Array.from(
         new Set(
@@ -54,11 +56,13 @@ export default function ProductDetailsClient({
     : product.colors?.length
       ? product.colors
       : ["Black", "White", "Gray"];
+
   const selectedVariant = activeVariants.find(
     (variant) =>
       variant.size === (selectedSize || availableSizes[0]) &&
       variant.color === (selectedColor || availableColors[0]),
   );
+
   const currentStock = selectedVariant?.stock ?? product.stock;
   const currentPrice = selectedVariant?.price_override ?? product.price;
   const productImage = getProductImage(product);
@@ -108,24 +112,30 @@ export default function ProductDetailsClient({
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
             RESEY
           </p>
+
           <h1 className="text-4xl font-black uppercase leading-none md:text-5xl">
             {product.title}
           </h1>
+
           <p className="mt-5 text-2xl font-bold">
             {formatCurrency(currentPrice)}
           </p>
-          <p className="mt-5 leading-7 text-zinc-600">{product.description}</p>
+
+          <p className="mt-5 leading-7 text-zinc-600">
+            {product.description}
+          </p>
 
           <div className="mt-6 border-y border-zinc-200 py-5 text-sm">
             <div className="flex justify-between py-2">
               <span className="font-bold uppercase tracking-[0.14em]">
-                Ch蘯･t li盻㎡
+                Chất liệu
               </span>
               <span>{product.material || "Cotton blend"}</span>
             </div>
+
             <div className="flex justify-between py-2">
               <span className="font-bold uppercase tracking-[0.14em]">
-                T盻渡 kho
+                Tồn kho
               </span>
               <span>{currentStock > 0 ? `Còn ${currentStock}` : "Hết hàng"}</span>
             </div>
@@ -134,8 +144,9 @@ export default function ProductDetailsClient({
           <div className="mt-6 space-y-5">
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Ch盻肱 size
+                Chọn size
               </h2>
+
               <div className="flex flex-wrap gap-2">
                 {availableSizes.map((size) => (
                   <button
@@ -156,8 +167,9 @@ export default function ProductDetailsClient({
 
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Ch盻肱 mﾃu
+                Chọn màu
               </h2>
+
               <div className="flex flex-wrap gap-2">
                 {availableColors.map((color) => (
                   <button
@@ -178,8 +190,9 @@ export default function ProductDetailsClient({
 
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                S盻・lﾆｰ盻｣ng
+                Số lượng
               </h2>
+
               <div className="inline-flex border border-zinc-300">
                 <button
                   type="button"
@@ -188,9 +201,11 @@ export default function ProductDetailsClient({
                 >
                   <Minus className="h-4 w-4" />
                 </button>
+
                 <span className="flex h-12 w-14 items-center justify-center border-x border-zinc-300 text-sm font-bold">
                   {quantity}
                 </span>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -212,11 +227,12 @@ export default function ProductDetailsClient({
               {isAddedToCart ? (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  ﾄ静｣ thﾃｪm vﾃo gi盻・                </>
+                  Đã thêm vào giỏ
+                </>
               ) : (
                 <>
                   <ShoppingCart className="mr-2 h-4 w-4" />
-                  Thﾃｪm vﾃo gi盻・- {formatCurrency(currentPrice * quantity)}
+                  Thêm vào giỏ - {formatCurrency(currentPrice * quantity)}
                 </>
               )}
             </Button>
@@ -224,15 +240,17 @@ export default function ProductDetailsClient({
 
           <div className="mt-8 grid gap-3 text-sm sm:grid-cols-3">
             {[
-              [Truck, "Giao nhanh", "N盻冓 thﾃnh 1-2 ngﾃy"],
-              [Shield, "Thanh toﾃ｡n", "COD / chuy盻ハ kho蘯｣n"],
-              [RotateCcw, "ﾄ雪ｻ品 tr蘯｣", "Trong vﾃｲng 7 ngﾃy"],
+              [Truck, "Giao nhanh", "Nội thành 1-2 ngày"],
+              [Shield, "Thanh toán", "COD / chuyển khoản"],
+              [RotateCcw, "Đổi trả", "Trong vòng 7 ngày"],
             ].map(([Icon, title, description]) => (
               <div key={String(title)} className="border border-zinc-200 p-4">
                 <Icon className="mb-3 h-5 w-5" />
+
                 <p className="font-bold uppercase tracking-[0.12em]">
                   {String(title)}
                 </p>
+
                 <p className="mt-1 text-xs text-zinc-500">
                   {String(description)}
                 </p>
@@ -246,38 +264,48 @@ export default function ProductDetailsClient({
         <div className="grid gap-6 border-y border-zinc-200 py-8 md:grid-cols-2">
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              Mﾃｴ t蘯｣ s蘯｣n ph蘯ｩm
+              Mô tả sản phẩm
             </h2>
-            <p className="mt-4 leading-7 text-zinc-600">{product.description}</p>
+
+            <p className="mt-4 leading-7 text-zinc-600">
+              {product.description}
+            </p>
           </div>
+
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              B蘯｣ng size
+              Bảng size
             </h2>
+
             <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
               <div className="font-bold">Size</div>
-              <div className="font-bold">Ng盻ｱc</div>
-              <div className="font-bold">Dﾃi ﾃ｡o</div>
+              <div className="font-bold">Ngực</div>
+              <div className="font-bold">Dài áo</div>
               <div className="font-bold">Vai</div>
+
               <div>S</div>
               <div>52</div>
               <div>68</div>
               <div>48</div>
+
               <div>M</div>
               <div>54</div>
               <div>70</div>
               <div>50</div>
+
               <div>L</div>
               <div>56</div>
               <div>72</div>
               <div>52</div>
+
               <div>XL</div>
               <div>58</div>
               <div>74</div>
               <div>54</div>
             </div>
+
             <p className="mt-3 text-xs text-zinc-500">
-              ﾄ脆｡n v盻・ cm, sai s盻・1-2cm.
+              Đơn vị: cm, sai số 1-2cm.
             </p>
           </div>
         </div>
@@ -285,8 +313,11 @@ export default function ProductDetailsClient({
 
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 border-b border-zinc-200 pb-4">
-          <h2 className="text-2xl font-black uppercase">S蘯｣n ph蘯ｩm liﾃｪn quan</h2>
+          <h2 className="text-2xl font-black uppercase">
+            Sản phẩm liên quan
+          </h2>
         </div>
+
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
           {relatedProducts.map((item) => (
             <ProductCard key={item.product_id} product={item} />
@@ -296,5 +327,3 @@ export default function ProductDetailsClient({
     </div>
   );
 }
-
-
