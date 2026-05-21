@@ -183,10 +183,11 @@ npm run build
 - Product SEO fields
 - Print/export order layout
 - Generate Supabase TypeScript types from the live project
-- Remove unused Polar legacy code after confirming it is no longer needed
+- Add payment status field for bank transfer confirmation
 
 ## License
 
 Educational and portfolio project.
+
 
 
