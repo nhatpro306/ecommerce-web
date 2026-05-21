@@ -60,7 +60,7 @@ export const productServerService = {
       const supabase = await createServerSupabase();
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(*), variants:product_variants(*)')
+        .select('*, category:categories(*)')
         .or(`slug.eq.${slug},product_id.eq.${slug}`)
         .eq('is_active', true)
         .single();
