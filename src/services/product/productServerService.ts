@@ -55,27 +55,54 @@ export const productServerService = {
     }
   },
 
-  async getProductBySlug(slug: string): Promise<ProductType | null> {
-    try {
-      const supabase = await createServerSupabase();
-      const { data, error } = await supabase
+async getProductBySlug(slug: string): Promise<ProductType | null> {
+  try {
+    const supabase = await createServerSupabase();
+
+    // 1. Search by slug first
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, category:categories(*)')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching product by slug:', error);
+      return useDemoData ? findSampleProduct(slug) : null;
+    }
+
+    if (data) {
+      return data as ProductType;
+    }
+
+    // 2. Fallback: if URL param is numeric, search by product_id
+    const numericId = Number(slug);
+
+    if (!Number.isNaN(numericId)) {
+      const { data: productById, error: idError } = await supabase
         .from('products')
         .select('*, category:categories(*)')
-        .or(`slug.eq.${slug},product_id.eq.${slug}`)
+        .eq('product_id', numericId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching product by slug:', error);
+      if (idError) {
+        console.error('Error fetching product by numeric id:', idError);
         return useDemoData ? findSampleProduct(slug) : null;
       }
 
-      return (data as ProductType) || (useDemoData ? findSampleProduct(slug) : null);
-    } catch (error) {
-      console.error('Error in getProductBySlug:', error);
-      return useDemoData ? findSampleProduct(slug) : null;
+      return (productById as ProductType) || (useDemoData ? findSampleProduct(slug) : null);
     }
-  },
+
+    return useDemoData ? findSampleProduct(slug) : null;
+  } catch (error) {
+    console.error('Error in getProductBySlug:', error);
+    return useDemoData ? findSampleProduct(slug) : null;
+  }
+} 
+
+  ,
 
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
