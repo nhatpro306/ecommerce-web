@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { ShoppingCart, User, LogIn, Search } from "lucide-react";
@@ -10,13 +10,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 const navItems = [
-  { href: "/products?sort=latest", label: "new arrivals" },
-  { href: "/products?sort=price-desc", label: "best-selling items" },
-  { href: "/products?category=T-Shirts", label: "tops" },
-  { href: "/products?category=Pants", label: "bottoms" },
-  { href: "/products?category=Hoodies", label: "outerwear" },
-  { href: "/products?category=Accessories", label: "accessories" },
-  { href: "/products", label: "sale" },
+  { href: "/products?sort=latest", label: "Hàng mới" },
+  { href: "/products?sort=price-desc", label: "Bán chạy" },
+  { href: "/products?category=T-Shirts", label: "Áo" },
+  { href: "/products?category=Pants", label: "Quần" },
+  { href: "/products?category=Hoodies", label: "Áo khoác" },
+  { href: "/products?category=Accessories", label: "Phụ kiện" },
+  { href: "/products", label: "Khuyến mãi" },
 ];
 
 export function Navbar() {
@@ -46,7 +46,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center justify-center">
           <Image
             src="/brand/resey-logo.jpg"
-            alt="RESEY logo"
+            alt="Logo RESEY"
             width={92}
             height={56}
             priority
@@ -74,7 +74,7 @@ export function Navbar() {
             onClick={() => router.push("/products")}
           >
             <Search className="h-[1.1rem] w-[1.1rem]" />
-            <span className="sr-only">Search products</span>
+            <span className="sr-only">Tìm sản phẩm</span>
           </Button>
 
           <Button
@@ -91,7 +91,7 @@ export function Navbar() {
                 </span>
               )}
             </div>
-            <span className="sr-only">Cart</span>
+            <span className="sr-only">Giỏ hàng</span>
           </Button>
 
           {user ? (
@@ -102,7 +102,7 @@ export function Navbar() {
               onClick={() => router.push("/profile")}
             >
               <User className="h-[1.1rem] w-[1.1rem]" />
-              <span className="sr-only">Profile</span>
+              <span className="sr-only">Tài khoản</span>
             </Button>
           ) : (
             <Button
@@ -112,7 +112,7 @@ export function Navbar() {
               onClick={() => router.push("/signin")}
             >
               <LogIn className="h-[1.1rem] w-[1.1rem]" />
-              <span className="sr-only">Sign in</span>
+              <span className="sr-only">Đăng nhập</span>
             </Button>
           )}
         </div>

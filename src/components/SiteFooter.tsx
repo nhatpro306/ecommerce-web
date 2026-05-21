@@ -1,21 +1,21 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 
-const policies: string[] = [
-  "Hướng dẫn mua hàng",
-  "Chính sách đổi trả",
-  "Chính sách giao nhận",
-  "Hướng dẫn bảo quản sản phẩm",
+const policies: { label: string; href: string }[] = [
+  { label: "Hướng dẫn mua hàng", href: "/payment-guide" },
+  { label: "Chính sách đổi trả", href: "/return-policy" },
+  { label: "Chính sách giao nhận", href: "/shipping-policy" },
+  { label: "Hướng dẫn chọn size", href: "/size-guide" },
 ];
 
 const benefits: [string, string][] = [
-  ["Giao hàng miễn phí", "với đơn hàng đạt điều kiện"],
-  ["Hỗ trợ 24/7", "online / offline"],
-  ["Đổi trả linh hoạt", "trong vòng 7 ngày"],
-  ["Đặt hàng trực tuyến", "COD / chuyển khoản"],
+  ["Giao hàng toàn quốc", "COD / chuyển khoản"],
+  ["Hỗ trợ nhanh", "qua email và mạng xã hội"],
+  ["Đổi trả linh hoạt", "theo chính sách RESEY"],
+  ["Local brand Việt", "thiết kế cho nhịp sống phố"],
 ];
 
-const stores: string[] = ["Online store only"];
+const stores: string[] = ["Cửa hàng online chính thức"];
 
 export function SiteFooter() {
   return (
@@ -36,15 +36,15 @@ export function SiteFooter() {
           <div>
             <Image
               src="/brand/resey-logo.jpg"
-              alt="RESEY logo"
+              alt="Logo RESEY"
               width={130}
               height={90}
               className="h-20 w-auto object-contain"
             />
 
             <p className="mt-4 max-w-md text-sm leading-6 text-zinc-600">
-              Vietnamese streetwear built for daily movement. Minimal
-              silhouettes, confident graphics, and practical fits for the city.
+              RESEY là local brand streetwear Việt Nam dành cho nhịp sống hằng ngày:
+              tối giản, dễ phối, form thoải mái và đủ cá tính để tạo dấu ấn riêng.
             </p>
 
             <div className="mt-4 space-y-1 text-sm text-zinc-600">
@@ -60,12 +60,12 @@ export function SiteFooter() {
 
             <ul className="mt-4 space-y-2 text-sm text-zinc-600">
               {policies.map((policy) => (
-                <li key={policy}>
+                <li key={policy.href}>
                   <Link
-                    href="/products"
+                    href={policy.href}
                     className="transition hover:text-zinc-950"
                   >
-                    {policy}
+                    {policy.label}
                   </Link>
                 </li>
               ))}

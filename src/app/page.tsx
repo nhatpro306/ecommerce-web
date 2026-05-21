@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -8,10 +8,10 @@ import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/queries";
 
 const categories = [
-  { label: "TẤT CẢ SẢN PHẨM", href: "/products" },
-  { label: "TOPS", href: "/products?category=T-Shirts" },
-  { label: "BOTTOMS", href: "/products?category=Pants" },
-  { label: "ACCESSORIES", href: "/products?category=Accessories" },
+  { label: "Tất cả sản phẩm", href: "/products" },
+  { label: "Áo", href: "/products?category=T-Shirts" },
+  { label: "Quần", href: "/products?category=Pants" },
+  { label: "Phụ kiện", href: "/products?category=Accessories" },
 ];
 
 export default function Home() {
@@ -24,21 +24,21 @@ export default function Home() {
         <div className="flex items-center bg-zinc-950 px-6 py-16 text-white md:px-12">
           <div className="max-w-xl">
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-zinc-400">
-              RESEY / NEW DROP
+              RESEY / Bộ sưu tập mới
             </p>
             <h1 className="text-5xl font-black uppercase leading-none tracking-tight md:text-7xl">
-              Young City.
+              Phong cách phố.
               <br />
-              New Uniform.
+              Dấu ấn riêng.
             </h1>
             <p className="mt-6 max-w-md text-sm leading-7 text-zinc-300">
-              RESEY builds modern streetwear for everyday movement. Clean
-              silhouettes, strong graphics, and practical fits for city life.
+              RESEY mang đến streetwear hiện đại cho nhịp sống hằng ngày: form dễ mặc,
+              chất liệu bền, màu sắc cá tính và tinh thần tự tin của thế hệ trẻ.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/products?sort=latest">
                 <Button className="h-12 cursor-pointer rounded-none bg-white px-7 text-xs font-bold uppercase tracking-[0.18em] text-zinc-950 hover:bg-zinc-200">
-                  Shop New Drop
+                  Mua hàng mới
                 </Button>
               </Link>
               <Link href="/products">
@@ -46,7 +46,7 @@ export default function Home() {
                   variant="outline"
                   className="h-12 cursor-pointer rounded-none border-white px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-white hover:text-zinc-950"
                 >
-                  View Collection
+                  Xem bộ sưu tập
                 </Button>
               </Link>
             </div>
@@ -56,7 +56,7 @@ export default function Home() {
         <div className="relative min-h-[420px]">
           <Image
             src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=1400&q=80"
-            alt="RESEY streetwear campaign"
+            alt="Chiến dịch streetwear RESEY"
             fill
             priority
             className="object-cover"
@@ -83,10 +83,10 @@ export default function Home() {
         <div className="mb-8 flex items-end justify-between border-b border-zinc-200 pb-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-              New Arrivals
+              Hàng mới về
             </p>
             <h2 className="mt-2 text-2xl font-black uppercase">
-              Tất cả sản phẩm
+              Sản phẩm nổi bật
             </h2>
           </div>
           <Link
@@ -112,7 +112,7 @@ export default function Home() {
         <div className="relative min-h-[360px] overflow-hidden bg-zinc-100">
           <Image
             src="https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=1200&q=80"
-            alt="RESEY streetwear detail"
+            alt="Chi tiết sản phẩm RESEY"
             fill
             className="object-cover"
           />
@@ -120,15 +120,15 @@ export default function Home() {
         <div className="flex items-center border border-zinc-200 p-8 md:p-12">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-              Thương hiệu
+              Câu chuyện thương hiệu
             </p>
             <h2 className="mt-3 text-3xl font-black uppercase">
-              RESEY identity, modern streetwear.
+              RESEY: bản sắc đường phố, tinh thần hiện đại.
             </h2>
             <p className="mt-5 leading-7 text-zinc-600">
-              RESEY lấy cảm hứng từ nhịp sống thành phố: tối giản, thực dụng
-              và tự tin. Sản phẩm tập trung vào form mặc hằng ngày, chất liệu
-              bền và tinh thần streetwear hiện đại.
+              RESEY lấy cảm hứng từ nhịp sống thành phố và văn hóa local brand Việt Nam.
+              Mỗi sản phẩm tập trung vào form mặc hằng ngày, chất liệu bền và chi tiết đủ
+              nổi bật để bạn tự tin xuất hiện ở bất kỳ đâu.
             </p>
           </div>
         </div>
