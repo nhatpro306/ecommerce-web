@@ -1,4 +1,4 @@
-﻿import { createServerSupabase } from '@/lib/supabase/server';
+﻿import { createPublicServerSupabase } from '@/lib/supabase/public-server';
 import { ProductType } from '@/types';
 import {
   findSampleProduct,
@@ -6,17 +6,24 @@ import {
   sampleProducts,
 } from '@/utils/sampleProducts';
 import { useDemoData } from '@/utils/demoData';
+import { withServerTimeout } from '@/utils/withTimeout';
+
+const SERVER_PRODUCT_QUERY_TIMEOUT_MS = 8000;
 
 export const productServerService = {
   async getProducts(): Promise<ProductType[]> {
     try {
-      const supabase = await createServerSupabase();
+      const supabase = createPublicServerSupabase();
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('is_active', true)
-        .order('title');
+      const { data, error } = await withServerTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('is_active', true)
+          .order('title'),
+        SERVER_PRODUCT_QUERY_TIMEOUT_MS,
+        'Server product query timed out',
+      );
 
       if (error) {
         console.error('Error fetching products:', error);
@@ -38,14 +45,18 @@ export const productServerService = {
 
   async getProductById(id: string): Promise<ProductType | null> {
     try {
-      const supabase = await createServerSupabase();
+      const supabase = createPublicServerSupabase();
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('product_id', id)
-        .eq('is_active', true)
-        .maybeSingle();
+      const { data, error } = await withServerTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('product_id', id)
+          .eq('is_active', true)
+          .maybeSingle(),
+        SERVER_PRODUCT_QUERY_TIMEOUT_MS,
+        'Server product detail query timed out',
+      );
 
       if (error) {
         console.error('Error fetching product:', error);
@@ -61,15 +72,19 @@ export const productServerService = {
 
   async getProductBySlug(slug: string): Promise<ProductType | null> {
     try {
-      const supabase = await createServerSupabase();
+      const supabase = createPublicServerSupabase();
 
       // Search by slug first.
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .maybeSingle();
+      const { data, error } = await withServerTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('slug', slug)
+          .eq('is_active', true)
+          .maybeSingle(),
+        SERVER_PRODUCT_QUERY_TIMEOUT_MS,
+        'Server product slug query timed out',
+      );
 
       if (error) {
         console.error('Error fetching product by slug:', error);
@@ -84,12 +99,16 @@ export const productServerService = {
       const numericId = Number(slug);
 
       if (!Number.isNaN(numericId)) {
-        const { data: productById, error: idError } = await supabase
-          .from('products')
-          .select('*, category:categories(*)')
-          .eq('product_id', numericId)
-          .eq('is_active', true)
-          .maybeSingle();
+        const { data: productById, error: idError } = await withServerTimeout(
+          supabase
+            .from('products')
+            .select('*, category:categories(*)')
+            .eq('product_id', numericId)
+            .eq('is_active', true)
+            .maybeSingle(),
+          SERVER_PRODUCT_QUERY_TIMEOUT_MS,
+          'Server product id query timed out',
+        );
 
         if (idError) {
           console.error('Error fetching product by numeric id:', idError);
@@ -108,14 +127,18 @@ export const productServerService = {
 
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
-      const supabase = await createServerSupabase();
+      const supabase = createPublicServerSupabase();
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('category_id', categoryId)
-        .eq('is_active', true)
-        .order('title');
+      const { data, error } = await withServerTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('category_id', categoryId)
+          .eq('is_active', true)
+          .order('title'),
+        SERVER_PRODUCT_QUERY_TIMEOUT_MS,
+        'Server category product query timed out',
+      );
 
       if (error) {
         console.error('Error fetching products by category:', error);
@@ -138,14 +161,18 @@ export const productServerService = {
 
   async searchProducts(query: string): Promise<ProductType[]> {
     try {
-      const supabase = await createServerSupabase();
+      const supabase = createPublicServerSupabase();
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('is_active', true)
-        .ilike('title', `%${query}%`)
-        .order('title');
+      const { data, error } = await withServerTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('is_active', true)
+          .ilike('title', `%${query}%`)
+          .order('title'),
+        SERVER_PRODUCT_QUERY_TIMEOUT_MS,
+        'Server product search query timed out',
+      );
 
       if (error) {
         console.error('Error searching products:', error);
@@ -179,3 +206,4 @@ export const productServerService = {
     }
   },
 };
+

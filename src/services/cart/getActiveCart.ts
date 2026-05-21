@@ -19,14 +19,14 @@ export async function getActiveCart() {
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching cart:', error);
-      toast.error('Failed to fetch cart');
+      toast.error('Khong the tai gio hang');
       return null;
     }
 
     return data as CartType | null;
   } catch (error) {
     console.error('Error in getActiveCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return null;
   }
 }

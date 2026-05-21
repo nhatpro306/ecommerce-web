@@ -10,14 +10,14 @@ export async function clearCart(cartId: number) {
 
     if (error) {
       console.error('Error clearing cart:', error);
-      toast.error('Failed to clear cart');
+      toast.error('Khong the xoa gio hang');
       return false;
     }
 
     return true;
   } catch (error) {
     console.error('Error in clearCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return false;
   }
 }

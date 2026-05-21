@@ -1,5 +1,7 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
+import { createPublicServerSupabase } from "@/lib/supabase/public-server";
+import { withServerTimeout } from "@/utils/withTimeout";
 
 const policies: { label: string; href: string }[] = [
   { label: "Về RESEY", href: "/about" },
@@ -20,7 +22,35 @@ const benefits: [string, string][] = [
 
 const stores: string[] = ["Cửa hàng online chính thức"];
 
-export function SiteFooter() {
+async function getPublicStoreContact() {
+  try {
+    const supabase = createPublicServerSupabase();
+    const { data } = await withServerTimeout(
+      supabase
+        .from("store_settings")
+        .select("contact_email, contact_phone")
+        .eq("id", 1)
+        .maybeSingle(),
+      3000,
+      "Footer store settings query timed out",
+    );
+
+    return {
+      email: data?.contact_email?.trim() || "support@resey.uk",
+      phone: data?.contact_phone?.trim() || "Đang cập nhật",
+    };
+  } catch (error) {
+    void error;
+    return {
+      email: "support@resey.uk",
+      phone: "Đang cập nhật",
+    };
+  }
+}
+
+export async function SiteFooter() {
+  const contact = await getPublicStoreContact();
+
   return (
     <footer className="border-t border-zinc-200 bg-white">
       <section className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-8 md:grid-cols-4">
@@ -51,8 +81,8 @@ export function SiteFooter() {
             </p>
 
             <div className="mt-4 space-y-1 text-sm text-zinc-600">
-              <p>Hotline: +81 90-xxxx-xxxx</p>
-              <p>Email: supermanzero30@gmail.com</p>
+              <p>Hotline: {contact.phone}</p>
+              <p>Email: {contact.email}</p>
             </div>
           </div>
 
@@ -64,10 +94,7 @@ export function SiteFooter() {
             <ul className="mt-4 space-y-2 text-sm text-zinc-600">
               {policies.map((policy) => (
                 <li key={policy.href}>
-                  <Link
-                    href={policy.href}
-                    className="transition hover:text-zinc-950"
-                  >
+                  <Link href={policy.href} className="transition hover:text-zinc-950">
                     {policy.label}
                   </Link>
                 </li>

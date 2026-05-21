@@ -16,14 +16,14 @@ export async function findCartItemByProductId(
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error finding cart item:', error);
-      toast.error('Failed to find cart item');
+      toast.error('Khong the tim san pham trong gio');
       return null;
     }
 
     return data as CartItemType | null;
   } catch (error) {
     console.error('Error in findCartItemByProductId:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return null;
   }
 }

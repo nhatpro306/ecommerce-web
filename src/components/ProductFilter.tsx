@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "motion/react";
 import { Filter, SortAsc } from "lucide-react";
@@ -95,10 +95,7 @@ export function ProductFilter({
           <Select
             value={filters.stockFilter}
             onValueChange={(value) =>
-              updateFilter(
-                "stockFilter",
-                value as FilterOptions["stockFilter"],
-              )
+              updateFilter("stockFilter", value as FilterOptions["stockFilter"])
             }
           >
             <SelectTrigger className="w-full">
@@ -138,9 +135,7 @@ export function ProductFilter({
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-muted-foreground text-xs font-medium">
-            Size
-          </label>
+          <label className="text-muted-foreground text-xs font-medium">Size</label>
           <Select
             value={filters.sizeFilter}
             onValueChange={(value) => {
@@ -161,9 +156,7 @@ export function ProductFilter({
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-muted-foreground text-xs font-medium">
-            Màu
-          </label>
+          <label className="text-muted-foreground text-xs font-medium">Màu</label>
           <Select
             value={filters.colorFilter}
             onValueChange={(value) => {

@@ -10,14 +10,14 @@ export async function removeCartItem(cartItemId: number) {
 
     if (error) {
       console.error('Error removing cart item:', error);
-      toast.error('Failed to remove item');
+      toast.error('Khong the xoa san pham khoi gio');
       return false;
     }
 
     return true;
   } catch (error) {
     console.error('Error in removeCartItem:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return false;
   }
 }

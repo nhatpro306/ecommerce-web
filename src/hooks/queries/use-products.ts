@@ -103,11 +103,13 @@ const handleProductError = (error: unknown): Error => {
   if (error instanceof Error) {
     return error;
   }
-  return new Error('Failed to fetch products');
+  return new Error('Không thể tải sản phẩm');
 };
 
 // Get all products with improved caching and error handling
-export function useProducts(options?: UseQueryOptions<ProductType[]>) {
+export function useProducts(
+  options?: Omit<UseQueryOptions<ProductType[]>, 'queryKey' | 'queryFn'>,
+) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: 'default',
@@ -137,9 +139,9 @@ export function useProducts(options?: UseQueryOptions<ProductType[]>) {
       ) {
         return false;
       }
-      return failureCount < 2;
+      return failureCount < 1;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: 1000,
     throwOnError: false, // Don't throw errors, handle them in component
     ...options,
   });
@@ -218,7 +220,7 @@ export function useProduct(
       ) {
         return false;
       }
-      return failureCount < 2;
+      return failureCount < 1;
     },
     throwOnError: false,
     ...options,
@@ -249,7 +251,7 @@ export function useProductsByCategory(
       ) {
         return false;
       }
-      return failureCount < 2;
+      return failureCount < 1;
     },
     throwOnError: false,
     ...options,
@@ -291,9 +293,9 @@ export function useFilteredProducts(
       ) {
         return false;
       }
-      return failureCount < 2;
+      return failureCount < 1;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: 1000,
     throwOnError: false,
   });
 

@@ -1,14 +1,25 @@
-import { Suspense } from "react";
+﻿import Image from "next/image";
 import ClientProducts from "@/components/ClientProducts";
-import Image from "next/image";
+import { productServerService } from "@/services/product/productServerService";
 
-export default function ProductsPage() {
+type ProductsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const params = (await searchParams) || {};
+  const products = await productServerService.getProducts();
+
   return (
     <div className="bg-white text-zinc-950">
       <section className="relative overflow-hidden">
         <Image
           src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1800&q=80"
-          alt="RESEY streetwear collection"
+          alt="Bộ sưu tập streetwear RESEY"
           width={1800}
           height={720}
           className="h-[320px] w-full object-cover md:h-[460px]"
@@ -21,11 +32,10 @@ export default function ProductsPage() {
               NEW DROP / RESEY
             </p>
             <h1 className="max-w-3xl text-4xl font-black uppercase leading-none md:text-6xl">
-              Streetwear collection
+              Bộ sưu tập streetwear
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-200">
-              RESEY identity, modern streetwear. Thiết kế cho chuyển động hằng
-              ngày.
+              Bản sắc RESEY, streetwear hiện đại. Thiết kế cho chuyển động hằng ngày.
             </p>
           </div>
         </div>
@@ -40,11 +50,15 @@ export default function ProductsPage() {
             Tất cả sản phẩm
           </h2>
         </div>
-        <Suspense
-          fallback={<div className="py-8 text-sm">Đang tải bộ lọc...</div>}
-        >
-          <ClientProducts />
-        </Suspense>
+        <ClientProducts
+          initialProducts={products}
+          initialQuery={firstParam(params.q) || ""}
+          initialCategory={firstParam(params.category) || "all"}
+          initialSize={firstParam(params.size) || "all"}
+          initialColor={firstParam(params.color) || "all"}
+          initialSort={firstParam(params.sort) || "default"}
+          initialStock={firstParam(params.stock) || "all"}
+        />
       </section>
     </div>
   );

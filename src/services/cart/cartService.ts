@@ -10,6 +10,16 @@ export interface CartVariantOptions {
   variantInfo?: Record<string, unknown>;
 }
 
+function isMissingVariantIdColumn(error: { message?: string; code?: string }) {
+  const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+  return (
+    message.includes("variant_id") &&
+    (message.includes("schema cache") ||
+      message.includes("column") ||
+      message.includes("could not find"))
+  );
+}
+
 // Get the active cart for the current user
 export async function getActiveCart() {
   try {
@@ -23,18 +33,18 @@ export async function getActiveCart() {
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error fetching cart:', error);
-      toast.error('Failed to fetch cart');
+      toast.error('Không thể tải giỏ hàng');
       return null;
     }
 
     return data as CartType | null;
   } catch (error) {
     console.error('Error in getActiveCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi tải giỏ hàng');
     return null;
   }
 }
@@ -44,7 +54,7 @@ export async function createCart() {
   try {
     const user = await getClientUser();
     if (!user) {
-      throw new Error('User not authenticated');
+      throw new Error('Bạn cần đăng nhập để dùng giỏ hàng');
     }
 
     const { data, error } = await supabase
@@ -58,14 +68,14 @@ export async function createCart() {
 
     if (error) {
       console.error('Error creating cart:', error);
-      toast.error('Failed to create cart');
+      toast.error('Không thể tạo giỏ hàng');
       return null;
     }
 
     return data as CartType;
   } catch (error) {
     console.error('Error in createCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi tạo giỏ hàng');
     return null;
   }
 }
@@ -94,7 +104,7 @@ export async function getCartItems(cartId: number) {
 
     if (error) {
       console.error('Error fetching cart items:', error);
-      toast.error('Failed to fetch cart items');
+      toast.error('Không thể tải sản phẩm trong giỏ');
       return [];
     }
 
@@ -119,7 +129,7 @@ export async function getCartItems(cartId: number) {
     ) as (CartItemType & { product: ProductType })[];
   } catch (error) {
     console.error('Error in getCartItems:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi tải sản phẩm trong giỏ');
     return [];
   }
 }
@@ -155,7 +165,7 @@ export async function addItemToCart(
 
     if (fetchError) {
       console.error('Error checking existing cart item:', fetchError);
-      toast.error('Failed to check cart');
+      toast.error('Không thể kiểm tra giỏ hàng');
       return null;
     }
 
@@ -173,31 +183,54 @@ export async function addItemToCart(
 
       if (error) {
         console.error('Error updating cart item:', error);
-        toast.error('Failed to update cart');
+        toast.error('Không thể cập nhật giỏ hàng');
         return null;
       }
 
       return data as CartItemType;
     } else {
       // Insert new item
+      const insertPayload = {
+        cart_id: cartId,
+        product_id: productId,
+        variant_id: options.variantId ?? null,
+        quantity,
+        price,
+        selected_size: selectedSize,
+        selected_color: selectedColor,
+        variant_info: options.variantInfo ?? {},
+      };
+
       const { data, error } = await supabase
         .from('cart_items')
-        .insert({
-          cart_id: cartId,
-          product_id: productId,
-          variant_id: options.variantId ?? null,
-          quantity,
-          price,
-          selected_size: selectedSize,
-          selected_color: selectedColor,
-          variant_info: options.variantInfo ?? {},
-        })
+        .insert(insertPayload)
         .select('*')
         .single();
 
       if (error) {
+        if (isMissingVariantIdColumn(error)) {
+          // Compatibility path for databases that have not applied the
+          // variant_id cart migration yet. Size/color are still persisted.
+          const { variant_id: _variantId, ...legacyPayload } = insertPayload;
+          void _variantId;
+
+          const { data: legacyData, error: legacyError } = await supabase
+            .from('cart_items')
+            .insert(legacyPayload)
+            .select('*')
+            .single();
+
+          if (!legacyError) {
+            return legacyData as CartItemType;
+          }
+
+          console.error('Error adding legacy cart item:', legacyError);
+          toast.error('Không thể thêm sản phẩm vào giỏ. Vui lòng kiểm tra cấu hình database.');
+          return null;
+        }
+
         console.error('Error adding item to cart:', error);
-        toast.error('Failed to add item to cart');
+        toast.error('Không thể thêm sản phẩm vào giỏ');
         return null;
       }
 
@@ -205,7 +238,7 @@ export async function addItemToCart(
     }
   } catch (error) {
     console.error('Error in addItemToCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi thêm sản phẩm vào giỏ');
     return null;
   }
 }
@@ -230,14 +263,14 @@ export async function updateCartItemQuantity(
 
     if (error) {
       console.error('Error updating cart item quantity:', error);
-      toast.error('Failed to update quantity');
+      toast.error('Không thể cập nhật số lượng');
       return null;
     }
 
     return data as CartItemType;
   } catch (error) {
     console.error('Error in updateCartItemQuantity:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi cập nhật số lượng');
     return null;
   }
 }
@@ -252,14 +285,14 @@ export async function removeCartItem(cartItemId: number) {
 
     if (error) {
       console.error('Error removing cart item:', error);
-      toast.error('Failed to remove item');
+      toast.error('Không thể xóa sản phẩm khỏi giỏ');
       return false;
     }
 
     return true;
   } catch (error) {
     console.error('Error in removeCartItem:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi xóa sản phẩm khỏi giỏ');
     return false;
   }
 }
@@ -274,14 +307,14 @@ export async function clearCart(cartId: number) {
 
     if (error) {
       console.error('Error clearing cart:', error);
-      toast.error('Failed to clear cart');
+      toast.error('Không thể xóa giỏ hàng');
       return false;
     }
 
     return true;
   } catch (error) {
     console.error('Error in clearCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi xóa giỏ hàng');
     return false;
   }
 }
@@ -297,18 +330,18 @@ export async function findCartItemByProductId(
       .select('*')
       .eq('cart_id', cartId)
       .eq('product_id', productId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error finding cart item:', error);
-      toast.error('Failed to find cart item');
+      toast.error('Không thể tìm sản phẩm trong giỏ');
       return null;
     }
 
     return data as CartItemType | null;
   } catch (error) {
     console.error('Error in findCartItemByProductId:', error);
-    toast.error('Something went wrong');
+    toast.error('Có lỗi xảy ra khi tìm sản phẩm trong giỏ');
     return null;
   }
 }

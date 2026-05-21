@@ -18,7 +18,7 @@ export async function addItemToCart(
 
     if (fetchError) {
       console.error('Error checking existing cart item:', fetchError);
-      toast.error('Failed to check cart');
+      toast.error('Khong the kiem tra gio hang');
       return null;
     }
 
@@ -36,7 +36,7 @@ export async function addItemToCart(
 
       if (error) {
         console.error('Error updating cart item:', error);
-        toast.error('Failed to update cart');
+        toast.error('Khong the cap nhat gio hang');
         return null;
       }
 
@@ -56,7 +56,7 @@ export async function addItemToCart(
 
       if (error) {
         console.error('Error adding item to cart:', error);
-        toast.error('Failed to add item to cart');
+        toast.error('Khong the them san pham vao gio');
         return null;
       }
 
@@ -64,7 +64,7 @@ export async function addItemToCart(
     }
   } catch (error) {
     console.error('Error in addItemToCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return null;
   }
 }

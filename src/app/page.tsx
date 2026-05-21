@@ -1,11 +1,8 @@
-﻿"use client";
-
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
-import { useProducts } from "@/hooks/queries";
+import { productServerService } from "@/services/product/productServerService";
 
 const categories = [
   { label: "Tất cả sản phẩm", href: "/products" },
@@ -14,9 +11,9 @@ const categories = [
   { label: "Phụ kiện", href: "/products?category=Accessories" },
 ];
 
-export default function Home() {
-  const { data: products = [], isLoading } = useProducts();
-  const featuredProducts = useMemo(() => products.slice(0, 8), [products]);
+export default async function Home() {
+  const products = await productServerService.getProducts();
+  const featuredProducts = products.slice(0, 8);
 
   return (
     <div className="min-h-screen bg-white text-zinc-950">
@@ -97,13 +94,15 @@ export default function Home() {
           </Link>
         </div>
 
-        {isLoading ? (
-          <p className="text-sm text-zinc-500">Đang tải sản phẩm...</p>
-        ) : (
+        {featuredProducts.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard key={product.product_id} product={product} />
             ))}
+          </div>
+        ) : (
+          <div className="border border-dashed border-zinc-300 p-8 text-sm text-zinc-500">
+            Hi?n ch?a c? s?n ph?m n?i b?t. Vui l?ng quay l?i sau ho?c v?o trang s?n ph?m ?? ki?m tra b? s?u t?p m?i nh?t.
           </div>
         )}
       </section>
@@ -136,3 +135,4 @@ export default function Home() {
     </div>
   );
 }
+

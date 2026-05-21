@@ -16,7 +16,7 @@ export async function getCartItems(cartId: number) {
 
     if (error) {
       console.error('Error fetching cart items:', error);
-      toast.error('Failed to fetch cart items');
+      toast.error('Khong the tai san pham trong gio');
       return [];
     }
 
@@ -40,7 +40,7 @@ export async function getCartItems(cartId: number) {
     ) as (CartItemType & { product: ProductType })[];
   } catch (error) {
     console.error('Error in getCartItems:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return [];
   }
 }

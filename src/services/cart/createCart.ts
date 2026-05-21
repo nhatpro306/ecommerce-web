@@ -7,7 +7,7 @@ export async function createCart() {
   try {
     const user = await getClientUser();
     if (!user) {
-      throw new Error('User not authenticated');
+      throw new Error('Ban can dang nhap de dung gio hang');
     }
 
     const { data, error } = await supabase
@@ -21,14 +21,14 @@ export async function createCart() {
 
     if (error) {
       console.error('Error creating cart:', error);
-      toast.error('Failed to create cart');
+      toast.error('Khong the tao gio hang');
       return null;
     }
 
     return data as CartType;
   } catch (error) {
     console.error('Error in createCart:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return null;
   }
 }

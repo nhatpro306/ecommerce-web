@@ -1,5 +1,3 @@
-"use client";
-
 import { SiteFooter } from "@/components/SiteFooter";
 
 interface MainLayoutProps {
