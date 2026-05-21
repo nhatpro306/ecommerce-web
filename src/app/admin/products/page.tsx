@@ -96,10 +96,10 @@ export default function AdminProductsPage() {
 
   const handleCreateProduct = async (productData: CreateProductData) => {
     try {
-      await createAdminProductAction(productData);
+      const createdProduct = await createAdminProductAction(productData);
       toast.success("Đã tạo sản phẩm");
-      setShowCreateModal(false);
       fetchProducts();
+      return createdProduct;
     } catch (error) {
       console.error("Error creating product:", error);
       toast.error("Không thể tạo sản phẩm");
@@ -111,10 +111,10 @@ export default function AdminProductsPage() {
     productData: UpdateProductData,
   ) => {
     try {
-      await updateAdminProductAction(productId, productData);
+      const updatedProduct = await updateAdminProductAction(productId, productData);
       toast.success("Đã cập nhật sản phẩm");
-      setEditingProduct(null);
       fetchProducts();
+      return updatedProduct;
     } catch (error) {
       console.error("Error updating product:", error);
       toast.error("Không thể cập nhật sản phẩm");
@@ -452,3 +452,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+

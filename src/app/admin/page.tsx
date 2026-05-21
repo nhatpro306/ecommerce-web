@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,13 +12,14 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/context/AuthContext";
-import { adminProductService } from "@/services/admin/adminProductService";
+import { useAdmin } from "@/hooks/useAdmin";
 import { adminOrderService } from "@/services/admin/adminOrderService";
+import { adminProductService } from "@/services/admin/adminProductService";
 import { adminUserService } from "@/services/admin/adminUserService";
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -43,26 +44,10 @@ interface DashboardStats {
 }
 
 const statCards = [
-  {
-    key: "revenue",
-    label: "Doanh thu",
-    icon: TrendingUp,
-  },
-  {
-    key: "products",
-    label: "Sản phẩm",
-    icon: Package,
-  },
-  {
-    key: "orders",
-    label: "Đơn hàng chờ",
-    icon: ShoppingCart,
-  },
-  {
-    key: "users",
-    label: "Người dùng",
-    icon: Users,
-  },
+  { key: "revenue", label: "Doanh thu", icon: TrendingUp },
+  { key: "products", label: "Sản phẩm", icon: Package },
+  { key: "orders", label: "Đơn chờ xử lý", icon: ShoppingCart },
+  { key: "users", label: "Người dùng", icon: Users },
 ];
 
 export default function AdminDashboard() {
@@ -178,11 +163,9 @@ export default function AdminDashboard() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-            RESEY ADMIN
+            RESEY Admin
           </p>
-          <h1 className="mt-2 text-3xl font-black uppercase">
-            Bảng điều khiển
-          </h1>
+          <h1 className="mt-2 text-3xl font-black uppercase">Bảng điều khiển</h1>
           <p className="mt-1 text-zinc-500">Xin chào, {user?.email}</p>
         </div>
         <Badge className="w-fit rounded-none bg-zinc-950 text-white">
@@ -210,7 +193,7 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Link href="/admin/products">
           <Button variant="outline" className="h-14 w-full rounded-none">
             <Package className="mr-2 h-4 w-4" />
@@ -227,6 +210,12 @@ export default function AdminDashboard() {
           <Button variant="outline" className="h-14 w-full rounded-none">
             <Users className="mr-2 h-4 w-4" />
             Quản lý người dùng
+          </Button>
+        </Link>
+        <Link href="/admin/settings">
+          <Button variant="outline" className="h-14 w-full rounded-none">
+            <Settings className="mr-2 h-4 w-4" />
+            Cấu hình cửa hàng
           </Button>
         </Link>
       </div>
