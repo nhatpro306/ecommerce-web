@@ -37,3 +37,15 @@ dist
 .npmrc
 .vercel
 .env*.local
+# Local env / temp files
+.env
+.env.local
+.env.*.local
+.env.local.bak
+*.bak
+*.tmp
+.npmrc
+.npmrc.tmp
+.vercel
+tsconfig.tsbuildinfo
+.env.production.local.bak
