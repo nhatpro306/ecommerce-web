@@ -1,257 +1,128 @@
-# Resey — Vietnamese Streetwear E-Commerce Platform
+﻿# RESEY - Vietnamese Streetwear E-Commerce Platform
 
-A modern full-stack Vietnamese streetwear e-commerce platform built with Next.js, Supabase, and Tailwind CSS.
+A production-oriented clothing e-commerce project built with Next.js, TypeScript, Tailwind CSS, and Supabase. The project keeps the existing MVP design direction while improving safety for a real RESEY shop: server-side admin guards, real product variants, product image uploads, and atomic checkout foundations.
 
-Resey was developed by extending and redesigning an existing e-commerce codebase into a portfolio-ready local fashion brand platform focused on mobile-first UX, scalable architecture, and production deployment.
+## Features
 
-The project demonstrates a real-world modern commerce workflow including:
+- Streetwear storefront for RESEY
+- Product listing with search, category, size, color, stock, and sorting filters
+- Product detail page with image, material, size/color selection, quantity, related products
+- Variant-aware cart with guest/local cart support
+- COD and bank transfer checkout
+- Admin dashboard, products, orders, and users
+- Server-side protected admin mutations
+- Supabase RLS policies and migration scripts
+- Vercel deployment support
 
-* Product discovery
-* Variant selection
-* Cart persistence
-* COD & bank-transfer checkout
-* Order storage
-* Admin functionality
-* SEO optimization
-* Production deployment with Vercel
+## Tech Stack
 
----
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui style components
+- Supabase Auth, PostgreSQL, Storage
+- TanStack Query
+- Zod
+- Sonner
+- Vercel
 
-# ✨ Features
-
-## 🏠 Storefront
-
-* Vietnamese local brand landing page
-* Mobile-first responsive design
-* Featured collections and categories
-* Optimized user experience for fashion/streetwear
-
----
-
-## 🛍 Product System
-
-* Product search
-* Category filtering
-* Size filtering
-* Color filtering
-* In-stock filtering
-* Product sorting
-* URL-based query state
-
-### Product Detail Page
-
-Dynamic slug routing:
-
-```bash
-/products/[slug]
-```
-
-Includes:
-
-* Product gallery
-* Size selection
-* Color selection
-* Quantity selector
-* Material information
-* Stock status
-* Related products
-* Toast notifications
-* Responsive mobile layout
-
----
-
-## 🛒 Shopping Cart
-
-* Persistent cart state
-* Variant-aware cart items
-* Selected size/color saved
-* Quantity editing
-* Real-time subtotal updates
-
----
-
-## 💳 Checkout System
-
-### Supported Payment Methods
-
-* Cash on Delivery (COD)
-* Bank Transfer
-
-### Checkout Information
-
-* Customer name
-* Phone number
-* Email
-* Address
-* Order note
-* Payment method
-
-### Order Handling
-
-* Stores variant metadata
-* Best-effort inventory reduction
-* Bank transfer instruction page
-* Unique order code:
-
-```bash
-ORDER-{orderId}
-```
-
----
-
-## 🔐 Admin Features
-
-Admin pages from the original repository were preserved and incrementally improved.
-
-Includes:
-
-* Product management basics
-* Order viewing
-* Inventory overview foundation
-* Authentication integration
-
----
-
-## 🔍 SEO Optimization
-
-* Dynamic metadata
-* OpenGraph support
-* robots.txt
-* sitemap.xml
-* Search-engine friendly routes
-* Clean URL structure
-
----
-
-# 🧱 Tech Stack
-
-| Technology         | Purpose                      |
-| ------------------ | ---------------------------- |
-| Next.js App Router | Frontend + Server Components |
-| TypeScript         | Type safety                  |
-| Tailwind CSS       | Styling                      |
-| shadcn/ui          | UI components                |
-| Supabase           | Database + Auth              |
-| PostgreSQL         | Data storage                 |
-| TanStack Query     | Async state management       |
-| Sonner             | Toast notifications          |
-| Vercel             | Deployment                   |
-
----
-
-# 📂 Project Structure
+## Project Structure
 
 ```bash
 src/
-├── app/                 # App Router pages & API routes
-├── components/          # Shared UI components
-├── context/             # Auth & cart providers
-├── hooks/               # TanStack Query hooks
-├── lib/supabase/        # Supabase helpers
-├── services/            # Business logic & DB services
-└── styles/              # Global styling
+  app/                 # App Router pages and server actions
+  components/          # Shared UI and admin components
+  context/             # Auth and cart providers
+  hooks/               # TanStack Query hooks
+  lib/                 # Supabase, auth guards, validation
+  services/            # Product, cart, order, admin, storage helpers
+  types.ts             # App-level TypeScript models
 
 supabase/
-└── migrations/          # SQL migrations & seed data
+  migrations/          # Safe SQL migrations
+  resey_base_schema.sql
 ```
 
----
+## Environment Variables
 
-# ⚙️ Environment Variables
-
-Create `.env.local`
+Create `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 NEXT_PUBLIC_BANK_NAME=Vietcombank
-NEXT_PUBLIC_BANK_ACCOUNT_NAME=Resey
+NEXT_PUBLIC_BANK_ACCOUNT_NAME=RESEY
 NEXT_PUBLIC_BANK_ACCOUNT_NUMBER=0123456789
+
+# Development only. Keep false in production.
+NEXT_PUBLIC_USE_DEMO_DATA=false
 ```
 
-> Never commit real secrets to GitHub.
-> Use `.env.example` as the public template.
+Production safety rule: do not set `NEXT_PUBLIC_USE_DEMO_DATA=true` on Vercel production. Demo products are only for local development when Supabase is unavailable.
 
----
+## Supabase Setup
 
-# 🗄 Database Setup
+1. Create a Supabase project.
+2. Run `supabase/resey_base_schema.sql` in SQL Editor for a fresh database.
+3. Run migrations in order from `supabase/migrations`.
+4. The latest production migration adds:
+   - `product_images`
+   - `product_variants`
+   - `store_settings`
+   - order item snapshot fields
+   - storage bucket `product-images`
+   - RLS policies
+   - RPC function `create_order_checkout(payload jsonb)`
 
-## 1. Create Supabase Project
+## Production Checkout Model
 
-Create a new project in Supabase.
+Checkout should use Supabase RPC `create_order_checkout`.
 
----
+The RPC:
 
-## 2. Apply Base Schema
+- validates the authenticated user
+- validates address ownership
+- locks variant rows with `FOR UPDATE`
+- validates stock server-side
+- calculates total from database prices
+- inserts order and order item snapshots
+- decreases variant stock atomically
+- marks the cart converted
 
-Run the original repository schema first.
+If stock changes before checkout, the customer sees a clear stock error.
 
----
+## Admin Safety
 
-## 3. Run Migrations
+Admin write actions are protected server-side with `requireAdmin()`.
 
-Apply migrations in order:
+Protected mutations include:
 
-```bash
-20260520_add_product_is_active_and_seed_local_brand.sql
+- product create/update/deactivate
+- order status update
 
-20260520_z_add_clothing_variant_checkout_fields.sql
-```
+Client-side redirects are still useful for UX, but they are not trusted for security.
 
----
+## Product Images
 
-## Current Migration Features
+Supabase Storage bucket: `product-images`.
 
-### Product Fields
+Upload rules:
 
-* `products.is_active`
-* `products.slug`
-* `products.material`
-* `products.sizes`
-* `products.colors`
+- allowed: JPEG, PNG, WebP
+- max file size: 5MB
+- path format: `product-images/{productId}/{uuid}.{ext}`
+- admin can upload/manage
+- public can read images
 
-### Cart Fields
+The admin product form supports upload previews and primary image selection for existing products.
 
-* `cart_items.selected_size`
-* `cart_items.selected_color`
-* `cart_items.variant_info`
-
-### Order Fields
-
-* `order_items.selected_size`
-* `order_items.selected_color`
-* `order_items.variant_info`
-
-### Customer Checkout Fields
-
-* `orders.customer_name`
-* `orders.customer_phone`
-* `orders.customer_email`
-* `orders.customer_note`
-
-### Seed Data
-
-* Vietnamese local brand products
-* Categories
-* Sample inventory
-
----
-
-# 🚀 Local Development
-
-Install dependencies:
+## Local Development
 
 ```bash
 npm install --legacy-peer-deps
-```
-
-Start development server:
-
-```bash
 npm run dev
 ```
 
@@ -261,124 +132,50 @@ Open:
 http://localhost:3000
 ```
 
----
+## Quality Checks
 
-# ✅ Quality Checks
-
-Run before deployment:
+Run before pushing or deploying:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-Both commands should pass successfully.
+## Smoke Test Checklist
 
----
+- Home page loads
+- Products page loads
+- Product detail page loads
+- Add size/color variant to cart
+- Cart quantity update works
+- Cart remove item works
+- Checkout creates order with COD
+- Checkout creates order with bank transfer
+- Admin can create product
+- Admin can upload product image
+- Admin can edit product stock/variant stock
+- Admin can update order status
+- Product image appears in product card/detail
+- Production does not show demo products when Supabase fails
 
-# 💰 Payment Strategy
+## Deployment
 
-This MVP intentionally focuses on lightweight payment methods for rapid deployment and demonstration.
+1. Push to GitHub.
+2. Import the repo into Vercel.
+3. Add production environment variables.
+4. Run Supabase migrations before testing checkout/admin.
+5. Deploy.
 
-## Included
+## Future Improvements
 
-* COD
-* Bank Transfer
+- Full variant manager UI
+- Store settings admin page
+- Email notifications with Resend
+- Low-stock dashboard
+- Product SEO fields
+- Print/export order layout
+- Remove unused Polar legacy code after confirming it is no longer needed
 
-## Planned Future Integrations
+## License
 
-* VNPay
-* Momo
-* ZaloPay
-* Stripe
-
-Legacy Stripe/Polar logic from the original repository remains only for compatibility purposes.
-
----
-
-# 🌐 Deployment
-
-## Deploy with Vercel
-
-1. Push repository to GitHub
-2. Import repository into Vercel
-3. Add environment variables
-4. Deploy project
-5. Set:
-
-```env
-NEXT_PUBLIC_SITE_URL=https://your-production-url.vercel.app
-```
-
-6. Connect production Supabase project
-
----
-
-## Production Architecture
-
-```bash
-GitHub
-   ↓
-Vercel
-   ↓
-Supabase
-```
-
----
-
-# 📸 Screenshots
-
-Add production screenshots here after deployment:
-
-* Homepage
-* Products page
-* Product detail
-* Cart
-* Checkout
-* Admin dashboard
-
----
-
-# 🛣 Future Improvements
-
-## Commerce
-
-* True variant-level inventory
-* Advanced product editor
-* Discount system
-* Wishlist
-* Order tracking
-
-## Infrastructure
-
-* Cloudinary / Supabase Storage uploads
-* Email notifications
-* Analytics dashboard
-* Background jobs
-
-## SEO & Performance
-
-* Product structured data
-* Dynamic OG images
-* Advanced caching
-* Search optimization
-
----
-
-# 🎯 Project Goals
-
-This project was built to demonstrate:
-
-* Modern full-stack web development
-* E-commerce architecture
-* Production deployment workflow
-* Database design
-* State management
-* Responsive UI/UX
-* Real-world portfolio quality engineering
-
----
-
-# 📄 License
-
-This project is intended for educational and portfolio purposes.
+Educational and portfolio project.

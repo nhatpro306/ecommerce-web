@@ -5,6 +5,7 @@ import {
   mergeWithSampleProducts,
   sampleProducts,
 } from '@/utils/sampleProducts';
+import { useDemoData } from '@/utils/demoData';
 
 export const productServerService = {
   async getProducts(): Promise<ProductType[]> {
@@ -18,14 +19,17 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching products:', error);
-        return sampleProducts;
+        return useDemoData ? sampleProducts : [];
       }
 
       const products = (data || []) as ProductType[];
-      return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
+      if (useDemoData) {
+        return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
+      }
+      return products;
     } catch (error) {
       console.error('Error in getProducts:', error);
-      return sampleProducts;
+      return useDemoData ? sampleProducts : [];
     }
   },
 
@@ -41,13 +45,13 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching product:', error);
-        return findSampleProduct(id);
+        return useDemoData ? findSampleProduct(id) : null;
       }
 
-      return (data as ProductType) || findSampleProduct(id);
+      return (data as ProductType) || (useDemoData ? findSampleProduct(id) : null);
     } catch (error) {
       console.error('Error in getProductById:', error);
-      return findSampleProduct(id);
+      return useDemoData ? findSampleProduct(id) : null;
     }
   },
 
@@ -63,13 +67,13 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching product by slug:', error);
-        return findSampleProduct(slug);
+        return useDemoData ? findSampleProduct(slug) : null;
       }
 
-      return (data as ProductType) || findSampleProduct(slug);
+      return (data as ProductType) || (useDemoData ? findSampleProduct(slug) : null);
     } catch (error) {
       console.error('Error in getProductBySlug:', error);
-      return findSampleProduct(slug);
+      return useDemoData ? findSampleProduct(slug) : null;
     }
   },
 
@@ -85,15 +89,19 @@ export const productServerService = {
 
       if (error) {
         console.error('Error fetching products by category:', error);
-        return sampleProducts.filter((product) => product.category_id === categoryId);
+        return useDemoData
+          ? sampleProducts.filter((product) => product.category_id === categoryId)
+          : [];
       }
 
       const products = (data || []) as ProductType[];
-      const mergedProducts = mergeWithSampleProducts(products);
+      const mergedProducts = useDemoData ? mergeWithSampleProducts(products) : products;
       return mergedProducts.filter((product) => product.category_id === categoryId);
     } catch (error) {
       console.error('Error in getProductsByCategory:', error);
-      return sampleProducts.filter((product) => product.category_id === categoryId);
+      return useDemoData
+        ? sampleProducts.filter((product) => product.category_id === categoryId)
+        : [];
     }
   },
 
@@ -109,12 +117,16 @@ export const productServerService = {
 
       if (error) {
         console.error('Error searching products:', error);
-        return sampleProducts.filter((product) =>
-          product.title.toLowerCase().includes(query.toLowerCase())
-        );
+        return useDemoData
+          ? sampleProducts.filter((product) =>
+              product.title.toLowerCase().includes(query.toLowerCase())
+            )
+          : [];
       }
 
-      const products = mergeWithSampleProducts((data || []) as ProductType[]);
+      const products = useDemoData
+        ? mergeWithSampleProducts((data || []) as ProductType[])
+        : ((data || []) as ProductType[]);
       const fallbackProducts = sampleProducts.filter((product) =>
         product.title.toLowerCase().includes(query.toLowerCase())
       );
@@ -125,9 +137,11 @@ export const productServerService = {
         : fallbackProducts;
     } catch (error) {
       console.error('Error in searchProducts:', error);
-      return sampleProducts.filter((product) =>
-        product.title.toLowerCase().includes(query.toLowerCase())
-      );
+      return useDemoData
+        ? sampleProducts.filter((product) =>
+            product.title.toLowerCase().includes(query.toLowerCase())
+          )
+        : [];
     }
   },
 };

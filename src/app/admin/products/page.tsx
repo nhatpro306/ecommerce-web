@@ -28,6 +28,11 @@ import Link from "next/link";
 import { ProductFormModal } from "@/components/admin/ProductFormModal";
 import { DeleteConfirmModal } from "@/components/admin/DeleteConfirmModal";
 import { getProductImage } from "@/utils/productImages";
+import {
+  createAdminProductAction,
+  deactivateAdminProductAction,
+  updateAdminProductAction,
+} from "./actions";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
@@ -58,7 +63,7 @@ export default function AdminProductsPage() {
 
   const handleCreateProduct = async (productData: CreateProductData) => {
     try {
-      await adminProductService.createProduct(productData);
+      await createAdminProductAction(productData);
       toast.success("Đã tạo sản phẩm");
       setShowCreateModal(false);
       fetchProducts();
@@ -73,7 +78,7 @@ export default function AdminProductsPage() {
     productData: UpdateProductData,
   ) => {
     try {
-      await adminProductService.updateProduct(productId, productData);
+      await updateAdminProductAction(productId, productData);
       toast.success("Đã cập nhật sản phẩm");
       setEditingProduct(null);
       fetchProducts();
@@ -85,7 +90,7 @@ export default function AdminProductsPage() {
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      await adminProductService.deleteProduct(productId);
+      await deactivateAdminProductAction(productId);
       toast.success("Đã ẩn sản phẩm khỏi storefront");
       setDeletingProduct(null);
       fetchProducts();

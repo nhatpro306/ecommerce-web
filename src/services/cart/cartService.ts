@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { getClientUser } from '@/lib/supabase/clientUtils';
 
 export interface CartVariantOptions {
+  variantId?: string;
   size?: string;
   color?: string;
   variantInfo?: Record<string, unknown>;
@@ -102,6 +103,7 @@ export async function getCartItems(cartId: number) {
         id: number;
         cart_id: number;
         product_id: string;
+        variant_id?: string | null;
         quantity: number;
         price: number;
         selected_size?: string | null;
@@ -183,6 +185,7 @@ export async function addItemToCart(
         .insert({
           cart_id: cartId,
           product_id: productId,
+          variant_id: options.variantId ?? null,
           quantity,
           price,
           selected_size: selectedSize,

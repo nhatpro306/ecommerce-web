@@ -22,6 +22,7 @@ import {
 } from "@/services/admin/adminOrderService";
 import { OrderDetailsModal } from "@/components/admin/OrderDetailsModal";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { updateAdminOrderStatusAction } from "./actions";
 
 const statusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
@@ -98,7 +99,7 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
-      await adminOrderService.updateOrderStatus(orderId, newStatus);
+      await updateAdminOrderStatusAction(orderId, newStatus);
       toast.success("Đã cập nhật trạng thái đơn hàng");
       fetchOrders();
     } catch (error) {
