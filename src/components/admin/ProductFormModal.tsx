@@ -73,7 +73,7 @@ interface VariantDraft {
 
 const defaultVariant = (): VariantDraft => ({
   size: "M",
-  color: "Brown",
+  color: "Đen",
   sku: "",
   stock: "0",
   price_override: "",
@@ -112,7 +112,7 @@ function buildInitialVariants(product?: ProductWithDetails | null): VariantDraft
   }
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : ["M"];
-  const colors = product.colors && product.colors.length > 0 ? product.colors : ["Brown"];
+  const colors = product.colors && product.colors.length > 0 ? product.colors : ["Đen"];
   const firstStock = product.stock || 0;
 
   return sizes.flatMap((size, sizeIndex) =>
@@ -190,7 +190,7 @@ export function ProductFormModal({
         sku: "",
         category_id: "no-category",
         sizes: "S, M, L, XL",
-        colors: "Brown, Green, Black",
+        colors: "Đen, Trắng, Xám",
         is_active: true,
       });
     }
@@ -218,17 +218,17 @@ export function ProductFormModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) newErrors.title = "Tên sản phẩm là bắt buộc";
+    if (!formData.title.trim()) newErrors.title = "Vui lòng nhập tên sản phẩm";
     if (formData.slug.trim() && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(formData.slug.trim())) {
       newErrors.slug = "Slug chỉ dùng chữ thường, số và dấu gạch ngang";
     }
-    if (!formData.description.trim()) newErrors.description = "Mô tả là bắt buộc";
+    if (!formData.description.trim()) newErrors.description = "Vui lòng nhập mô tả sản phẩm";
 
     const price = Number.parseFloat(formData.price);
     if (!formData.price.trim()) {
-      newErrors.price = "Giá là bắt buộc";
+      newErrors.price = "Vui lòng nhập giá bán";
     } else if (Number.isNaN(price) || price <= 0) {
-      newErrors.price = "Giá phải lớn hơn 0";
+      newErrors.price = "Giá bán phải lớn hơn 0";
     }
 
     if (variants.length === 0) {
@@ -242,7 +242,7 @@ export function ProductFormModal({
 
       const stock = Number.parseInt(variant.stock, 10);
       if (Number.isNaN(stock) || stock < 0) {
-        newErrors[`variant-${index}-stock`] = "Stock phải >= 0";
+        newErrors[`variant-${index}-stock`] = "Tồn kho không được âm";
       }
 
       if (variant.price_override.trim()) {
@@ -381,6 +381,48 @@ export function ProductFormModal({
     setVariants((previous) => [...previous, defaultVariant()]);
   };
 
+  const addColorVariants = () => {
+    const color = window.prompt("Nhập màu mới, ví dụ: Đen");
+    if (!color?.trim()) return;
+
+    const sizes = parseList(formData.sizes).length > 0
+      ? parseList(formData.sizes)
+      : Array.from(new Set(variants.map((variant) => variant.size).filter(Boolean)));
+
+    setVariants((previous) => [
+      ...previous,
+      ...sizes.map((size) => ({
+        size,
+        color: color.trim(),
+        sku: formData.sku ? `${formData.sku}-${color.trim()}-${size}`.toUpperCase() : "",
+        stock: "0",
+        price_override: "",
+        is_active: true,
+      })),
+    ]);
+  };
+
+  const addSizeVariants = () => {
+    const size = window.prompt("Nhập size mới, ví dụ: XL");
+    if (!size?.trim()) return;
+
+    const colors = parseList(formData.colors).length > 0
+      ? parseList(formData.colors)
+      : Array.from(new Set(variants.map((variant) => variant.color).filter(Boolean)));
+
+    setVariants((previous) => [
+      ...previous,
+      ...colors.map((color) => ({
+        size: size.trim(),
+        color,
+        sku: formData.sku ? `${formData.sku}-${color}-${size.trim()}`.toUpperCase() : "",
+        stock: "0",
+        price_override: "",
+        is_active: true,
+      })),
+    ]);
+  };
+
   const removeVariant = (index: number) => {
     setVariants((previous) => previous.filter((_, currentIndex) => currentIndex !== index));
   };
@@ -405,7 +447,7 @@ export function ProductFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-none">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -416,7 +458,7 @@ export function ProductFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <section className="space-y-4 border border-zinc-200 p-4">
+          <section className="space-y-4 rounded-2xl border border-zinc-200 p-5">
             <h3 className="text-sm font-black uppercase tracking-[0.16em]">
               Thông tin cơ bản
             </h3>
@@ -426,9 +468,10 @@ export function ProductFormModal({
                 id="title"
                 value={formData.title}
                 onChange={(event) => handleInputChange("title", event.target.value)}
-                placeholder="RESEY Washed Tee"
-                className={errors.title ? "border-rose-500" : ""}
+                placeholder="RESEY Basic Tee"
+                className={`h-12 text-base ${errors.title ? "border-rose-500" : ""}`}
               />
+              <p className="mt-1 text-xs text-zinc-500">Ví dụ: RESEY Basic Tee</p>
               {errors.title && <p className="mt-1 text-sm text-rose-600">{errors.title}</p>}
             </div>
 
@@ -443,7 +486,7 @@ export function ProductFormModal({
                     handleInputChange("slug", slugify(formData.slug || formData.title))
                   }
                   placeholder="resey-washed-tee"
-                  className={errors.slug ? "border-rose-500" : ""}
+                  className={`h-12 text-base ${errors.slug ? "border-rose-500" : ""}`}
                 />
                 {errors.slug && <p className="mt-1 text-sm text-rose-600">{errors.slug}</p>}
               </div>
@@ -455,6 +498,7 @@ export function ProductFormModal({
                   value={formData.material}
                   onChange={(event) => handleInputChange("material", event.target.value)}
                   placeholder="Cotton washed 260gsm"
+                  className="h-12 text-base"
                 />
               </div>
             </div>
@@ -466,8 +510,8 @@ export function ProductFormModal({
                 value={formData.description}
                 onChange={(event) => handleInputChange("description", event.target.value)}
                 placeholder="Mô tả chất liệu, fit, phong cách..."
-                rows={3}
-                className={`w-full rounded-none border px-3 py-2 focus:outline-none ${
+                rows={6}
+                className={`w-full rounded-2xl border px-4 py-3 text-base focus:outline-none ${
                   errors.description ? "border-rose-500" : "border-zinc-300"
                 }`}
               />
@@ -478,7 +522,7 @@ export function ProductFormModal({
 
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <Label htmlFor="price">Giá VND *</Label>
+                <Label htmlFor="price">Giá bán *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -486,19 +530,24 @@ export function ProductFormModal({
                   value={formData.price}
                   onChange={(event) => handleInputChange("price", event.target.value)}
                   placeholder="450000"
-                  className={errors.price ? "border-rose-500" : ""}
+                  className={`h-12 text-base ${errors.price ? "border-rose-500" : ""}`}
                 />
+                <p className="mt-1 text-xs text-zinc-500">Nhập giá bán bằng VND</p>
                 {errors.price && <p className="mt-1 text-sm text-rose-600">{errors.price}</p>}
               </div>
 
               <div>
-                <Label htmlFor="sku">SKU gốc</Label>
+                <Label htmlFor="sku">Mã SKU</Label>
                 <Input
                   id="sku"
                   value={formData.sku}
                   onChange={(event) => handleInputChange("sku", event.target.value)}
-                  placeholder="RESEY-TEE-001"
+                  placeholder="RESEY-TEE-BLK-M"
+                  className="h-12 text-base"
                 />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Mã nội bộ để quản lý kho, ví dụ: RESEY-TEE-BLK-M
+                </p>
               </div>
 
               <div>
@@ -508,11 +557,11 @@ export function ProductFormModal({
                   onValueChange={(value) => handleInputChange("category_id", value || "")}
                   disabled={categoriesLoading || !!categoriesError}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 text-base">
                     <SelectValue placeholder="Chọn danh mục" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="no-category">Không phân loại</SelectItem>
+                    <SelectItem value="no-category">Chưa phân loại</SelectItem>
                     {categories?.map((category) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
@@ -525,7 +574,7 @@ export function ProductFormModal({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-2 rounded-none"
+                    className="mt-2 rounded-2xl"
                     onClick={() => void refetchCategories()}
                   >
                     Tải lại danh mục
@@ -536,15 +585,16 @@ export function ProductFormModal({
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label htmlFor="sizes">Sizes</Label>
+                <Label htmlFor="sizes">Size</Label>
                 <Input
                   id="sizes"
                   value={formData.sizes}
                   onChange={(event) => handleInputChange("sizes", event.target.value)}
                   placeholder="S, M, L, XL"
+                  className="h-12 text-base"
                 />
                 <p className="mt-1 text-xs text-zinc-500">
-                  Nhập cách nhau bằng dấu phẩy. Variant bên dưới vẫn là nguồn tồn kho chính.
+                  Tổng số lượng còn bán. Nếu dùng size/màu, tồn kho nên được tính từ variant.
                 </p>
               </div>
 
@@ -554,7 +604,8 @@ export function ProductFormModal({
                   id="colors"
                   value={formData.colors}
                   onChange={(event) => handleInputChange("colors", event.target.value)}
-                  placeholder="Brown, Green, Black"
+                  placeholder="Đen, Trắng, Xám"
+                  className="h-12 text-base"
                 />
               </div>
             </div>
@@ -571,20 +622,28 @@ export function ProductFormModal({
             </label>
           </section>
 
-          <section className="space-y-4 border border-zinc-200 p-4">
+          <section className="space-y-4 rounded-2xl border border-zinc-200 p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-[0.16em]">
-                  Variant inventory
+                  Màu sắc, size & tồn kho
                 </h3>
                 <p className="text-xs text-zinc-500">
                   Tồn kho tổng hiện tại: {getVariantTotalStock()} sản phẩm
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={addColorVariants}>
+                Thêm màu
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={addSizeVariants}>
+                Thêm size
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={addVariant}>
                 <Plus className="mr-2 h-4 w-4" />
-                Thêm variant
+                Thêm size/màu
               </Button>
+              </div>
             </div>
 
             {errors.variants && <p className="text-sm text-rose-600">{errors.variants}</p>}
@@ -593,7 +652,7 @@ export function ProductFormModal({
               {variants.map((variant, index) => (
                 <div
                   key={`${variant.id || "new"}-${index}`}
-                  className="grid gap-3 border border-zinc-100 p-3 md:grid-cols-[1fr_1fr_1.2fr_0.8fr_1fr_auto_auto]"
+                  className="grid gap-3 rounded-2xl border border-zinc-100 p-3 md:grid-cols-[1fr_1fr_1.2fr_0.8fr_1fr_auto_auto]"
                 >
                   <div>
                     <Label>Size</Label>
@@ -609,20 +668,20 @@ export function ProductFormModal({
                     <Input
                       value={variant.color}
                       onChange={(event) => handleVariantChange(index, "color", event.target.value)}
-                      placeholder="Brown"
+                      placeholder="Đen"
                       className={errors[`variant-${index}-color`] ? "border-rose-500" : ""}
                     />
                   </div>
                   <div>
-                    <Label>SKU variant</Label>
+                    <Label>Mã SKU</Label>
                     <Input
                       value={variant.sku}
                       onChange={(event) => handleVariantChange(index, "sku", event.target.value)}
-                      placeholder="RESEY-TEE-M-BROWN"
+                      placeholder="RESEY-TEE-BLK-M"
                     />
                   </div>
                   <div>
-                    <Label>Stock</Label>
+                    <Label>Tồn kho</Label>
                     <Input
                       type="number"
                       min="0"
@@ -658,7 +717,7 @@ export function ProductFormModal({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-6 rounded-none text-red-600"
+                    className="mt-6 rounded-2xl text-red-600"
                     disabled={variants.length === 1}
                     onClick={() => removeVariant(index)}
                   >
@@ -669,29 +728,31 @@ export function ProductFormModal({
             </div>
           </section>
 
-          <section className="space-y-4 border border-zinc-200 p-4">
+          <section className="space-y-4 rounded-2xl border border-zinc-200 p-5">
             <h3 className="text-sm font-black uppercase tracking-[0.16em]">Hình ảnh</h3>
             <div>
-              <Label htmlFor="image">Image URL dự phòng</Label>
+              <Label htmlFor="image">Link ảnh sản phẩm</Label>
               <Input
                 id="image"
                 value={formData.image}
                 onChange={(event) => handleInputChange("image", event.target.value)}
                 placeholder="https://example.com/image.jpg"
+                className="h-12 text-base"
               />
             </div>
 
             <div>
-              <Label htmlFor="imageFiles">Upload product images</Label>
+              <Label htmlFor="imageFiles">Upload ảnh sản phẩm</Label>
               <Input
                 id="imageFiles"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
+                className="h-12 text-base"
                 onChange={(event) => handleImageFilesChange(event.target.files)}
               />
               <p className="mt-1 text-xs text-zinc-500">
-                JPEG, PNG hoặc WebP, tối đa 5MB mỗi ảnh. Click ảnh preview để chọn ảnh chính.
+                Dán link ảnh hoặc dùng ảnh đã upload trong Supabase Storage. JPEG, PNG hoặc WebP, tối đa 5MB mỗi ảnh.
               </p>
               {errors.imageFiles && <p className="mt-1 text-sm text-rose-600">{errors.imageFiles}</p>}
             </div>
@@ -713,7 +774,7 @@ export function ProductFormModal({
                       className="aspect-square w-full object-cover"
                     />
                     <span className="block px-2 py-1 text-[10px] uppercase tracking-wide">
-                      {primaryImageIndex === index ? "Primary" : "Set primary"}
+                      {primaryImageIndex === index ? "Ảnh chính" : "Chọn ảnh chính"}
                     </span>
                   </button>
                 ))}
@@ -723,10 +784,10 @@ export function ProductFormModal({
 
           <DialogFooter>
             {errors.submit && <p className="mr-auto text-sm text-rose-600">{errors.submit}</p>}
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="h-12 px-6 text-base">
               Hủy
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="h-12 bg-black px-6 text-base text-white hover:bg-zinc-800">
               {loading ? "Đang lưu..." : product ? "Cập nhật" : "Tạo sản phẩm"}
             </Button>
           </DialogFooter>

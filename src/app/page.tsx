@@ -18,17 +18,17 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-white text-zinc-950">
       <section className="grid min-h-[78vh] lg:grid-cols-2">
-        <div className="flex items-center bg-zinc-950 px-6 py-16 text-white md:px-12">
+        <div className="flex items-center bg-black px-6 py-16 text-white md:px-12">
           <div className="max-w-xl">
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-zinc-400">
               RESEY / Bộ sưu tập mới
             </p>
-            <h1 className="text-5xl font-black uppercase leading-none tracking-tight md:text-7xl">
+            <h1 className="text-5xl font-black uppercase leading-none tracking-tight text-white md:text-7xl">
               Phong cách phố.
               <br />
               Dấu ấn riêng.
             </h1>
-            <p className="mt-6 max-w-md text-sm leading-7 text-zinc-300">
+            <p className="mt-6 max-w-md text-sm leading-7 text-zinc-200">
               RESEY mang đến streetwear hiện đại cho nhịp sống hằng ngày: form dễ mặc,
               chất liệu bền, màu sắc cá tính và tinh thần tự tin của thế hệ trẻ.
             </p>
@@ -41,7 +41,7 @@ export default async function Home() {
               <Link href="/products">
                 <Button
                   variant="outline"
-                  className="h-12 cursor-pointer rounded-none border-white px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-white hover:text-zinc-950"
+                  className="h-12 cursor-pointer rounded-none border-white bg-transparent px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-white hover:text-black active:bg-white active:text-black"
                 >
                   Xem bộ sưu tập
                 </Button>
@@ -52,7 +52,7 @@ export default async function Home() {
 
         <div className="relative min-h-[420px]">
           <Image
-            src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=1400&q=80"
+            src="/images/hero-resey.jpg"
             alt="Chiến dịch streetwear RESEY"
             fill
             priority
@@ -101,7 +101,7 @@ export default async function Home() {
             ))}
           </div>
         ) : (
-          <div className="border border-dashed border-zinc-300 p-8 text-sm text-zinc-500">
+          <div className="border border-dashed border-zinc-300 bg-white p-8 text-sm font-medium text-zinc-700">
             Hi?n ch?a c? s?n ph?m n?i b?t. Vui l?ng quay l?i sau ho?c v?o trang s?n ph?m ?? ki?m tra b? s?u t?p m?i nh?t.
           </div>
         )}
@@ -110,7 +110,7 @@ export default async function Home() {
       <section className="mx-auto grid max-w-7xl gap-6 px-4 py-14 md:grid-cols-2">
         <div className="relative min-h-[360px] overflow-hidden bg-zinc-100">
           <Image
-            src="https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=1200&q=80"
+            src="/images/brand-story.jpg"
             alt="Chi tiết sản phẩm RESEY"
             fill
             className="object-cover"
@@ -135,4 +135,3 @@ export default async function Home() {
     </div>
   );
 }
-

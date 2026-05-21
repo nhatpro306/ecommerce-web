@@ -33,29 +33,32 @@ export default function ProductDetailsClient({
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+  const [activeImage, setActiveImage] = useState("");
 
   const activeVariants = useMemo(
     () => product.variants?.filter((variant) => variant.is_active) || [],
     [product.variants],
   );
 
-  const availableSizes = activeVariants.length
-    ? Array.from(new Set(activeVariants.map((variant) => variant.size)))
-    : product.sizes?.length
-      ? product.sizes
-      : ["S", "M", "L", "XL"];
-
   const availableColors = activeVariants.length
     ? Array.from(
-        new Set(
-          activeVariants
-            .filter((variant) => !selectedSize || variant.size === selectedSize)
-            .map((variant) => variant.color),
-        ),
+        new Set(activeVariants.map((variant) => variant.color)),
       )
     : product.colors?.length
       ? product.colors
-      : ["Black", "White", "Gray"];
+      : ["Đen", "Trắng", "Xám"];
+
+  const availableSizes = activeVariants.length
+    ? Array.from(
+        new Set(
+          activeVariants
+            .filter((variant) => !selectedColor || variant.color === selectedColor)
+            .map((variant) => variant.size),
+        ),
+      )
+    : product.sizes?.length
+      ? product.sizes
+      : ["S", "M", "L", "XL"];
 
   const selectedVariant = activeVariants.find(
     (variant) =>
@@ -65,6 +68,18 @@ export default function ProductDetailsClient({
   const currentStock = selectedVariant?.stock ?? product.stock;
   const currentPrice = selectedVariant?.price_override ?? product.price;
   const productImage = getProductImage(product);
+  const galleryImages = useMemo(() => {
+    const imageSet = new Set<string>();
+    imageSet.add(productImage);
+    product.images
+      ?.sort((left, right) => left.sort_order - right.sort_order)
+      .forEach((image) => imageSet.add(image.url));
+    activeVariants
+      .map((variant) => variant.image_url)
+      .filter((url): url is string => Boolean(url))
+      .forEach((url) => imageSet.add(url));
+    return Array.from(imageSet);
+  }, [activeVariants, product.images, productImage]);
   const hasSizeOptions = availableSizes.length > 0;
   const hasColorOptions = availableColors.length > 0;
 
@@ -83,23 +98,27 @@ export default function ProductDetailsClient({
   }, [currentStock, quantity]);
 
   useEffect(() => {
+    setActiveImage(selectedVariant?.image_url || productImage);
+  }, [productImage, selectedVariant?.image_url]);
+
+  useEffect(() => {
     if (
-      selectedColor &&
+      selectedSize &&
       activeVariants.length > 0 &&
-      !availableColors.includes(selectedColor)
+      !availableSizes.includes(selectedSize)
     ) {
-      setSelectedColor("");
+      setSelectedSize("");
     }
-  }, [activeVariants.length, availableColors, selectedColor]);
+  }, [activeVariants.length, availableSizes, selectedSize]);
 
   const handleAddToCart = async () => {
     if (hasSizeOptions && !selectedSize) {
-      toast.error("Vui lòng chọn size trước khi thêm vào giỏ.");
+      toast.error("Vui lòng chọn kích thước");
       return;
     }
 
     if (hasColorOptions && !selectedColor) {
-      toast.error("Vui lòng chọn màu trước khi thêm vào giỏ.");
+      toast.error("Vui lòng chọn màu sắc");
       return;
     }
 
@@ -129,6 +148,7 @@ export default function ProductDetailsClient({
         color: selectedColor || undefined,
         quantity,
         variantId: selectedVariant?.id,
+        sku: selectedVariant?.sku || product.sku || null,
       },
     );
 
@@ -141,14 +161,41 @@ export default function ProductDetailsClient({
   return (
     <div className="bg-white text-zinc-950">
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-2">
-        <div className="relative aspect-[3/4] overflow-hidden bg-zinc-100">
-          <Image
-            src={productImage}
-            alt={product.title}
-            fill
-            priority
-            className="object-cover"
-          />
+        <div className="space-y-3">
+          <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
+            <Image
+              src={activeImage || productImage}
+              alt={product.title}
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+
+          {galleryImages.length > 1 && (
+            <div className="grid grid-cols-5 gap-2">
+              {galleryImages.map((image) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => setActiveImage(image)}
+                  className={`relative aspect-[4/5] overflow-hidden border ${
+                    (activeImage || productImage) === image
+                      ? "border-black"
+                      : "border-zinc-200"
+                  }`}
+                >
+                  <Image
+                    src={image}
+                    alt={`${product.title} thumbnail`}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col justify-center">
@@ -187,35 +234,7 @@ export default function ProductDetailsClient({
           <div className="mt-6 space-y-5">
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Chọn size
-              </h2>
-
-              <div className="flex flex-wrap gap-2">
-                {availableSizes.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => setSelectedSize(size)}
-                    className={`min-w-12 border px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] ${
-                      selectedSize === size
-                        ? "border-zinc-950 bg-zinc-950 text-white"
-                        : "border-zinc-300 bg-white text-zinc-950 hover:border-zinc-950"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-              {hasSizeOptions && !selectedSize && (
-                <p className="mt-2 text-xs text-zinc-500">
-                  Vui lòng chọn size phù hợp trước khi đặt hàng.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Chọn màu
+                Chọn màu sắc
               </h2>
 
               <div className="flex flex-wrap gap-2">
@@ -223,8 +242,11 @@ export default function ProductDetailsClient({
                   <button
                     key={color}
                     type="button"
-                    onClick={() => setSelectedColor(color)}
-                    className={`border px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] ${
+                    onClick={() => {
+                      setSelectedColor(color);
+                      setSelectedSize("");
+                    }}
+                    className={`min-w-12 border px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] ${
                       selectedColor === color
                         ? "border-zinc-950 bg-zinc-950 text-white"
                         : "border-zinc-300 bg-white text-zinc-950 hover:border-zinc-950"
@@ -236,10 +258,64 @@ export default function ProductDetailsClient({
               </div>
               {hasColorOptions && !selectedColor && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  Vui lòng chọn màu trước khi thêm vào giỏ.
+                  Vui lòng chọn màu trước khi chọn size.
                 </p>
               )}
             </div>
+
+            <div>
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
+                Chọn kích thước
+              </h2>
+
+              <div className="flex flex-wrap gap-2">
+                {availableSizes.map((size) => {
+                  const sizeVariant = activeVariants.find(
+                    (variant) =>
+                      variant.color === selectedColor && variant.size === size,
+                  );
+                  const disabled = activeVariants.length > 0
+                    ? !selectedColor || !sizeVariant || sizeVariant.stock <= 0
+                    : currentStock <= 0;
+
+                  return (
+                  <button
+                    key={size}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setSelectedSize(size)}
+                    className={`border px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] ${
+                      selectedSize === size
+                        ? "border-zinc-950 bg-zinc-950 text-white"
+                        : disabled
+                          ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400"
+                          : "border-zinc-300 bg-white text-zinc-950 hover:border-zinc-950"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                  );
+                })}
+              </div>
+              {hasSizeOptions && !selectedSize && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {selectedColor
+                    ? "Vui lòng chọn kích thước phù hợp trước khi đặt hàng."
+                    : "Chọn màu sắc trước để xem size còn hàng."}
+                </p>
+              )}
+            </div>
+
+            {selectedColor && selectedSize && (
+              <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm font-semibold text-zinc-800">
+                {currentStock <= 0
+                  ? "Hết hàng"
+                  : currentStock <= 3
+                    ? `Chỉ còn ${currentStock} sản phẩm`
+                    : "Còn hàng"}
+                {selectedVariant?.sku ? ` / SKU: ${selectedVariant.sku}` : ""}
+              </div>
+            )}
 
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">

@@ -34,6 +34,7 @@ interface CartContextType {
       color?: string;
       quantity?: number;
       variantId?: string | null;
+      sku?: string | null;
     }
   ) => Promise<boolean>;
   removeFromCart: (productId: string, cartItemId?: number) => void;
@@ -159,12 +160,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       color?: string;
       quantity?: number;
       variantId?: string | null;
+      sku?: string | null;
     }
   ): Promise<boolean> => {
     const quantity = Math.max(1, options?.quantity ?? 1);
     const selectedSize = options?.size ?? null;
     const selectedColor = options?.color ?? null;
     const selectedVariantId = options?.variantId ?? null;
+    const selectedSku = options?.sku ?? product.sku ?? null;
     const shouldUseLocalCart = !user || !isSupabaseProductId(product.product_id);
 
     const targetKey = getCartItemKey(product.product_id, selectedSize, selectedColor);
@@ -210,6 +213,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   variant_info: {
                     size: selectedSize,
                     color: selectedColor,
+                    sku: selectedSku,
                     localCart: true,
                   },
                 },
@@ -252,6 +256,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           variantInfo: {
             size: selectedSize,
             color: selectedColor,
+            sku: selectedSku,
           },
         }
       );

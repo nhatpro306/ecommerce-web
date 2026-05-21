@@ -79,9 +79,11 @@ export const orderService = {
       );
 
       if (checkoutError) {
-        const message = checkoutError.message.includes("Not enough stock")
-          ? "Một sản phẩm vừa hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng."
-          : checkoutError.message;
+        const message =
+          checkoutError.message.includes("Not enough stock") ||
+          checkoutError.message.includes("Variant is no longer available")
+            ? "Một sản phẩm vừa hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng."
+            : checkoutError.message;
         toast.error(message);
         throw new Error(message);
       }
@@ -93,7 +95,7 @@ export const orderService = {
         .single();
 
       if (orderFetchError || !order) {
-        throw new Error(orderFetchError?.message || "Order was created but could not be loaded");
+        throw new Error(orderFetchError?.message || "Đơn hàng đã được tạo nhưng không thể tải lại.");
       }
 
       return order;
@@ -128,7 +130,7 @@ export const orderService = {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error("Failed to fetch orders");
+      toast.error("Không thể tải đơn hàng");
       throw error;
     }
     return data;
@@ -151,7 +153,7 @@ export const orderService = {
       .single();
 
     if (error) {
-      toast.error("Failed to fetch order");
+      toast.error("Không thể tải chi tiết đơn hàng");
       throw error;
     }
     return data;
@@ -166,7 +168,7 @@ export const orderService = {
       .single();
 
     if (error) {
-      toast.error("Failed to update order status");
+      toast.error("Không thể cập nhật trạng thái đơn hàng");
       throw error;
     }
     return data;
@@ -177,7 +179,7 @@ export const orderService = {
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
 
     if (error) {
-      toast.error("Failed to delete order");
+      toast.error("Không thể xóa đơn hàng");
       throw error;
     }
     return true;

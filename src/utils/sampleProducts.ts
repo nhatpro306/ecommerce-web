@@ -1,4 +1,4 @@
-import type { ProductType } from "@/types";
+﻿import type { ProductType } from "@/types";
 
 const now = "2026-05-20T00:00:00.000Z";
 
@@ -17,7 +17,7 @@ export const sampleProducts: ProductType[] = [
     slug: "resey-washed-tee-brown",
     title: "RESEY Washed Tee - Brown",
     description:
-      "Áo thun wash màu nâu, form boxy rộng, logo chìm và đường ráp lệch tạo điểm nhấn streetwear.",
+      "ﾃ｛ thun wash mﾃu nﾃ｢u, form boxy r盻冢g, logo chﾃｬm vﾃ ﾄ柁ｰ盻拵g rﾃ｡p l盻㌘h t蘯｡o ﾄ訴盻ノ nh蘯･n streetwear.",
     material: "Washed cotton 250gsm",
     price: 590000,
     image: "/products/resey-washed-tee-brown-fit-02.jpg",
@@ -36,7 +36,7 @@ export const sampleProducts: ProductType[] = [
     slug: "resey-washed-tee-brown-crop-fit",
     title: "RESEY Brown Washed Crop Fit",
     description:
-      "Phiên bản fit ngắn hơn cho outfit layer, chất cotton wash mềm và màu nâu vintage dễ phối.",
+      "Phiﾃｪn b蘯｣n fit ng蘯ｯn hﾆ｡n cho outfit layer, ch蘯･t cotton wash m盻［ vﾃ mﾃu nﾃ｢u vintage d盻・ph盻訴.",
     material: "Washed cotton 240gsm",
     price: 560000,
     image: "/products/resey-washed-tee-brown-fit-03.jpg",
@@ -55,7 +55,7 @@ export const sampleProducts: ProductType[] = [
     slug: "resey-washed-tee-olive",
     title: "RESEY Washed Tee - Olive",
     description:
-      "Áo thun wash màu olive xám, form rộng, hợp phối với quần trắng, denim hoặc cargo.",
+      "ﾃ｛ thun wash mﾃu olive xﾃ｡m, form r盻冢g, h盻｣p ph盻訴 v盻嬖 qu蘯ｧn tr蘯ｯng, denim ho蘯ｷc cargo.",
     material: "Washed cotton 250gsm",
     price: 590000,
     image: "/products/resey-washed-tee-olive-fit-01.jpg",
@@ -74,7 +74,7 @@ export const sampleProducts: ProductType[] = [
     slug: "resey-washed-tee-street-set",
     title: "RESEY Washed Tee Street Set",
     description:
-      "Set phối áo wash nâu cùng quần ống rộng, phù hợp lookbook và outfit đường phố hằng ngày.",
+      "Set ph盻訴 ﾃ｡o wash nﾃ｢u cﾃｹng qu蘯ｧn 盻創g r盻冢g, phﾃｹ h盻｣p lookbook vﾃ outfit ﾄ柁ｰ盻拵g ph盻・h蘯ｱng ngﾃy.",
     material: "Washed cotton tee / cotton twill pants",
     price: 1190000,
     image: "/products/resey-washed-tee-brown-fit-01.jpg",
@@ -93,7 +93,7 @@ export const sampleProducts: ProductType[] = [
     slug: "resey-wide-leg-cream-pants",
     title: "RESEY Wide Leg Pants - Cream",
     description:
-      "Quần ống rộng màu cream, dáng rũ, dễ phối với các dòng tee wash của RESEY.",
+      "Qu蘯ｧn 盻創g r盻冢g mﾃu cream, dﾃ｡ng rﾅｩ, d盻・ph盻訴 v盻嬖 cﾃ｡c dﾃｲng tee wash c盻ｧa RESEY.",
     material: "Cotton twill",
     price: 760000,
     image: "/products/resey-washed-tee-brown-fit-05.jpg",
@@ -112,7 +112,7 @@ export const sampleProducts: ProductType[] = [
     slug: "resey-wide-leg-dust-pants",
     title: "RESEY Wide Leg Pants - Dust Gray",
     description:
-      "Quần ống rộng wash bụi, dáng streetwear mạnh, phối tốt với áo nâu hoặc olive.",
+      "Qu蘯ｧn 盻創g r盻冢g wash b盻･i, dﾃ｡ng streetwear m蘯｡nh, ph盻訴 t盻奏 v盻嬖 ﾃ｡o nﾃ｢u ho蘯ｷc olive.",
     material: "Washed cotton twill",
     price: 790000,
     image: "/products/resey-washed-tee-brown-fit-04.jpg",
@@ -130,7 +130,7 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-oversized-tee",
     slug: "resey-oversized-tee",
     title: "RESEY Oversized Tee",
-    description: "Áo thun form rộng cho streetwear hằng ngày.",
+    description: "ﾃ｛ thun form r盻冢g cho streetwear h蘯ｱng ngﾃy.",
     material: "Cotton 240gsm",
     price: 450000,
     image: "/products/resey-washed-tee-brown-fit-02.jpg",
@@ -148,11 +148,11 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-minimal-hoodie",
     slug: "resey-minimal-hoodie",
     title: "RESEY Minimal Hoodie",
-    description: "Hoodie nỉ dày, tối giản, giữ form tốt.",
+    description: "Hoodie n盻・dﾃy, t盻訴 gi蘯｣n, gi盻ｯ form t盻奏.",
     material: "French terry cotton blend",
     price: 790000,
     image:
-      "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80",
+      "/images/products/black-tee-fallback.jpg",
     stock: 24,
     sizes: ["S", "M", "L", "XL"],
     colors: ["Black", "White", "Gray"],
@@ -167,7 +167,7 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-street-cargo-pants",
     slug: "resey-street-cargo-pants",
     title: "RESEY Street Cargo Pants",
-    description: "Cargo pants utility fit, thoải mái khi di chuyển.",
+    description: "Cargo pants utility fit, tho蘯｣i mﾃ｡i khi di chuy盻ハ.",
     material: "Cotton twill",
     price: 920000,
     image: "/products/resey-washed-tee-brown-fit-04.jpg",
@@ -185,11 +185,11 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-logo-cap",
     slug: "resey-logo-cap",
     title: "RESEY Logo Cap",
-    description: "Nón lưỡi trai basic tone đen/trắng.",
+    description: "Nﾃｳn lﾆｰ盻｡i trai basic tone ﾄ粗n/tr蘯ｯng.",
     material: "Cotton canvas",
     price: 320000,
     image:
-      "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80",
+      "/images/products/black-tee-fallback.jpg",
     stock: 60,
     sizes: ["Free Size"],
     colors: ["Black", "White", "Beige"],
@@ -204,7 +204,7 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-heavyweight-tee",
     slug: "resey-heavyweight-tee",
     title: "RESEY Heavyweight Tee",
-    description: "Áo thun heavy cotton, chất dày, đứng form.",
+    description: "ﾃ｛ thun heavy cotton, ch蘯･t dﾃy, ﾄ黛ｻｩng form.",
     material: "Heavyweight cotton 260gsm",
     price: 520000,
     image: "/products/resey-washed-tee-brown-fit-03.jpg",
@@ -222,11 +222,11 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-dragon-graphic-tee",
     slug: "resey-dragon-graphic-tee",
     title: "RESEY Dragon Graphic Tee",
-    description: "Graphic tee phiên bản giới hạn.",
+    description: "Graphic tee phiﾃｪn b蘯｣n gi盻嬖 h蘯｡n.",
     material: "Cotton jersey",
     price: 680000,
     image:
-      "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=80",
+      "/images/products/black-tee-fallback.jpg",
     stock: 12,
     sizes: ["S", "M", "L", "XL"],
     colors: ["Black", "White", "Gray"],
@@ -241,7 +241,7 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-boxy-tee",
     slug: "resey-boxy-tee",
     title: "RESEY Boxy Tee",
-    description: "Boxy tee với form rộng, gọn và dễ phối đồ.",
+    description: "Boxy tee v盻嬖 form r盻冢g, g盻肱 vﾃ d盻・ph盻訴 ﾄ黛ｻ・",
     material: "Compact cotton",
     price: 560000,
     image: "/products/resey-washed-tee-brown-fit-01.jpg",
@@ -259,11 +259,11 @@ export const sampleProducts: ProductType[] = [
     product_id: "resey-club-hoodie",
     slug: "resey-club-hoodie",
     title: "RESEY Club Hoodie",
-    description: "Hoodie signature của RESEY.",
+    description: "Hoodie signature c盻ｧa RESEY.",
     material: "Brushed fleece",
     price: 850000,
     image:
-      "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=900&q=80",
+      "/images/products/black-tee-fallback.jpg",
     stock: 14,
     sizes: ["S", "M", "L", "XL"],
     colors: ["Black", "White", "Gray"],
@@ -298,3 +298,4 @@ export function findSampleProduct(identifier: string): ProductType | null {
     ) || null
   );
 }
+

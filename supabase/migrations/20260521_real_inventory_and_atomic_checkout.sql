@@ -102,8 +102,8 @@ values (
   1,
   'RESEY',
   '/brand/resey-logo.jpg',
-  'supermanzero30@gmail.com',
-  '+81 90-xxxx-xxxx',
+  'support@resey.uk',
+  'Đang cập nhật',
   'Vietcombank',
   'RESEY',
   '0123456789',
@@ -454,3 +454,4 @@ $$;
 
 revoke all on function public.create_order_checkout(jsonb) from public;
 grant execute on function public.create_order_checkout(jsonb) to authenticated;
+

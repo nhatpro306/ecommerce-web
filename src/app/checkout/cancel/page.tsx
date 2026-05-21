@@ -15,16 +15,15 @@ export default function CancelPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <XCircle className="h-10 w-10 text-red-600" />
           </div>
-          <CardTitle className="text-2xl">Checkout Cancelled</CardTitle>
+          <CardTitle className="text-2xl">Thanh toán đã hủy</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2 text-center">
             <p className="text-muted-foreground">
-              Your checkout was cancelled. No charges were made.
+              Quy trình thanh toán đã được hủy. Đơn hàng chưa được tạo.
             </p>
             <p className="text-muted-foreground">
-              Your items are still in your cart and ready for checkout when
-              you&apos;re ready.
+              Sản phẩm vẫn còn trong giỏ hàng. Bạn có thể quay lại thanh toán khi sẵn sàng.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -33,13 +32,13 @@ export default function CancelPage() {
               variant="outline"
               className="cursor-pointer"
             >
-              Return to Cart
+              Quay lại giỏ hàng
             </Button>
             <Button
               onClick={() => router.push("/checkout")}
               className="cursor-pointer"
             >
-              Try Again
+              Thanh toán lại
             </Button>
           </div>
         </CardContent>

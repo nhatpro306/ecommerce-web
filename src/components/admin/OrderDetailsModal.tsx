@@ -49,7 +49,7 @@ const getStatusColor = (status: string) => {
 const mapStatusLabel = (status: string) => {
   switch (status) {
     case "processing":
-      return "Đã xác nhận";
+      return "Đang đóng gói";
     case "shipped":
       return "Đang giao";
     case "delivered":
@@ -148,12 +148,20 @@ export function OrderDetailsModal({
 
               <div className="border border-zinc-200 p-4">
                 <p className="text-sm font-bold uppercase tracking-[0.14em]">
-                  Thanh toán
+                  Phương thức thanh toán
                 </p>
                 <p className="mt-2 text-sm text-zinc-600">
                   {paymentLabels[activeOrder.payment_method || ""] ||
                     activeOrder.payment_method ||
                     "Chưa xác định"}
+                </p>
+                <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+                  Trạng thái thanh toán
+                </p>
+                <p className="mt-1 text-sm text-zinc-600">
+                  {activeOrder.payment_method === "bank_transfer"
+                    ? "Đang kiểm tra"
+                    : "Chưa thanh toán"}
                 </p>
               </div>
             </div>

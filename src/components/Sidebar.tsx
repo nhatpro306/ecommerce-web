@@ -59,10 +59,10 @@ import {
 
 // Default icons for each category
 const categoryIcons: Record<string, React.ElementType> = {
-  All: Home,
+  "Tất cả": Home,
   "T-Shirts": Shirt,
   Hoodies: Shirt,
-  Pants: Smartphone,
+  Pants: Shirt,
   Accessories: Watch,
 };
 
@@ -94,7 +94,7 @@ export default function Sidebar() {
 
   // Mapping of categories from DB to display with icons and hrefs
   const categoryItems = [
-    { name: "All", icon: Home, href: "/products" },
+    { name: "Tất cả", icon: Home, href: "/products" },
     ...(categories || []).map((category) => ({
       name: category.name,
       icon: categoryIcons[category.name] || Smartphone,
@@ -106,15 +106,15 @@ export default function Sidebar() {
   const displayCategories = user
     ? categoryItems
     : categoryItems.filter((category) =>
-        ["All", "T-Shirts", "Accessories"].includes(category.name),
+        ["Tất cả", "T-Shirts", "Accessories"].includes(category.name),
       );
 
   // Admin navigation items
   const adminNavItems = [
-    { name: "Admin Dashboard", icon: Settings, href: "/admin" },
-    { name: "Products", icon: Package, href: "/admin/products" },
-    { name: "Orders", icon: ShoppingCart, href: "/admin/orders" },
-    { name: "Users", icon: Users, href: "/admin/users" },
+    { name: "Tổng quan admin", icon: Settings, href: "/admin" },
+    { name: "Sản phẩm", icon: Package, href: "/admin/products" },
+    { name: "Đơn hàng", icon: ShoppingCart, href: "/admin/orders" },
+    { name: "Người dùng", icon: Users, href: "/admin/users" },
   ];
 
   return (
@@ -141,10 +141,10 @@ export default function Sidebar() {
                 className="flex flex-col"
               >
                 <span className="text-foreground text-base font-semibold">
-                  E-Store
+                  RESEY
                 </span>
                 <span className="text-muted-foreground text-xs">
-                  Premium Shop
+                  Local Streetwear
                 </span>
               </Motion>
             )}
@@ -172,7 +172,7 @@ export default function Sidebar() {
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                 <Input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Tìm sản phẩm..."
                   className="bg-muted/50 border-border/50 focus:bg-background w-full pl-9 text-sm transition-all duration-200"
                 />
               </div>
@@ -194,7 +194,7 @@ export default function Sidebar() {
               {!isCollapsed && (
                 <Motion variants={itemVariants} initial="closed" animate="open">
                   <SidebarGroupLabel className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                    Administration
+                    Quản trị
                   </SidebarGroupLabel>
                 </Motion>
               )}
@@ -271,7 +271,7 @@ export default function Sidebar() {
             {!isCollapsed && (
               <Motion variants={itemVariants} initial="closed" animate="open">
                 <SidebarGroupLabel className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                  Categories
+                  Danh mục
                 </SidebarGroupLabel>
               </Motion>
             )}
@@ -298,17 +298,17 @@ export default function Sidebar() {
                   >
                     {!isCollapsed && (
                       <p className="leading-snug font-medium">
-                        Couldn&apos;t load categories
+                        Không thể tải danh mục
                       </p>
                     )}
                     <button
                       type="button"
                       onClick={() => void refetchCategories()}
                       className="bg-background/80 text-foreground hover:bg-background flex w-full cursor-pointer items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs font-medium"
-                      title="Retry loading categories"
+                      title="Tải lại danh mục"
                     >
                       <RefreshCw className="h-3 w-3 shrink-0" />
-                      {!isCollapsed && <span>Retry</span>}
+                      {!isCollapsed && <span>Thử lại</span>}
                     </button>
                   </div>
                 ) : (
@@ -400,7 +400,7 @@ export default function Sidebar() {
                     </Avatar>
                     <div className="ml-3 min-w-0 flex-1">
                       <p className="text-foreground truncate text-sm font-medium">
-                        {user.email?.split("@")[0] || "User"}
+                        {user.email?.split("@")[0] || "Tài khoản"}
                       </p>
                       <p className="text-muted-foreground truncate text-xs">
                         {user.email}
@@ -418,7 +418,7 @@ export default function Sidebar() {
                   <SidebarMenuButton
                     size="lg"
                     className="group cursor-pointer"
-                    tooltip={`${user.email?.split("@")[0] || "User"}`}
+                    tooltip={`${user.email?.split("@")[0] || "Tài khoản"}`}
                   >
                     <div className="relative">
                       <Avatar className="ring-primary/20 group-hover:ring-primary/40 h-8 w-8 ring-2 transition-all duration-200">
@@ -446,7 +446,7 @@ export default function Sidebar() {
                 </Avatar>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">
-                    {user.email?.split("@")[0] || "User"}
+                    {user.email?.split("@")[0] || "Tài khoản"}
                   </span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
@@ -459,21 +459,21 @@ export default function Sidebar() {
                 onClick={() => router.replace("/profile")}
               >
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>Tài khoản</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="focus:bg-muted/70 cursor-pointer"
                 onClick={() => router.replace("/cart")}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                <span>Cart</span>
+                <span>Giỏ hàng</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="focus:bg-muted/70 cursor-pointer"
-                onClick={() => router.replace("/dashboard")}
+                onClick={() => router.replace("/profile")}
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Dashboard</span>
+                <span>Đơn hàng của tôi</span>
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem
@@ -481,7 +481,7 @@ export default function Sidebar() {
                   onClick={() => router.replace("/admin")}
                 >
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Admin Panel</span>
+                  <span>Trang admin</span>
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
@@ -489,7 +489,7 @@ export default function Sidebar() {
                 className="focus:bg-muted/70 cursor-pointer transition-colors duration-200"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign out</span>
+                <span>Đăng xuất</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

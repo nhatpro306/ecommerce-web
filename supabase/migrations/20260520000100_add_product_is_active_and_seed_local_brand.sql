@@ -1,4 +1,4 @@
-alter table if exists public.products
+﻿alter table if exists public.products
 add column if not exists is_active boolean not null default true;
 
 insert into public.categories (name, description)
@@ -41,7 +41,7 @@ values
     'Vietnamese streetwear oversized tee',
     '100% cotton',
     390000,
-    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80',
+    '/images/products/black-tee-fallback.jpg',
     20,
     array['M','L','XL'],
     array['Black'],
@@ -55,7 +55,7 @@ values
     'Heavyweight streetwear hoodie',
     'Cotton fleece',
     790000,
-    'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80',
+    '/images/products/black-tee-fallback.jpg',
     12,
     array['M','L','XL'],
     array['Gray'],

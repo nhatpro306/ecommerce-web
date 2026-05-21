@@ -10,13 +10,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 const navItems = [
-  { href: "/products?sort=latest", label: "Hàng mới" },
-  { href: "/products?sort=price-desc", label: "Bán chạy" },
-  { href: "/products?category=T-Shirts", label: "Áo" },
-  { href: "/products?category=Pants", label: "Quần" },
-  { href: "/products?category=Hoodies", label: "Áo khoác" },
-  { href: "/products?category=Accessories", label: "Phụ kiện" },
-  { href: "/products", label: "Khuyến mãi" },
+  { href: "/", label: "Trang chủ" },
+  { href: "/products", label: "Sản phẩm" },
+  { href: "/products?sort=latest", label: "Bộ sưu tập" },
+  { href: "/about", label: "Về RESEY" },
+  { href: "/contact", label: "Liên hệ" },
 ];
 
 export function Navbar() {
@@ -25,14 +23,14 @@ export function Navbar() {
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 text-black backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-3 lg:hidden">
-          <SidebarTrigger className="hover:bg-zinc-100" />
+          <SidebarTrigger className="text-black hover:bg-zinc-100 hover:text-black" />
         </div>
 
         <nav className="hidden flex-1 items-center gap-5 lg:flex">
-          {navItems.slice(0, 4).map((item) => (
+          {navItems.slice(0, 3).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -55,7 +53,7 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-end gap-5 lg:flex">
-          {navItems.slice(4).map((item) => (
+          {navItems.slice(3).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -70,7 +68,7 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden h-9 w-9 cursor-pointer sm:inline-flex"
+            className="hidden h-9 w-9 cursor-pointer text-black hover:bg-zinc-100 hover:text-black active:bg-zinc-200 sm:inline-flex"
             onClick={() => router.push("/products")}
           >
             <Search className="h-[1.1rem] w-[1.1rem]" />
@@ -80,7 +78,7 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 cursor-pointer"
+            className="h-9 w-9 cursor-pointer text-black hover:bg-zinc-100 hover:text-black active:bg-zinc-200"
             onClick={() => router.push("/cart")}
           >
             <div className="relative">
@@ -98,7 +96,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 cursor-pointer"
+              className="h-9 w-9 cursor-pointer text-black hover:bg-zinc-100 hover:text-black active:bg-zinc-200"
               onClick={() => router.push("/profile")}
             >
               <User className="h-[1.1rem] w-[1.1rem]" />
@@ -108,7 +106,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 cursor-pointer"
+              className="h-9 w-9 cursor-pointer text-black hover:bg-zinc-100 hover:text-black active:bg-zinc-200"
               onClick={() => router.push("/signin")}
             >
               <LogIn className="h-[1.1rem] w-[1.1rem]" />

@@ -32,14 +32,14 @@ export default function CartShoppingPage() {
 
         <div className="mt-6 border-b border-zinc-200 pb-5">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-            Cart
+            Giỏ hàng
           </p>
           <h1 className="mt-2 text-3xl font-black uppercase">
             Giỏ hàng của bạn
           </h1>
           {!user && cartItems.length > 0 && (
             <p className="mt-3 text-sm text-zinc-600">
-              Bạn có thể xem giỏ hàng trước. Khi checkout, hệ thống sẽ yêu cầu đăng nhập.
+              Bạn có thể xem giỏ hàng trước. Khi thanh toán, hệ thống sẽ yêu cầu đăng nhập.
             </p>
           )}
         </div>
@@ -164,7 +164,7 @@ export default function CartShoppingPage() {
               </div>
               <Link href={user ? "/checkout" : "/signin"}>
                 <Button className="mt-5 h-12 w-full rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
-                  {user ? "Tiến hành thanh toán" : "Đăng nhập để checkout"}
+                  {user ? "Tiến hành thanh toán" : "Đăng nhập để thanh toán"}
                 </Button>
               </Link>
             </aside>

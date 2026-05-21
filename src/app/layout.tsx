@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | RESEY",
   },
   description:
-    "RESEY streetwear shop with T-shirts, hoodies, pants, accessories, COD checkout, and bank transfer.",
+    "RESEY là website streetwear Việt Nam với áo, quần, phụ kiện, thanh toán COD và chuyển khoản.",
   openGraph: {
     title: "RESEY",
     description: "RESEY identity, modern streetwear.",
@@ -65,8 +65,8 @@ export default function RootLayout({
               <CartProvider>
                 <ThemeProvider
                   attribute="class"
-                  defaultTheme="system"
-                  enableSystem
+                  defaultTheme="light"
+                  enableSystem={false}
                   disableTransitionOnChange
                 >
                   <SidebarProvider>
