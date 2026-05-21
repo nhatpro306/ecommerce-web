@@ -2,7 +2,8 @@
 
 interface ImportMetaEnv {
   readonly NEXT_PUBLIC_SUPABASE_URL: string;
-  readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+  readonly NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
+  readonly NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {
@@ -11,7 +12,8 @@ interface ImportMeta {
 
 declare namespace NodeJS {
   interface ProcessEnv {
-    readonly POLAR_ACCESS_TOKEN: string;
-    readonly POLAR_WEBHOOK_SECRET: string;
+    readonly NEXT_PUBLIC_SUPABASE_URL?: string;
+    readonly NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
+    readonly NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string;
   }
 }

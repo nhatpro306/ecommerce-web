@@ -22,8 +22,9 @@ const env = {
   ...process.env,
 };
 
-const required = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"];
-const missing = required.filter((key) => !env[key]);
+const missing = ["NEXT_PUBLIC_SUPABASE_URL"].filter((key) => !env[key]);
+const supabasePublicKey =
+  env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (missing.length > 0) {
   console.error(`Missing env: ${missing.join(", ")}`);
@@ -35,18 +36,22 @@ if (!env.NEXT_PUBLIC_SUPABASE_URL.startsWith("https://")) {
   process.exit(1);
 }
 
-if (env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 100) {
+if (!supabasePublicKey) {
   console.error(
-    `NEXT_PUBLIC_SUPABASE_ANON_KEY looks too short (${env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length} chars). ` +
-      "Copy the anon public key again from Supabase Project Settings > API.",
+    "Missing env: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY",
   );
   process.exit(1);
 }
 
-const supabase = createClient(
-  env.NEXT_PUBLIC_SUPABASE_URL,
-  env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-);
+if (!supabasePublicKey.startsWith("sb_publishable_") && supabasePublicKey.length < 100) {
+  console.error(
+    `Supabase public key looks too short (${supabasePublicKey.length} chars). ` +
+      "Copy the publishable or anon public key again from Supabase Project Settings > API.",
+  );
+  process.exit(1);
+}
+
+const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, supabasePublicKey);
 
 const checks = [
   "products",
@@ -60,7 +65,9 @@ const checks = [
 let failed = false;
 
 for (const table of checks) {
-  const { error } = await supabase.from(table).select("*", { count: "exact", head: true });
+  const { error } = await supabase
+    .from(table)
+    .select("*", { count: "exact", head: true });
 
   if (error) {
     failed = true;
