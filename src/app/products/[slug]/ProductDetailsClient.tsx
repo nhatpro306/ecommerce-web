@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   Check,
@@ -59,13 +59,14 @@ export default function ProductDetailsClient({
 
   const selectedVariant = activeVariants.find(
     (variant) =>
-      variant.size === (selectedSize || availableSizes[0]) &&
-      variant.color === (selectedColor || availableColors[0]),
+      variant.size === selectedSize && variant.color === selectedColor,
   );
 
   const currentStock = selectedVariant?.stock ?? product.stock;
   const currentPrice = selectedVariant?.price_override ?? product.price;
   const productImage = getProductImage(product);
+  const hasSizeOptions = availableSizes.length > 0;
+  const hasColorOptions = availableColors.length > 0;
 
   const relatedProducts = useMemo(
     () =>
@@ -75,21 +76,63 @@ export default function ProductDetailsClient({
     [allProducts, product.product_id],
   );
 
+  useEffect(() => {
+    if (currentStock > 0 && quantity > currentStock) {
+      setQuantity(currentStock);
+    }
+  }, [currentStock, quantity]);
+
+  useEffect(() => {
+    if (
+      selectedColor &&
+      activeVariants.length > 0 &&
+      !availableColors.includes(selectedColor)
+    ) {
+      setSelectedColor("");
+    }
+  }, [activeVariants.length, availableColors, selectedColor]);
+
   const handleAddToCart = async () => {
+    if (hasSizeOptions && !selectedSize) {
+      toast.error("Vui lòng chọn size trước khi thêm vào giỏ.");
+      return;
+    }
+
+    if (hasColorOptions && !selectedColor) {
+      toast.error("Vui lòng chọn màu trước khi thêm vào giỏ.");
+      return;
+    }
+
+    if (activeVariants.length > 0 && !selectedVariant) {
+      toast.error("Phiên bản size/màu này hiện không khả dụng.");
+      return;
+    }
+
+    if (currentStock <= 0) {
+      toast.error("Sản phẩm đã hết hàng.");
+      return;
+    }
+
     if (quantity > currentStock) {
       toast.error("Số lượng vượt quá tồn kho hiện tại.");
       return;
     }
 
-    const sizeToAdd = selectedSize || availableSizes[0];
-    const colorToAdd = selectedColor || availableColors[0];
+    const added = await addToCart(
+      {
+        ...product,
+        price: currentPrice,
+        stock: currentStock,
+      },
+      {
+        size: selectedSize || undefined,
+        color: selectedColor || undefined,
+        quantity,
+        variantId: selectedVariant?.id,
+      },
+    );
 
-    await addToCart(product, {
-      size: sizeToAdd,
-      color: colorToAdd,
-      quantity,
-      variantId: selectedVariant?.id,
-    });
+    if (!added) return;
 
     setIsAddedToCart(true);
     window.setTimeout(() => setIsAddedToCart(false), 2000);
@@ -163,6 +206,11 @@ export default function ProductDetailsClient({
                   </button>
                 ))}
               </div>
+              {hasSizeOptions && !selectedSize && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Vui lòng chọn size phù hợp trước khi đặt hàng.
+                </p>
+              )}
             </div>
 
             <div>
@@ -186,6 +234,11 @@ export default function ProductDetailsClient({
                   </button>
                 ))}
               </div>
+              {hasColorOptions && !selectedColor && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Vui lòng chọn màu trước khi thêm vào giỏ.
+                </p>
+              )}
             </div>
 
             <div>
@@ -224,7 +277,9 @@ export default function ProductDetailsClient({
               disabled={currentStock <= 0}
               onClick={handleAddToCart}
             >
-              {isAddedToCart ? (
+              {currentStock <= 0 ? (
+                "Hết hàng"
+              ) : isAddedToCart ? (
                 <>
                   <Check className="mr-2 h-4 w-4" />
                   Đã thêm vào giỏ
