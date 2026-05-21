@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import {
   createContext,
   useContext,
@@ -19,6 +19,7 @@ const UUID_PATTERN =
 export interface CartItem extends ProductType {
   quantity: number;
   cart_item_id?: number; // Database ID for the cart item
+  variant_id?: string | null;
   selected_size?: string | null;
   selected_color?: string | null;
   variant_info?: Record<string, unknown>;
@@ -28,7 +29,12 @@ interface CartContextType {
   cartItems: CartItem[];
   addToCart: (
     product: ProductType,
-    options?: { size?: string; color?: string; quantity?: number }
+    options?: {
+      size?: string;
+      color?: string;
+      quantity?: number;
+      variantId?: string | null;
+    }
   ) => Promise<void>;
   removeFromCart: (productId: string, cartItemId?: number) => void;
   updateQuantity: (
@@ -110,6 +116,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ...item.product,
             quantity: item.quantity,
             cart_item_id: item.id,
+            variant_id: item.variant_id,
             selected_size: item.selected_size,
             selected_color: item.selected_color,
             variant_info: item.variant_info,
@@ -147,11 +154,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = async (
     product: ProductType,
-    options?: { size?: string; color?: string; quantity?: number }
+    options?: {
+      size?: string;
+      color?: string;
+      quantity?: number;
+      variantId?: string | null;
+    }
   ) => {
     const quantity = Math.max(1, options?.quantity ?? 1);
     const selectedSize = options?.size ?? null;
     const selectedColor = options?.color ?? null;
+    const selectedVariantId = options?.variantId ?? null;
     const shouldUseLocalCart = !user || !isSupabaseProductId(product.product_id);
 
     if (shouldUseLocalCart) {
@@ -177,6 +190,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 {
                   ...product,
                   quantity,
+                  variant_id: selectedVariantId,
                   selected_size: selectedSize,
                   selected_color: selectedColor,
                   variant_info: {
@@ -220,6 +234,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           size: selectedSize ?? undefined,
           color: selectedColor ?? undefined,
+          variantId: selectedVariantId ?? undefined,
           variantInfo: {
             size: selectedSize,
             color: selectedColor,
@@ -253,6 +268,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ...product,
               quantity,
               cart_item_id: result.id,
+              variant_id: result.variant_id,
               selected_size: selectedSize,
               selected_color: selectedColor,
               variant_info: result.variant_info,
@@ -425,3 +441,4 @@ export function useCart() {
   }
   return context;
 }
+

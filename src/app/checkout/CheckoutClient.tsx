@@ -1,16 +1,25 @@
-"use client";
+﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+import { sendOrderCreatedNotificationAction } from "@/app/checkout/notification-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { supabase } from "@/lib/supabase/client";
 import { addressService } from "@/services/address/addressService";
-import { orderService } from "@/services/order/orderService";
 import { getActiveCart } from "@/services/cart/cartService";
-import { toast } from "sonner";
+import { orderService } from "@/services/order/orderService";
 import { formatCurrency } from "@/utils/formatCurrency";
+
+interface BankConfig {
+  name: string;
+  accountName: string;
+  accountNumber: string;
+}
 
 type PaymentMethod = "cod" | "bank_transfer";
 
@@ -20,6 +29,7 @@ export default function CheckoutClient() {
   const { cartItems, subtotal, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -31,14 +41,35 @@ export default function CheckoutClient() {
     note: "",
   });
 
+  useEffect(() => {
+    async function loadStoreSettings() {
+      const { data, error } = await supabase
+        .from("store_settings")
+        .select("bank_name, bank_account_name, bank_account_number")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error || !data) return;
+
+      setStoreBankConfig({
+        name: data.bank_name || "Vietcombank",
+        accountName: data.bank_account_name || "RESEY",
+        accountNumber: data.bank_account_number || "0123456789",
+      });
+    }
+
+    loadStoreSettings();
+  }, []);
+
   const bankConfig = useMemo(
-    () => ({
-      name: process.env.NEXT_PUBLIC_BANK_NAME || "Vietcombank",
-      accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "RESEY",
-      accountNumber:
-        process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
-    }),
-    [],
+    () =>
+      storeBankConfig || {
+        name: process.env.NEXT_PUBLIC_BANK_NAME || "Vietcombank",
+        accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "RESEY",
+        accountNumber:
+          process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
+      },
+    [storeBankConfig],
   );
 
   const canSubmit =
@@ -80,6 +111,7 @@ export default function CheckoutClient() {
         userId: user.id,
         items: cartItems.map((item) => ({
           product_id: item.product_id,
+          variant_id: item.variant_id,
           quantity: item.quantity,
           price: item.price,
           selected_size: item.selected_size,
@@ -98,6 +130,18 @@ export default function CheckoutClient() {
         customerNote: form.note.trim(),
       });
 
+      try {
+        await sendOrderCreatedNotificationAction({
+          orderId: order.id,
+          customerName: form.fullName.trim(),
+          customerEmail: form.email.trim() || undefined,
+          total: order.total,
+          paymentMethod,
+        });
+      } catch (notificationError) {
+        console.warn("Order notification failed:", notificationError);
+      }
+
       const activeCart = await getActiveCart();
       if (activeCart) {
         await clearCart();
@@ -108,7 +152,11 @@ export default function CheckoutClient() {
       );
     } catch (error) {
       console.error(error);
-      toast.error("Đặt hàng thất bại, vui lòng thử lại.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Đặt hàng thất bại, vui lòng thử lại.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -135,10 +183,7 @@ export default function CheckoutClient() {
               placeholder="Họ và tên *"
               value={form.fullName}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  fullName: event.target.value,
-                }))
+                setForm((previous) => ({ ...previous, fullName: event.target.value }))
               }
             />
             <Input
@@ -146,10 +191,7 @@ export default function CheckoutClient() {
               placeholder="Số điện thoại *"
               value={form.phone}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  phone: event.target.value,
-                }))
+                setForm((previous) => ({ ...previous, phone: event.target.value }))
               }
             />
             <Input
@@ -157,10 +199,7 @@ export default function CheckoutClient() {
               placeholder="Email (không bắt buộc)"
               value={form.email}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  email: event.target.value,
-                }))
+                setForm((previous) => ({ ...previous, email: event.target.value }))
               }
             />
             <Input
@@ -168,10 +207,7 @@ export default function CheckoutClient() {
               placeholder="Địa chỉ *"
               value={form.street}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  street: event.target.value,
-                }))
+                setForm((previous) => ({ ...previous, street: event.target.value }))
               }
             />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -180,10 +216,7 @@ export default function CheckoutClient() {
                 placeholder="Quận/Huyện *"
                 value={form.city}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    city: event.target.value,
-                  }))
+                  setForm((previous) => ({ ...previous, city: event.target.value }))
                 }
               />
               <Input
@@ -191,10 +224,7 @@ export default function CheckoutClient() {
                 placeholder="Tỉnh/TP"
                 value={form.state}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    state: event.target.value,
-                  }))
+                  setForm((previous) => ({ ...previous, state: event.target.value }))
                 }
               />
               <Input
@@ -202,10 +232,7 @@ export default function CheckoutClient() {
                 placeholder="Mã bưu chính *"
                 value={form.zipCode}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    zipCode: event.target.value,
-                  }))
+                  setForm((previous) => ({ ...previous, zipCode: event.target.value }))
                 }
               />
             </div>
@@ -267,15 +294,14 @@ export default function CheckoutClient() {
           <div className="mt-5 space-y-4">
             {cartItems.map((item) => (
               <div
-                key={item.cart_item_id ?? item.product_id}
+                key={item.cart_item_id ?? `${item.product_id}-${item.variant_id}`}
                 className="flex justify-between gap-4 border-b border-zinc-100 pb-4 text-sm"
               >
                 <span>
                   <span className="font-bold">{item.title}</span> x {item.quantity}
                   {(item.selected_size || item.selected_color) && (
                     <span className="mt-1 block text-xs text-zinc-500">
-                      Size: {item.selected_size || "-"} / Màu:{" "}
-                      {item.selected_color || "-"}
+                      Size: {item.selected_size || "-"} / Màu: {item.selected_color || "-"}
                     </span>
                   )}
                 </span>
