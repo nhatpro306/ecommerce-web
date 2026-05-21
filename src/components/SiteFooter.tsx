@@ -2,10 +2,13 @@
 import Link from "next/link";
 
 const policies: { label: string; href: string }[] = [
+  { label: "Về RESEY", href: "/about" },
+  { label: "Liên hệ", href: "/contact" },
   { label: "Hướng dẫn mua hàng", href: "/payment-guide" },
-  { label: "Chính sách đổi trả", href: "/return-policy" },
   { label: "Chính sách giao nhận", href: "/shipping-policy" },
+  { label: "Chính sách đổi trả", href: "/return-policy" },
   { label: "Hướng dẫn chọn size", href: "/size-guide" },
+  { label: "Bảo mật thông tin", href: "/privacy-policy" },
 ];
 
 const benefits: [string, string][] = [
@@ -92,3 +95,4 @@ export function SiteFooter() {
     </footer>
   );
 }
+
