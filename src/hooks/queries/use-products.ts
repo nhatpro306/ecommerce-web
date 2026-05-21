@@ -173,11 +173,7 @@ export function useProducts(options?: UseQueryOptions<ProductType[]>) {
 
   // Filter products based on user authentication
   const getFilteredProductsForUser = (user: unknown) => {
-    if (!user) {
-      return processedProducts.filter(
-        (product) => ![1, 2].includes(product.category_id || 0) // 1 = clothing, 2 = accessories
-      );
-    }
+    void user;
     return processedProducts;
   };
 
@@ -327,13 +323,9 @@ export function useFilteredProducts(
     return processed;
   }, [searchTerm, filters, productsQuery.data]);
 
-  // Filter products based on user authentication
+  // All active storefront products are public. RLS still protects admin writes.
   const displayProducts = useMemo(() => {
-    if (!user) {
-      return processedProducts.filter(
-        (product) => ![1, 2].includes(product.category_id || 0) // 1 = clothing, 2 = accessories
-      );
-    }
+    void user;
     return processedProducts;
   }, [user, processedProducts]);
 
