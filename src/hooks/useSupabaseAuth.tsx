@@ -1,126 +1,135 @@
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { profileService } from '@/services/profile/profileService'; // Import profileService
-import { authService } from '@/services/auth/authService'; // Import authService
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase/client";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { profileService } from "@/services/profile/profileService";
+import { authService } from "@/services/auth/authService";
 
 export function useSupabaseAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      // If user logs in, ensure they exist in our profiles table
-      if (session?.user) {
-        ensureUserProfile(session.user);
-      }
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      // If we have a user, ensure they exist in our profiles table
-      if (session?.user) {
-        ensureUserProfile(session.user);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Ensure user exists in the profiles table
-  const ensureUserProfile = async (user: User) => {
+  const ensureUserProfile = async (currentUser: User) => {
     try {
-      // Get user email from auth - use the User object's email first, then try to fetch if not available
-      let userEmail = user.email || '';
+      let userEmail = currentUser.email || "";
 
       if (!userEmail) {
-        console.log(
-          'Email not available in user object, fetching from auth service...'
-        );
         try {
           const authUserEmail = await authService.getCurrentUserEmail();
           if (authUserEmail) {
             userEmail = authUserEmail;
-            console.log(
-              'Successfully fetched email from auth service:',
-              userEmail
-            );
           }
         } catch (emailError) {
-          console.error('Error fetching email from auth service:', emailError);
+          console.error("Không thể lấy email người dùng:", emailError);
         }
       }
 
-      // Check if user profile exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('profile_id, email')
-        .eq('profile_id', user.id)
-        .single();
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from("profiles")
+        .select("profile_id, email")
+        .eq("profile_id", currentUser.id)
+        .maybeSingle();
 
-      if (existingProfile) {
-        // Profile already exists, update email if needed
-        if (!existingProfile.email && userEmail) {
-          console.log('Updating existing profile with email:', userEmail);
-          await profileService.updateProfile(user.id, {
-            email: userEmail,
-          });
-        }
+      if (fetchError) {
+        console.error("Không thể kiểm tra hồ sơ người dùng:", fetchError);
         return;
       }
 
-      // Create profile directly with Supabase
-      const { error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          profile_id: user.id,
-          username: '',
-          avatar_url: '',
-          email: userEmail,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      if (existingProfile) {
+        if (!existingProfile.email && userEmail) {
+          await profileService.updateProfile(currentUser.id, {
+            email: userEmail,
+          });
+        }
+
+        return;
+      }
+
+      const { error: createError } = await supabase.from("profiles").insert({
+        profile_id: currentUser.id,
+        username: "",
+        avatar_url: "",
+        email: userEmail,
+        created_at: new Date().toISOString(),
+      });
 
       if (createError) {
-        // Check if this is a duplicate key error (profile was created by another request)
-        if (createError.code === '23505') {
-          console.log('Profile already exists (created by another request)');
+        if (createError.code === "23505") {
           return;
         }
 
-        console.error('Error creating user profile:', createError);
-        throw createError;
+        console.error("Không thể tạo hồ sơ người dùng:", createError);
       }
     } catch (error) {
-      console.error('Error in ensureUserProfile:', error);
-      // Don't throw - we'll handle this on profile page visit
+      console.error("Lỗi khi xử lý hồ sơ người dùng:", error);
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await ensureUserProfile(session.user);
+        }
+      } catch (error) {
+        console.error("Không thể lấy phiên đăng nhập:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    syncSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        await ensureUserProfile(session.user);
+      }
+
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
-      toast.success('Signed in successfully');
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Đăng nhập thành công.");
     } catch (error) {
-      toast.error('Failed to sign in');
-      console.error(error);
+      console.error("Lỗi đăng nhập:", error);
+      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.");
       throw error;
     } finally {
       setLoading(false);
@@ -130,21 +139,26 @@ export function useSupabaseAuth() {
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error, data } = await supabase.auth.signUp({
+
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-      if (error) throw error;
 
-      // If signup is successfully and we have a user, ensure profile exists
+      if (error) {
+        throw error;
+      }
+
       if (data?.user) {
         await ensureUserProfile(data.user);
       }
 
-      toast.success('Signed up successfully');
+      toast.success(
+        "Đăng ký thành công. Vui lòng kiểm tra email nếu cần xác nhận tài khoản."
+      );
     } catch (error) {
-      toast.error('Failed to sign up');
-      console.error(error);
+      console.error("Lỗi đăng ký:", error);
+      toast.error("Đăng ký thất bại. Vui lòng thử lại.");
       throw error;
     } finally {
       setLoading(false);
@@ -154,24 +168,32 @@ export function useSupabaseAuth() {
   const signOut = async () => {
     try {
       setLoading(true);
-      console.log('Signing out user:', user?.email);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
 
-      // Explicitly clear user and session state
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        throw error;
+      }
+
       setUser(null);
       setSession(null);
 
-      console.log('Sign out complete, state cleared');
-      toast.success('Signed out successfully');
+      toast.success("Đăng xuất thành công.");
     } catch (error) {
-      toast.error('Failed to sign out');
-      console.error(error);
+      console.error("Lỗi đăng xuất:", error);
+      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  return { user, session, loading, signIn, signUp, signOut };
+  return {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  };
 }
