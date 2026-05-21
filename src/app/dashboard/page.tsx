@@ -81,14 +81,14 @@ export default function DashboardPage() {
                 : "text-muted-foreground"
             }`}
           >
-            Order History
+            Lịch sử đơn hàng
           </button>
         </div>
 
         {activeTab === "analytics" &&
           (ordersLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <p>Loading...</p>
+              <p>Đang tải...</p>
             </div>
           ) : (
             <DashboardCharts orders={orders || []} />
@@ -168,12 +168,12 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="flex flex-col items-center justify-center px-4 py-12">
-                  <p className="mb-4 text-xl font-medium">No orders yet</p>
+                  <p className="mb-4 text-xl font-medium">Chưa có đơn hàng</p>
                   <p className="text-muted-foreground mb-6">
-                    You haven&apos;t placed any orders yet.
+                    Bạn chưa có đơn hàng nào.
                   </p>
                   <Link href="/">
-                    <Button>Browse Products</Button>
+                    <Button>Xem sản phẩm</Button>
                   </Link>
                 </div>
               )}

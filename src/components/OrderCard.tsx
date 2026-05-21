@@ -6,11 +6,22 @@ import { toast } from "sonner";
 import { useDeleteOrder } from "@/hooks/queries";
 import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface OrderCardProps {
   order: OrderType;
   onDelete?: (orderId: number) => void;
 }
+
+const orderStatusLabels: Record<string, string> = {
+  pending: "Chờ xác nhận",
+  processing: "Đang xử lý",
+  confirmed: "Đã xác nhận",
+  shipped: "Đang giao",
+  delivered: "Đã giao",
+  completed: "Hoàn thành",
+  cancelled: "Đã hủy",
+};
 
 export function OrderCard({ order, onDelete }: OrderCardProps) {
   const { user } = useAuth();
@@ -22,11 +33,11 @@ export function OrderCard({ order, onDelete }: OrderCardProps) {
         orderId: order.id.toString(),
         userId: user?.id,
       });
-      toast.success("Order deleted");
+      toast.success("Đã xóa đơn hàng");
       onDelete?.(order.id);
     } catch (error) {
       console.error("Error deleting order:", error);
-      toast.error("Failed to delete order");
+      toast.error("Không thể xóa đơn hàng");
     }
   };
 
@@ -34,12 +45,12 @@ export function OrderCard({ order, onDelete }: OrderCardProps) {
     <Card className="overflow-hidden">
       <CardHeader className="bg-muted/20">
         <div className="flex flex-col justify-between md:flex-row">
-          <CardTitle className="text-lg">Order #{order.id}</CardTitle>
+          <CardTitle className="text-lg">Đơn hàng #{order.id}</CardTitle>
           <div className="mt-2 flex items-center space-x-4 md:mt-0">
             <span className="text-muted-foreground text-sm">
               {order.created_at
-                ? format(new Date(order.created_at), "MMM dd, yyyy")
-                : "N/A"}
+                ? format(new Date(order.created_at), "dd/MM/yyyy")
+                : "Chưa có ngày"}
             </span>
             <span
               className={`rounded-full px-2 py-1 text-xs ${
@@ -54,7 +65,7 @@ export function OrderCard({ order, onDelete }: OrderCardProps) {
                         : "bg-gray-100 text-gray-800"
               }`}
             >
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              {orderStatusLabels[order.status] || order.status}
             </span>
             {order.status !== "cancelled" && (
               <Button
@@ -64,7 +75,7 @@ export function OrderCard({ order, onDelete }: OrderCardProps) {
                 onClick={handleDeleteOrder}
                 disabled={deleteOrder.isPending}
               >
-                {deleteOrder.isPending ? "Deleting..." : "Delete Order"}
+                {deleteOrder.isPending ? "Đang xóa..." : "Xóa đơn"}
               </Button>
             )}
           </div>
@@ -89,22 +100,22 @@ export function OrderCard({ order, onDelete }: OrderCardProps) {
                 )}
                 <div>
                   <p className="font-medium">
-                    {item.product?.title || "Product"}
+                    {item.product?.title || "Sản phẩm"}
                   </p>
                   <p className="text-muted-foreground text-sm">
-                    Qty: {item.quantity} x ${item.price.toFixed(2)}
+                    Số lượng: {item.quantity} x {formatCurrency(item.price)}
                   </p>
                 </div>
               </div>
               <p className="mt-2 font-medium md:mt-0">
-                ${(item.quantity * item.price).toFixed(2)}
+                {formatCurrency(item.quantity * item.price)}
               </p>
             </div>
           ))}
           <div className="flex justify-end pt-2">
             <div className="text-right">
-              <p className="text-muted-foreground text-sm">Total</p>
-              <p className="text-lg font-bold">${order.total.toFixed(2)}</p>
+              <p className="text-muted-foreground text-sm">Tổng tiền</p>
+              <p className="text-lg font-bold">{formatCurrency(order.total)}</p>
             </div>
           </div>
         </div>
