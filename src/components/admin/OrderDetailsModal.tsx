@@ -1,10 +1,12 @@
-"use client";
+﻿"use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { Calendar, MapPin, Package, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, MapPin, Package, Phone, User } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,10 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { OrderWithDetails } from "@/services/admin/adminOrderService";
-import { useOrder } from "@/hooks/queries";
+import { Separator } from "@/components/ui/separator";
+import {
+  adminOrderService,
+  OrderWithDetails,
+} from "@/services/admin/adminOrderService";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getProductImage } from "@/utils/productImages";
 
@@ -28,8 +32,9 @@ interface OrderDetailsModalProps {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "delivered":
+      return "bg-emerald-100 text-emerald-800";
     case "shipped":
-      return "bg-green-100 text-green-800";
+      return "bg-sky-100 text-sky-800";
     case "processing":
       return "bg-blue-100 text-blue-800";
     case "pending":
@@ -44,14 +49,22 @@ const getStatusColor = (status: string) => {
 const mapStatusLabel = (status: string) => {
   switch (status) {
     case "processing":
-      return "confirmed";
+      return "Đã xác nhận";
     case "shipped":
-      return "shipping";
+      return "Đang giao";
     case "delivered":
-      return "completed";
+      return "Hoàn thành";
+    case "cancelled":
+      return "Đã hủy";
     default:
-      return status;
+      return "Chờ xác nhận";
   }
+};
+
+const paymentLabels: Record<string, string> = {
+  cod: "COD",
+  bank_transfer: "Chuyển khoản ngân hàng",
+  stripe: "Stripe",
 };
 
 export function OrderDetailsModal({
@@ -59,22 +72,44 @@ export function OrderDetailsModal({
   onClose,
   order,
 }: OrderDetailsModalProps) {
-  const { data: orderDetails, isLoading } = useOrder(
-    isOpen && order ? order.id.toString() : "",
-  );
+  const [orderDetails, setOrderDetails] = useState<OrderWithDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !order?.id) return;
+
+    let cancelled = false;
+
+    async function loadOrderDetails() {
+      setIsLoading(true);
+      const details = await adminOrderService.getOrderDetails(order.id);
+      if (!cancelled) {
+        setOrderDetails(details || order);
+        setIsLoading(false);
+      }
+    }
+
+    loadOrderDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, order]);
 
   if (!order) return null;
 
+  const activeOrder = orderDetails || order;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[84vh] max-w-2xl rounded-none">
+      <DialogContent className="max-h-[84vh] max-w-3xl rounded-none">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase">
             <Package className="h-5 w-5" />
             Đơn hàng #{order.id}
           </DialogTitle>
           <DialogDescription>
-            Chi tiết khách hàng, địa chỉ giao hàng và sản phẩm trong đơn.
+            Chi tiết khách hàng, địa chỉ giao hàng, thanh toán và sản phẩm đã đặt.
           </DialogDescription>
         </DialogHeader>
 
@@ -87,8 +122,8 @@ export function OrderDetailsModal({
                   Ngày đặt
                 </p>
                 <p className="mt-2 text-sm text-zinc-600">
-                  {order.created_at
-                    ? format(new Date(order.created_at), "dd/MM/yyyy HH:mm")
+                  {activeOrder.created_at
+                    ? format(new Date(activeOrder.created_at), "dd/MM/yyyy HH:mm")
                     : "Chưa có ngày"}
                 </p>
               </div>
@@ -98,7 +133,7 @@ export function OrderDetailsModal({
                   Tổng tiền
                 </p>
                 <p className="mt-2 text-lg font-black">
-                  {formatCurrency(order.total)}
+                  {formatCurrency(activeOrder.total)}
                 </p>
               </div>
 
@@ -106,8 +141,8 @@ export function OrderDetailsModal({
                 <p className="text-sm font-bold uppercase tracking-[0.14em]">
                   Trạng thái
                 </p>
-                <Badge className={`mt-2 rounded-none ${getStatusColor(order.status)}`}>
-                  {mapStatusLabel(order.status)}
+                <Badge className={`mt-2 rounded-none ${getStatusColor(activeOrder.status)}`}>
+                  {mapStatusLabel(activeOrder.status)}
                 </Badge>
               </div>
 
@@ -116,7 +151,9 @@ export function OrderDetailsModal({
                   Thanh toán
                 </p>
                 <p className="mt-2 text-sm text-zinc-600">
-                  {order.payment_method || "Chưa xác định"}
+                  {paymentLabels[activeOrder.payment_method || ""] ||
+                    activeOrder.payment_method ||
+                    "Chưa xác định"}
                 </p>
               </div>
             </div>
@@ -132,35 +169,36 @@ export function OrderDetailsModal({
                 <div>
                   <p className="text-sm font-bold">Tên</p>
                   <p className="text-sm text-zinc-600">
-                    {order.customer_name ||
-                      order.profile?.username ||
+                    {activeOrder.customer_name ||
+                      activeOrder.profile?.username ||
                       "Chưa cung cấp"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-bold">Email</p>
                   <p className="text-sm text-zinc-600">
-                    {order.customer_email ||
-                      order.profile?.email ||
+                    {activeOrder.customer_email ||
+                      activeOrder.profile?.email ||
                       "Chưa cung cấp"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-bold">Số điện thoại</p>
-                  <p className="text-sm text-zinc-600">
-                    {order.customer_phone || "Chưa cung cấp"}
+                  <p className="flex items-center gap-1 text-sm text-zinc-600">
+                    <Phone className="h-3 w-3" />
+                    {activeOrder.customer_phone || "Chưa cung cấp"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-bold">Ghi chú</p>
                   <p className="text-sm text-zinc-600">
-                    {order.customer_note || "Không có"}
+                    {activeOrder.customer_note || "Không có"}
                   </p>
                 </div>
               </div>
             </section>
 
-            {order.shipping_address && (
+            {activeOrder.shipping_address && (
               <>
                 <Separator />
                 <section>
@@ -169,14 +207,14 @@ export function OrderDetailsModal({
                     Địa chỉ giao hàng
                   </h3>
                   <div className="border border-zinc-200 p-4">
-                    <p className="font-bold">{order.shipping_address.street}</p>
+                    <p className="font-bold">{activeOrder.shipping_address.street}</p>
                     <p className="text-sm text-zinc-600">
-                      {order.shipping_address.city},{" "}
-                      {order.shipping_address.state}{" "}
-                      {order.shipping_address.zip_code}
+                      {activeOrder.shipping_address.city},{" "}
+                      {activeOrder.shipping_address.state}{" "}
+                      {activeOrder.shipping_address.zip_code}
                     </p>
                     <p className="text-sm text-zinc-600">
-                      {order.shipping_address.country}
+                      {activeOrder.shipping_address.country}
                     </p>
                   </div>
                 </section>
@@ -195,56 +233,64 @@ export function OrderDetailsModal({
                 <div className="flex h-32 items-center justify-center text-sm text-zinc-500">
                   Đang tải sản phẩm...
                 </div>
-              ) : orderDetails?.order_items ? (
+              ) : activeOrder.order_items && activeOrder.order_items.length > 0 ? (
                 <div className="space-y-3">
-                  {orderDetails.order_items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="grid grid-cols-[64px_1fr_auto] gap-4 border border-zinc-200 p-4"
-                    >
-                      <div className="relative h-16 w-16 overflow-hidden bg-zinc-100">
-                        <Image
-                          src={
-                            item.product
-                              ? getProductImage({
-                                  ...item.product,
-                                  description: "",
-                                  price: item.price,
-                                  stock: 0,
-                                })
-                              : getProductImage({
-                                  product_id: item.product_id,
-                                  title: "Sản phẩm",
-                                  description: "",
-                                  price: item.price,
-                                  stock: 0,
-                                })
-                          }
-                          alt={item.product?.title || "Sản phẩm"}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                  {activeOrder.order_items.map((item) => {
+                    const title =
+                      item.product_title_snapshot ||
+                      item.product?.title ||
+                      "Sản phẩm";
+                    const image =
+                      item.product_image_snapshot ||
+                      (item.product
+                        ? getProductImage({
+                            ...item.product,
+                            description: "",
+                            price: item.price,
+                            stock: 0,
+                          })
+                        : getProductImage({
+                            product_id: item.product_id,
+                            title,
+                            description: "",
+                            price: item.price,
+                            stock: 0,
+                          }));
 
-                      <div>
-                        <h4 className="font-bold">{item.product?.title}</h4>
-                        <p className="text-sm text-zinc-500">
-                          Số lượng: {item.quantity}
-                        </p>
-                        <p className="text-sm text-zinc-500">
-                          Size: {item.selected_size || "-"} / Màu:{" "}
-                          {item.selected_color || "-"}
-                        </p>
-                        <p className="text-sm text-zinc-500">
-                          Đơn giá: {formatCurrency(item.price)}
+                    return (
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-[64px_1fr_auto] gap-4 border border-zinc-200 p-4"
+                      >
+                        <div className="relative h-16 w-16 overflow-hidden bg-zinc-100">
+                          <Image src={image} alt={title} fill className="object-cover" />
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold">{title}</h4>
+                          <p className="text-sm text-zinc-500">
+                            Số lượng: {item.quantity}
+                          </p>
+                          <p className="text-sm text-zinc-500">
+                            Size: {item.size_snapshot || item.selected_size || "-"} / Màu:{" "}
+                            {item.color_snapshot || item.selected_color || "-"}
+                          </p>
+                          {item.sku_snapshot && (
+                            <p className="text-sm text-zinc-500">
+                              SKU: {item.sku_snapshot}
+                            </p>
+                          )}
+                          <p className="text-sm text-zinc-500">
+                            Đơn giá: {formatCurrency(item.price)}
+                          </p>
+                        </div>
+
+                        <p className="font-black">
+                          {formatCurrency(item.quantity * item.price)}
                         </p>
                       </div>
-
-                      <p className="font-black">
-                        {formatCurrency(item.quantity * item.price)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="border border-zinc-200 p-8 text-center text-zinc-500">

@@ -1,18 +1,12 @@
-import { supabase } from "@/lib/supabase/client";
-import { OrderType } from "@/types";
+﻿import { supabase } from "@/lib/supabase/client";
+import { OrderItemType, OrderType } from "@/types";
 
-// Strongly-typed helper interfaces
-interface OrderItemWithProductFromSupabase {
-  id: number;
-  order_id: number;
-  product_id: string;
-  quantity: number;
-  price: number;
-  products: {
+interface OrderItemRow extends Omit<OrderItemType, "product"> {
+  products?: {
     product_id: string;
     title: string;
-    image: string;
-  };
+    image?: string;
+  } | null;
 }
 
 interface CustomerStat {
@@ -35,18 +29,7 @@ export interface OrderWithDetails extends Omit<OrderType, "order_items"> {
     zip_code: string;
     country: string;
   };
-  order_items?: Array<{
-    id: number;
-    order_id: number;
-    product_id: string;
-    quantity: number;
-    price: number;
-    product: {
-      product_id: string;
-      title: string;
-      image: string;
-    };
-  }>;
+  order_items?: OrderItemType[];
 }
 
 export interface OrderFilters {
@@ -67,14 +50,27 @@ export interface OrderAnalytics {
   topCustomers: CustomerStat[];
 }
 
+function applyOrderFilters<T extends { eq: Function; gte: Function; lte: Function }>(
+  query: T,
+  filters: OrderFilters,
+): T {
+  let nextQuery = query;
+
+  if (filters.status) nextQuery = nextQuery.eq("status", filters.status) as T;
+  if (filters.userId) nextQuery = nextQuery.eq("user_id", filters.userId) as T;
+  if (filters.dateFrom) nextQuery = nextQuery.gte("created_at", filters.dateFrom) as T;
+  if (filters.dateTo) nextQuery = nextQuery.lte("created_at", filters.dateTo) as T;
+  if (filters.minAmount) nextQuery = nextQuery.gte("total", filters.minAmount) as T;
+  if (filters.maxAmount) nextQuery = nextQuery.lte("total", filters.maxAmount) as T;
+
+  return nextQuery;
+}
+
 /**
- * Admin service for order management
- * Requires admin privileges for all operations
+ * Admin service for order reads. Status mutations are handled by server actions
+ * so role checks happen on the server.
  */
 export const adminOrderService = {
-  /**
-   * Get all orders with filters and pagination
-   */
   async getAllOrders(
     filters: OrderFilters = {},
     page: number = 1,
@@ -82,47 +78,28 @@ export const adminOrderService = {
   ): Promise<{ orders: OrderWithDetails[]; total: number }> {
     try {
       let query = supabase.from("orders").select(`
-					*,
-					profiles!orders_user_id_fkey (
-						username,
-						email
-					),
-					addresses!orders_shipping_address_id_fkey (
-						street,
-						city,
-						state,
-						zip_code,
-						country
-					)
-				`);
+        *,
+        profiles!orders_user_id_fkey (
+          username,
+          email
+        ),
+        addresses!orders_shipping_address_id_fkey (
+          street,
+          city,
+          state,
+          zip_code,
+          country
+        )
+      `);
 
-      // Apply filters
-      if (filters.status) {
-        query = query.eq("status", filters.status);
-      }
-      if (filters.userId) {
-        query = query.eq("user_id", filters.userId);
-      }
-      if (filters.dateFrom) {
-        query = query.gte("created_at", filters.dateFrom);
-      }
-      if (filters.dateTo) {
-        query = query.lte("created_at", filters.dateTo);
-      }
-      if (filters.minAmount) {
-        query = query.gte("total", filters.minAmount);
-      }
-      if (filters.maxAmount) {
-        query = query.lte("total", filters.maxAmount);
-      }
+      query = applyOrderFilters(query, filters);
 
-      // Get total count for pagination
-      const countQuery = supabase
+      let countQuery = supabase
         .from("orders")
         .select("*", { count: "exact", head: true });
+      countQuery = applyOrderFilters(countQuery, filters);
       const { count } = await countQuery;
 
-      // Get paginated results
       const { data, error } = await query
         .order("created_at", { ascending: false })
         .range((page - 1) * limit, page * limit - 1);
@@ -132,7 +109,6 @@ export const adminOrderService = {
         throw error;
       }
 
-      // Format the data
       const orders: OrderWithDetails[] = (data || []).map((order) => ({
         ...order,
         profile: order.profiles,
@@ -149,38 +125,45 @@ export const adminOrderService = {
     }
   },
 
-  /**
-   * Get order details with items
-   */
   async getOrderDetails(orderId: number): Promise<OrderWithDetails | null> {
     try {
       const { data, error } = await supabase
         .from("orders")
         .select(
           `
-					*,
-					profiles!orders_user_id_fkey (
-						username,
-						email
-					),
-					addresses!orders_shipping_address_id_fkey (
-						street,
-						city,
-						state,
-						zip_code,
-						country
-					),
-					order_items (
-						id,
-						quantity,
-						price,
-						products (
-							product_id,
-							title,
-							image
-						)
-					)
-				`,
+          *,
+          profiles!orders_user_id_fkey (
+            username,
+            email
+          ),
+          addresses!orders_shipping_address_id_fkey (
+            street,
+            city,
+            state,
+            zip_code,
+            country
+          ),
+          order_items (
+            id,
+            order_id,
+            product_id,
+            variant_id,
+            quantity,
+            price,
+            selected_size,
+            selected_color,
+            product_title_snapshot,
+            product_image_snapshot,
+            sku_snapshot,
+            size_snapshot,
+            color_snapshot,
+            products (
+              product_id,
+              title,
+              image
+            )
+          )
+        `,
         )
         .eq("id", orderId)
         .single();
@@ -194,22 +177,17 @@ export const adminOrderService = {
         ...data,
         profile: data.profiles,
         shipping_address: data.addresses,
-        order_items: (
-          data.order_items as OrderItemWithProductFromSupabase[] | undefined
-        )?.map((item) => ({
+        order_items: (data.order_items as OrderItemRow[] | undefined)?.map((item) => ({
           ...item,
           product: item.products,
         })),
-      };
+      } as OrderWithDetails;
     } catch (err) {
       console.error("Failed to get order details:", err);
       return null;
     }
   },
 
-  /**
-   * Update order status
-   */
   async updateOrderStatus(orderId: number, status: string): Promise<OrderType> {
     try {
       const validStatuses = [
@@ -246,22 +224,18 @@ export const adminOrderService = {
     }
   },
 
-  /**
-   * Get order analytics
-   */
   async getOrderAnalytics(): Promise<OrderAnalytics> {
     try {
-      // Get all orders for analytics
       const { data: orders, error } = await supabase
         .from("orders")
         .select(
           `
-					*,
-					profiles (
-						username,
-						email
-					)
-				`,
+          *,
+          profiles (
+            username,
+            email
+          )
+        `,
         )
         .order("created_at", { ascending: false });
 
@@ -271,17 +245,13 @@ export const adminOrderService = {
       }
 
       const allOrders = orders || [];
-
-      // Calculate basic metrics
       const totalOrders = allOrders.length;
       const totalRevenue = allOrders.reduce(
         (sum, order) => sum + order.total,
         0,
       );
-      const averageOrderValue =
-        totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      // Orders by status
       const ordersByStatus = allOrders.reduce(
         (acc, order) => {
           acc[order.status] = (acc[order.status] || 0) + 1;
@@ -290,13 +260,11 @@ export const adminOrderService = {
         {} as Record<string, number>,
       );
 
-      // Recent orders (last 10)
       const recentOrders = allOrders.slice(0, 10).map((order) => ({
         ...order,
         profile: order.profiles,
       }));
 
-      // Top customers
       const customerStats = allOrders.reduce<Record<string, CustomerStat>>(
         (acc, order) => {
           const userId = order.user_id;
@@ -341,62 +309,10 @@ export const adminOrderService = {
     }
   },
 
-  /**
-   * Cancel an order
-   */
   async cancelOrder(orderId: number): Promise<OrderType> {
-    try {
-      const { data, error } = await supabase
-        .from("orders")
-        .update({
-          status: "cancelled",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", orderId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error cancelling order:", error);
-        throw error;
-      }
-
-      // Optionally restore product stock
-      const orderDetails = await this.getOrderDetails(orderId);
-      if (orderDetails?.order_items) {
-        await Promise.all(
-          orderDetails.order_items.map(async (item) => {
-            // Get current stock
-            const { data: product } = await supabase
-              .from("products")
-              .select("stock")
-              .eq("product_id", item.product.product_id)
-              .single();
-
-            if (product) {
-              // Restore stock
-              await supabase
-                .from("products")
-                .update({
-                  stock: product.stock + item.quantity,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq("product_id", item.product.product_id);
-            }
-          }),
-        );
-      }
-
-      return data;
-    } catch (err) {
-      console.error("Failed to cancel order:", err);
-      throw err;
-    }
+    return this.updateOrderStatus(orderId, "cancelled");
   },
 
-  /**
-   * Get orders requiring attention (pending for too long, payment issues, etc.)
-   */
   async getOrdersRequiringAttention(): Promise<OrderWithDetails[]> {
     try {
       const threeDaysAgo = new Date();
@@ -406,12 +322,12 @@ export const adminOrderService = {
         .from("orders")
         .select(
           `
-					*,
-					profiles (
-						username,
-						email
-					)
-				`,
+          *,
+          profiles (
+            username,
+            email
+          )
+        `,
         )
         .or(
           `status.eq.pending.and.created_at.lt.${threeDaysAgo.toISOString()},status.eq.processing.and.created_at.lt.${threeDaysAgo.toISOString()}`,
@@ -433,3 +349,5 @@ export const adminOrderService = {
     }
   },
 };
+
+
