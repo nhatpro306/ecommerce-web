@@ -6,6 +6,7 @@ import {
   mergeWithSampleProducts,
   sampleProducts,
 } from '@/utils/sampleProducts';
+import { useDemoData } from '@/utils/demoData';
 
 export const productService = {
   async getProducts(): Promise<ProductType[]> {
@@ -21,10 +22,16 @@ export const productService = {
       }
 
       const products = (data || []) as ProductType[];
-      return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
+      if (useDemoData) {
+        return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
+      }
+      return products;
     } catch (error) {
-      console.warn('Using sample products because Supabase products are unavailable:', error);
-      return sampleProducts;
+      if (useDemoData) {
+        console.warn('Using demo products because Supabase products are unavailable:', error);
+        return sampleProducts;
+      }
+      throw error;
     }
   },
 
@@ -44,9 +51,9 @@ export const productService = {
         throw toUserFacingQueryError('Product', error);
       }
 
-      return (data as ProductType) || findSampleProduct(id);
+      return (data as ProductType) || (useDemoData ? findSampleProduct(id) : null);
     } catch (error) {
-      const fallbackProduct = findSampleProduct(id);
+      const fallbackProduct = useDemoData ? findSampleProduct(id) : null;
       if (fallbackProduct) return fallbackProduct;
       throw error instanceof Error ? error : toUserFacingQueryError('Product', {});
     }
@@ -65,18 +72,22 @@ export const productService = {
         throw toUserFacingQueryError('Products', error);
       }
 
-      const products = (data || []) as ProductType[];
-      const mergedProducts = mergeWithSampleProducts(products);
-      const fallbackProducts = mergedProducts.filter(
+      const products = useDemoData
+        ? mergeWithSampleProducts((data || []) as ProductType[])
+        : ((data || []) as ProductType[]);
+      const fallbackProducts = products.filter(
         (product) => product.category_id === categoryId
       );
       return fallbackProducts;
     } catch (error) {
-      console.warn(
-        'Using sample category products because Supabase products are unavailable:',
-        error
-      );
-      return sampleProducts.filter((product) => product.category_id === categoryId);
+      if (useDemoData) {
+        console.warn(
+          'Using demo category products because Supabase products are unavailable:',
+          error
+        );
+        return sampleProducts.filter((product) => product.category_id === categoryId);
+      }
+      throw error;
     }
   },
 };

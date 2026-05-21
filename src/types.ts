@@ -21,10 +21,35 @@ export interface ProductType {
   updated_at?: string;
 }
 
+export interface ProductImageType {
+  id: string;
+  product_id: string;
+  url: string;
+  alt_text?: string | null;
+  sort_order: number;
+  is_primary: boolean;
+  created_at?: string;
+}
+
+export interface ProductVariantType {
+  id: string;
+  product_id: string;
+  size: string;
+  color: string;
+  sku?: string | null;
+  stock: number;
+  price_override?: number | null;
+  image_url?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CartItemType {
   id: number;
   cart_id: number;
   product_id: string;
+  variant_id?: string | null;
   quantity: number;
   price: number;
   selected_size?: string | null;
@@ -54,9 +79,15 @@ export interface OrderItemType {
   quantity: number;
   price: number;
   product_id: string;
+  variant_id?: string | null;
   selected_size?: string | null;
   selected_color?: string | null;
   variant_info?: Record<string, unknown>;
+  product_title_snapshot?: string | null;
+  product_image_snapshot?: string | null;
+  sku_snapshot?: string | null;
+  size_snapshot?: string | null;
+  color_snapshot?: string | null;
   product?: {
     product_id: string;
     title: string;
@@ -123,4 +154,19 @@ export interface CategoryType {
   name: string;
   description: string;
   parent_id?: number;
+}
+
+export interface StoreSettingsType {
+  id: 1;
+  store_name?: string | null;
+  logo_url?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  address?: string | null;
+  bank_name?: string | null;
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
+  shipping_fee: number;
+  free_shipping_threshold?: number | null;
+  updated_at?: string;
 }

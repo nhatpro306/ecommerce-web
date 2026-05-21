@@ -24,6 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  uploadAndAttachProductImages,
+  validateProductImageFile,
+} from "@/services/storage/productImageUpload";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -61,6 +65,9 @@ export function ProductFormModal({
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
 
   // Use the query hook to fetch categories
   const {
@@ -93,7 +100,16 @@ export function ProductFormModal({
       });
     }
     setErrors({});
+    setSelectedFiles([]);
+    setPreviewUrls([]);
+    setPrimaryImageIndex(0);
   }, [product, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -137,11 +153,27 @@ export function ProductFormModal({
 
     setLoading(true);
     try {
+      let uploadedPrimaryImage = formData.image.trim() || undefined;
+
+      if (selectedFiles.length > 0) {
+        if (!product?.product_id) {
+          throw new Error("Save the product first, then upload product images.");
+        }
+
+        const uploadedImages = await uploadAndAttachProductImages(
+          product.product_id,
+          selectedFiles,
+          primaryImageIndex,
+        );
+        uploadedPrimaryImage =
+          uploadedImages[primaryImageIndex]?.url || uploadedPrimaryImage;
+      }
+
       const submitData: CreateProductData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
-        image: formData.image.trim() || undefined,
+        image: uploadedPrimaryImage,
         stock: parseInt(formData.stock),
         sku: formData.sku.trim() || undefined,
         category_id:
@@ -153,6 +185,13 @@ export function ProductFormModal({
       await onSubmit(submitData);
     } catch (error) {
       console.error("Error submitting product:", error);
+      setErrors((previous) => ({
+        ...previous,
+        submit:
+          error instanceof Error
+            ? error.message
+            : "Failed to save product. Please try again.",
+      }));
     } finally {
       setLoading(false);
     }
@@ -164,6 +203,24 @@ export function ProductFormModal({
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleImageFilesChange = (files: FileList | null) => {
+    const nextFiles = Array.from(files || []);
+    const validationError = nextFiles
+      .map((file) => validateProductImageFile(file))
+      .find((message): message is string => Boolean(message));
+
+    if (validationError) {
+      setErrors((previous) => ({ ...previous, imageFiles: validationError }));
+      return;
+    }
+
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    setSelectedFiles(nextFiles);
+    setPreviewUrls(nextFiles.map((file) => URL.createObjectURL(file)));
+    setPrimaryImageIndex(0);
+    setErrors((previous) => ({ ...previous, imageFiles: "" }));
   };
 
   return (
@@ -314,7 +371,56 @@ export function ProductFormModal({
             />
           </div>
 
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="imageFiles">Upload product images</Label>
+              <Input
+                id="imageFiles"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(event) => handleImageFilesChange(event.target.files)}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                JPEG, PNG, or WebP up to 5MB. For new products, create the
+                product first, then edit it to upload images.
+              </p>
+              {errors.imageFiles && (
+                <p className="mt-1 text-sm text-rose-600">{errors.imageFiles}</p>
+              )}
+            </div>
+
+            {previewUrls.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {previewUrls.map((url, index) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setPrimaryImageIndex(index)}
+                    className={`overflow-hidden border text-left ${
+                      primaryImageIndex === index
+                        ? "border-zinc-950"
+                        : "border-zinc-200"
+                    }`}
+                  >
+                    <img
+                      src={url}
+                      alt={`Upload preview ${index + 1}`}
+                      className="aspect-square w-full object-cover"
+                    />
+                    <span className="block px-2 py-1 text-[10px] uppercase tracking-wide">
+                      {primaryImageIndex === index ? "Primary" : "Set primary"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
+            {errors.submit && (
+              <p className="mr-auto text-sm text-rose-600">{errors.submit}</p>
+            )}
             <Button
               type="button"
               variant="outline"
