@@ -7,15 +7,22 @@ import {
   sampleProducts,
 } from '@/utils/sampleProducts';
 import { useDemoData } from '@/utils/demoData';
+import { withTimeout } from '@/utils/withTimeout';
+
+const PRODUCT_QUERY_TIMEOUT_MS = 8000;
 
 export const productService = {
   async getProducts(): Promise<ProductType[]> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('is_active', true)
-        .order('title');
+      const { data, error } = await withTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('is_active', true)
+          .order('title'),
+        PRODUCT_QUERY_TIMEOUT_MS,
+        'Không thể tải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+      );
 
       if (error) {
         throw toUserFacingQueryError('Products', error);
@@ -37,12 +44,16 @@ export const productService = {
 
   async getProductById(id: string): Promise<ProductType | null> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('product_id', id)
-        .eq('is_active', true)
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('product_id', id)
+          .eq('is_active', true)
+          .single(),
+        PRODUCT_QUERY_TIMEOUT_MS,
+        'Không thể tải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+      );
 
       if (error) {
         if (isNoRowsError(error)) {
@@ -61,12 +72,16 @@ export const productService = {
 
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*)')
-        .eq('category_id', categoryId)
-        .eq('is_active', true)
-        .order('title');
+      const { data, error } = await withTimeout(
+        supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('category_id', categoryId)
+          .eq('is_active', true)
+          .order('title'),
+        PRODUCT_QUERY_TIMEOUT_MS,
+        'Không thể tải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
+      );
 
       if (error) {
         throw toUserFacingQueryError('Products', error);

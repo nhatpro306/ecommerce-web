@@ -28,7 +28,7 @@ export function useCategories(options?: UseQueryOptions<CategoryType[]>) {
 			) {
 				return false
 			}
-			return failureCount < 2
+			return failureCount < 1
 		},
 		throwOnError: false,
 		...options,
@@ -55,7 +55,7 @@ export function useCategory(
 			) {
 				return false
 			}
-			return failureCount < 2
+			return failureCount < 1
 		},
 		throwOnError: false,
 		...options,

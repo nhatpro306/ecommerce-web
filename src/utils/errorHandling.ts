@@ -7,7 +7,7 @@ export const ErrorCodes = {
 };
 
 /** Substring in messages from {@link toUserFacingQueryError} for unreachable API/DB. */
-export const UNABLE_TO_REACH_DATABASE = 'Unable to reach the database';
+export const UNABLE_TO_REACH_DATABASE = 'Không thể kết nối đến database';
 
 /**
  * Maps Supabase/PostgREST client errors to an Error for React Query.
@@ -24,16 +24,16 @@ export function toUserFacingQueryError(
     raw.includes('Load failed')
   ) {
     return new Error(
-      `${UNABLE_TO_REACH_DATABASE}. Check your connection and Supabase configuration.`
+      `${UNABLE_TO_REACH_DATABASE}. Vui lòng kiểm tra kết nối và cấu hình Supabase.`
     );
   }
   if (error.code === ErrorCodes.RLS_VIOLATION) {
-    return new Error('You do not have permission to view this data.');
+    return new Error('Bạn không có quyền xem dữ liệu này.');
   }
   if (raw) {
     return new Error(`${subject}: ${raw}`);
   }
-  return new Error(`${subject} could not be loaded.`);
+  return new Error(`Không thể tải ${subject}.`);
 }
 
 /**

@@ -22,14 +22,14 @@ export async function updateCartItemQuantity(
 
     if (error) {
       console.error('Error updating cart item quantity:', error);
-      toast.error('Failed to update quantity');
+      toast.error('Khong the cap nhat so luong');
       return null;
     }
 
     return data as CartItemType;
   } catch (error) {
     console.error('Error in updateCartItemQuantity:', error);
-    toast.error('Something went wrong');
+    toast.error('Co loi xay ra, vui long thu lai');
     return null;
   }
 }

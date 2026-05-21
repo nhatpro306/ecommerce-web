@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,31 +35,29 @@ export function ErrorState({
       case "network":
         return {
           icon: <WifiOff className="text-destructive h-8 w-8" />,
-          title: title || "Connection Error",
+          title: title || "Không thể kết nối",
           description:
             description ||
-            "Unable to connect to the server. Please check your internet connection.",
+            "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.",
         };
       case "not-found":
         return {
           icon: <AlertCircle className="text-muted-foreground h-8 w-8" />,
-          title: title || "No Data Found",
-          description: description || "The requested data could not be found.",
+          title: title || "Không có dữ liệu",
+          description: description || "Không tìm thấy dữ liệu phù hợp.",
         };
       case "permission":
         return {
           icon: <AlertCircle className="text-destructive h-8 w-8" />,
-          title: title || "Access Denied",
-          description:
-            description || "You don't have permission to access this resource.",
+          title: title || "Không có quyền truy cập",
+          description: description || "Bạn không có quyền xem nội dung này.",
         };
       default:
         return {
           icon: <AlertCircle className="text-destructive h-8 w-8" />,
-          title: title || "Something went wrong",
+          title: title || "Đã xảy ra lỗi",
           description:
-            description ||
-            "An unexpected error occurred while loading the data.",
+            description || "Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.",
         };
     }
   };
@@ -78,7 +76,7 @@ export function ErrorState({
           {error && (
             <details className="mt-4 text-left">
               <summary className="cursor-pointer text-sm font-medium">
-                Error details
+                Chi tiết lỗi
               </summary>
               <pre className="text-muted-foreground bg-muted mt-2 overflow-auto rounded p-2 text-xs">
                 {error.message}
@@ -90,7 +88,7 @@ export function ErrorState({
           {showRetry && onRetry && (
             <Button onClick={onRetry} className="w-full cursor-pointer">
               <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
+              Thử lại
             </Button>
           )}
           {showHomeButton && (
@@ -101,7 +99,7 @@ export function ErrorState({
               className="w-full cursor-pointer"
             >
               <Home className="mr-2 h-4 w-4" />
-              Go Home
+              Về trang chủ
             </Button>
           )}
         </CardContent>

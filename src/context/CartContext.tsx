@@ -129,7 +129,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('Error loading cart:', error);
-        toast.error('Failed to load your cart');
+        toast.error('Không thể tải giỏ hàng của bạn');
       } finally {
         setIsLoading(false);
       }
@@ -223,9 +223,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         writeLocalCart(nextItems);
         return nextItems;
       });
-      toast.success('Đã thêm vào giỏ');
-      return true;
-    }
+        toast.success('Đã thêm vào giỏ');
+        return true;
+      }
 
     let cartId = activeCartId;
     if (!cartId) {
@@ -290,7 +290,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ]);
         }
 
-        toast.success('Added to cart');
+        toast.success('Đã thêm vào giỏ');
         return true;
       }
     } catch (error) {
@@ -319,7 +319,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           writeLocalCart(nextItems);
           return nextItems;
         });
-        toast.success('Item removed from cart');
+        toast.success('Đã xóa sản phẩm khỏi giỏ');
         return;
       }
 
@@ -338,12 +338,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 : item.product_id !== productId
             )
           );
-          toast.success('Item removed from cart');
+          toast.success('Đã xóa sản phẩm khỏi giỏ');
         }
       }
     } catch (error) {
       console.error('Error removing from cart:', error);
-      toast.error('Failed to remove item from cart');
+      toast.error('Không thể xóa sản phẩm khỏi giỏ');
     }
   };
 
@@ -413,7 +413,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error updating quantity:', error);
-      toast.error('Failed to update quantity');
+      toast.error('Không thể cập nhật số lượng');
     }
   };
 
@@ -430,11 +430,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (success) {
         setCartItems([]);
         writeLocalCart([]);
-        toast.success('Cart cleared');
+        toast.success('Đã xóa giỏ hàng');
       }
     } catch (error) {
       console.error('Error clearing cart:', error);
-      toast.error('Failed to clear cart');
+      toast.error('Không thể xóa giỏ hàng');
     }
   };
 
