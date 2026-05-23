@@ -31,14 +31,14 @@ export default function DashboardPage() {
       <div className="container mx-auto py-12">
         <Card>
           <CardHeader>
-            <CardTitle>Please Sign In</CardTitle>
+            <CardTitle>Vui lòng đăng nhập</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-4">
-              You need to be signed in to view your dashboard.
+              Bạn cần đăng nhập để xem trang tổng quan.
             </p>
             <Link href="/signin">
-              <Button>Sign In</Button>
+              <Button>Đăng nhập</Button>
             </Link>
           </CardContent>
         </Card>
@@ -49,9 +49,8 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="flex flex-col space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Tổng quan</h1>
 
-        {/* Tabs */}
         <div className="flex border-b">
           <button
             onClick={() => setActiveTab("analytics")}
@@ -61,7 +60,7 @@ export default function DashboardPage() {
                 : "text-muted-foreground"
             }`}
           >
-            Analytics
+            Thống kê
           </button>
           <button
             onClick={() => setActiveTab("products")}
@@ -71,7 +70,7 @@ export default function DashboardPage() {
                 : "text-muted-foreground"
             }`}
           >
-            Products
+            Sản phẩm
           </button>
           <button
             onClick={() => setActiveTab("orders")}
@@ -97,12 +96,12 @@ export default function DashboardPage() {
         {activeTab === "products" &&
           (productsLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <p>Loading...</p>
+              <p>Đang tải...</p>
             </div>
           ) : productsError ? (
             <ErrorState
-              title="Failed to load products"
-              description="We could not load products for the dashboard. Check your connection."
+              title="Không thể tải sản phẩm"
+              description="Không thể tải danh sách sản phẩm. Vui lòng kiểm tra kết nối."
               onRetry={refetchProducts}
               error={productsError}
               type="network"
@@ -123,7 +122,7 @@ export default function DashboardPage() {
                         />
                       ) : (
                         <div className="text-muted-foreground flex h-full w-full items-center justify-center">
-                          No image
+                          Chưa có ảnh
                         </div>
                       )}
                     </div>
@@ -141,7 +140,7 @@ export default function DashboardPage() {
                           {formatCurrency(product.price)}
                         </span>
                         <Link href={`/products/${product.slug || product.product_id}`}>
-                          <Button size="sm">View Details</Button>
+                          <Button size="sm">Xem chi tiết</Button>
                         </Link>
                       </div>
                     </CardContent>
@@ -149,7 +148,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="col-span-full flex h-64 items-center justify-center">
-                  <p className="text-muted-foreground">No products found</p>
+                  <p className="text-muted-foreground">Chưa có sản phẩm</p>
                 </div>
               )}
             </div>
@@ -158,7 +157,7 @@ export default function DashboardPage() {
         {activeTab === "orders" &&
           (ordersLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <p>Loading...</p>
+              <p>Đang tải...</p>
             </div>
           ) : (
             <div className="space-y-6">

@@ -3,14 +3,11 @@ import { CartProvider } from "@/context/CartContext";
 import { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Navbar } from "@/components/Navbar";
-import Sidebar  from "@/components/Sidebar";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TanStackQueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "sonner";
-import { MainLayout } from "@/components/MainLayout";
+import { SiteFooter } from "@/components/SiteFooter";
+import { ConditionalChrome } from "@/components/ConditionalChrome";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { DemoBanner } from "@/components/DemoBanner";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -69,14 +66,9 @@ export default function RootLayout({
                   enableSystem={false}
                   disableTransitionOnChange
                 >
-                  <SidebarProvider>
-                    <Sidebar />
-                    <SidebarInset>
-                      <DemoBanner />
-                      <Navbar />
-                      <MainLayout>{children}</MainLayout>
-                    </SidebarInset>
-                  </SidebarProvider>
+                  <ConditionalChrome footerSlot={<SiteFooter />}>
+                    {children}
+                  </ConditionalChrome>
                 </ThemeProvider>
               </CartProvider>
             </AuthProvider>

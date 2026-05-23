@@ -59,7 +59,7 @@ export const productService = {
     try {
       const { data, error } = await runProductQuery(
         (select) => onlyActiveProducts(productSelect(select)).order('title'),
-        'Không thềEtải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+        'Không thể tải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
@@ -86,7 +86,7 @@ export const productService = {
     try {
       const { data, error } = await runProductQuery(
         (select) => onlyActiveProducts(productSelect(select).eq('product_id', id)).single(),
-        'Không thềEtải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+        'Không thể tải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
@@ -110,7 +110,7 @@ export const productService = {
     try {
       const { data, error } = await runProductQuery(
         (select) => onlyActiveProducts(productSelect(select).eq('category_id', categoryId)).order('title'),
-        'Không thềEtải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
+        'Không thể tải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
