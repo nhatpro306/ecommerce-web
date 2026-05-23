@@ -29,6 +29,7 @@ import {
 } from "@/services/admin/adminProductService";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getProductImage } from "@/utils/productImages";
+import { getActiveVariantStock, getSellableStock } from "@/utils/productVisibility";
 
 import {
   createAdminProductAction,
@@ -36,15 +37,10 @@ import {
   updateAdminProductAction,
 } from "./actions";
 
-type StatusFilter = "all" | "active" | "inactive";
+type StatusFilter = "all" | "active" | "inactive" | "hidden-web";
 
 function getTotalStock(product: ProductWithDetails) {
-  const activeVariants = product.variants?.filter((variant) => variant.is_active);
-  if (activeVariants && activeVariants.length > 0) {
-    return activeVariants.reduce((total, variant) => total + variant.stock, 0);
-  }
-
-  return product.stock || 0;
+  return getSellableStock(product);
 }
 
 function getPrimaryImage(product: ProductWithDetails) {
@@ -67,6 +63,14 @@ function getVariantSummary(product: ProductWithDetails) {
 function summarizeList(values?: string[]) {
   if (!values || values.length === 0) return "Chưa có";
   return values.join(", ");
+}
+
+function isVisibleOnStorefront(product: ProductWithDetails) {
+  return product.is_active !== false && getSellableStock(product) > 0;
+}
+
+function hasImage(product: ProductWithDetails) {
+  return Boolean(product.images?.[0]?.url || product.image);
 }
 
 export default function AdminProductsPage() {
@@ -177,6 +181,9 @@ export default function AdminProductsPage() {
 
       if (statusFilter === "active" && !isActive) return false;
       if (statusFilter === "inactive" && isActive) return false;
+      if (statusFilter === "hidden-web" && isVisibleOnStorefront(product)) {
+        return false;
+      }
       if (categoryFilter !== "all" && product.category?.name !== categoryFilter) {
         return false;
       }
@@ -275,6 +282,7 @@ export default function AdminProductsPage() {
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang bán</option>
               <option value="inactive">Đã ẩn</option>
+              <option value="hidden-web">Không hiện ngoài web</option>
             </select>
 
             <select
@@ -307,6 +315,9 @@ export default function AdminProductsPage() {
           const totalStock = getTotalStock(product);
           const isLowStock = totalStock <= 5;
           const isActive = product.is_active !== false;
+          const visibleOnWeb = isVisibleOnStorefront(product);
+          const imageMissing = !hasImage(product);
+          const variantStock = getActiveVariantStock(product.variants);
 
           return (
             <Card key={product.product_id} className="overflow-hidden rounded-none">
@@ -349,6 +360,33 @@ export default function AdminProductsPage() {
                 <div className="text-sm text-zinc-700">
                   <p>Size: {summarizeList(product.sizes)}</p>
                   <p>Màu: {summarizeList(product.colors)}</p>
+                  {variantStock > 0 && <p>Tồn kho variant: {variantStock}</p>}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={isActive ? "rounded-none bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : "rounded-none bg-zinc-200 text-zinc-700 hover:bg-zinc-200"}>
+                    {isActive ? "Đang bán" : "Đang ẩn"}
+                  </Badge>
+                  {totalStock === 0 && (
+                    <Badge className="rounded-none bg-zinc-950 text-white hover:bg-zinc-950">
+                      Hết hàng
+                    </Badge>
+                  )}
+                  {isLowStock && totalStock > 0 && (
+                    <Badge className="rounded-none bg-amber-100 text-amber-800 hover:bg-amber-100">
+                      Sắp hết hàng
+                    </Badge>
+                  )}
+                  {imageMissing && (
+                    <Badge className="rounded-none bg-rose-100 text-rose-700 hover:bg-rose-100">
+                      Thiếu ảnh
+                    </Badge>
+                  )}
+                  {!visibleOnWeb && (
+                    <Badge className="rounded-none bg-blue-100 text-blue-700 hover:bg-blue-100">
+                      Không hiện ngoài web
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -399,6 +437,8 @@ export default function AdminProductsPage() {
                 const totalStock = getTotalStock(product);
                 const isLowStock = totalStock <= 5;
                 const isActive = product.is_active !== false;
+                const imageMissing = !hasImage(product);
+                const visibleOnWeb = isVisibleOnStorefront(product);
 
                 return (
                   <tr key={product.product_id} className="bg-white hover:bg-zinc-50">
@@ -458,15 +498,27 @@ export default function AdminProductsPage() {
                       {getVariantSummary(product)}
                     </td>
                     <td className="px-4 py-4">
-                      <Badge
-                        className={
-                          isActive
-                            ? "rounded-none bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                            : "rounded-none bg-zinc-200 text-zinc-600 hover:bg-zinc-200"
-                        }
-                      >
-                        {isActive ? "Đang bán" : "Tạm ẩn"}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge
+                          className={
+                            isActive
+                              ? "rounded-none bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                              : "rounded-none bg-zinc-200 text-zinc-700 hover:bg-zinc-200"
+                          }
+                        >
+                          {isActive ? "Đang bán" : "Đang ẩn"}
+                        </Badge>
+                        {imageMissing && (
+                          <Badge className="rounded-none bg-rose-100 text-rose-700 hover:bg-rose-100">
+                            Thiếu ảnh
+                          </Badge>
+                        )}
+                        {!visibleOnWeb && (
+                          <Badge className="rounded-none bg-blue-100 text-blue-700 hover:bg-blue-100">
+                            Không hiện ngoài web
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">

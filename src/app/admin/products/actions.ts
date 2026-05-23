@@ -55,6 +55,7 @@ export async function createAdminProductAction(
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   return data as ProductType;
 }
 
@@ -81,6 +82,7 @@ export async function updateAdminProductAction(
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   revalidatePath(`/products/${data.slug || productId}`);
   return data as ProductType;
 }
@@ -177,19 +179,40 @@ export async function syncAdminProductVariantsAction(
     throw new Error(error.message);
   }
 
-  const totalStock = (data || []).reduce(
+  const synced = (data || []) as ProductVariantType[];
+  const activeVariants = synced.filter((variant) => variant.is_active !== false);
+  const totalStock = activeVariants.reduce(
     (total, variant) => total + Number(variant.stock || 0),
     0,
+  );
+  const sizes = Array.from(
+    new Set(activeVariants.map((variant) => variant.size.trim()).filter(Boolean)),
+  );
+  const colors = Array.from(
+    new Set(activeVariants.map((variant) => variant.color.trim()).filter(Boolean)),
   );
 
   await supabase
     .from("products")
-    .update({ stock: totalStock, updated_at: new Date().toISOString() })
+    .update({
+      stock: totalStock,
+      sizes,
+      colors,
+      updated_at: new Date().toISOString(),
+    })
     .eq("product_id", productId);
+
+  const { data: productForPath } = await supabase
+    .from("products")
+    .select("slug")
+    .eq("product_id", productId)
+    .maybeSingle();
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
-  return data as ProductVariantType[];
+  revalidatePath("/");
+  revalidatePath(`/products/${productForPath?.slug || productId}`);
+  return synced;
 }
 
 export async function deactivateAdminProductAction(
@@ -209,5 +232,6 @@ export async function deactivateAdminProductAction(
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   return true;
 }

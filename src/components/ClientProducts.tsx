@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState } from "@/components/ErrorState";
 import { FilterOptions, useProducts } from "@/hooks/queries";
 import { ProductType } from "@/types";
+import { getSellableStock } from "@/utils/productVisibility";
 
 const DEFAULT_FILTERS: FilterOptions = {
   sortBy: "default",
@@ -69,9 +70,9 @@ const filterProducts = (products: ProductType[], filters: FilterOptions) => {
   let filtered = [...products];
 
   if (filters.stockFilter === "in-stock") {
-    filtered = filtered.filter((product) => product.stock > 0);
+    filtered = filtered.filter((product) => getSellableStock(product) > 0);
   } else if (filters.stockFilter === "out-of-stock") {
-    filtered = filtered.filter((product) => product.stock === 0);
+    filtered = filtered.filter((product) => getSellableStock(product) === 0);
   }
 
   if (filters.categoryFilter !== "all") {
@@ -116,7 +117,12 @@ export default function ClientProducts({
     refetch: retry,
   } = useProducts({ initialData: initialProducts });
 
-  const products = queriedProducts.length > 0 ? queriedProducts : initialProducts;
+  const products =
+    error && initialProducts.length > 0
+      ? initialProducts
+      : queriedProducts.length > 0
+        ? queriedProducts
+        : initialProducts;
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: isValidSort(initialSort) ? initialSort : DEFAULT_FILTERS.sortBy,

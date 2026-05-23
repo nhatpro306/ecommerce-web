@@ -8,19 +8,22 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useI18n } from "@/lib/i18n";
 
 const navItems = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/products", label: "Sản phẩm" },
-  { href: "/products?sort=latest", label: "Bộ sưu tập" },
-  { href: "/about", label: "Về RESEY" },
-  { href: "/contact", label: "Liên hệ" },
+  { href: "/", key: "nav_home" },
+  { href: "/products", key: "nav_products" },
+  { href: "/products?sort=latest", key: "nav_collection" },
+  { href: "/about", key: "nav_about" },
+  { href: "/contact", key: "nav_contact" },
 ];
 
 export function Navbar() {
   const { totalItems } = useCart();
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 text-black backdrop-blur">
@@ -36,7 +39,7 @@ export function Navbar() {
               href={item.href}
               className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-700 transition hover:text-zinc-950"
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
         </nav>
@@ -59,12 +62,13 @@ export function Navbar() {
               href={item.href}
               className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-700 transition hover:text-zinc-950"
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
         </nav>
 
         <div className="ml-2 flex items-center justify-end gap-1">
+          <LanguageSwitcher />
           <Button
             variant="ghost"
             size="icon"
@@ -72,7 +76,7 @@ export function Navbar() {
             onClick={() => router.push("/products")}
           >
             <Search className="h-[1.1rem] w-[1.1rem]" />
-            <span className="sr-only">Tìm sản phẩm</span>
+            <span className="sr-only">{t("nav_search")}</span>
           </Button>
 
           <Button
@@ -89,7 +93,7 @@ export function Navbar() {
                 </span>
               )}
             </div>
-            <span className="sr-only">Giỏ hàng</span>
+            <span className="sr-only">{t("nav_cart")}</span>
           </Button>
 
           {user ? (
@@ -100,7 +104,7 @@ export function Navbar() {
               onClick={() => router.push("/profile")}
             >
               <User className="h-[1.1rem] w-[1.1rem]" />
-              <span className="sr-only">Tài khoản</span>
+              <span className="sr-only">{t("nav_account")}</span>
             </Button>
           ) : (
             <Button
@@ -110,7 +114,7 @@ export function Navbar() {
               onClick={() => router.push("/signin")}
             >
               <LogIn className="h-[1.1rem] w-[1.1rem]" />
-              <span className="sr-only">Đăng nhập</span>
+              <span className="sr-only">{t("nav_signin")}</span>
             </Button>
           )}
         </div>

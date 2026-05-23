@@ -1,6 +1,7 @@
 import { productService } from '@/services/product/productService'
 import { ProductType } from '@/types'
 import { UNABLE_TO_REACH_DATABASE } from '@/utils/errorHandling'
+import { getSellableStock } from '@/utils/productVisibility'
 import { useQuery, UseQueryOptions } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 
@@ -70,9 +71,9 @@ const filterProducts = (
 
   // Filter by stock
   if (filters.stockFilter === 'in-stock') {
-    filtered = filtered.filter((product) => product.stock > 0);
+    filtered = filtered.filter((product) => getSellableStock(product) > 0);
   } else if (filters.stockFilter === 'out-of-stock') {
-    filtered = filtered.filter((product) => product.stock === 0);
+    filtered = filtered.filter((product) => getSellableStock(product) === 0);
   }
 
   // Filter by category

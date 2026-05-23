@@ -5,6 +5,7 @@ import {
   mergeWithSampleProducts,
   sampleProducts,
 } from '@/utils/sampleProducts';
+import { isPubliclyVisibleProduct } from '@/utils/productVisibility';
 import { useDemoData } from '@/utils/demoData';
 import { withServerTimeout } from '@/utils/withTimeout';
 
@@ -26,7 +27,7 @@ function productSelect(supabase: ReturnType<typeof createPublicServerSupabase>, 
   return supabase.from('products').select(select);
 }
 
-function onlyVisibleProducts<T extends { or: Function }>(query: T): T {
+function onlyActiveProducts<T extends { or: Function }>(query: T): T {
   return query.or('is_active.eq.true,is_active.is.null') as T;
 }
 
@@ -58,7 +59,7 @@ export const productServerService = {
       const supabase = createPublicServerSupabase();
 
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(supabase, select)).order('title'),
+        (select) => onlyActiveProducts(productSelect(supabase, select)).order('title'),
         'Server product query timed out',
       );
 
@@ -67,7 +68,9 @@ export const productServerService = {
         return useDemoData ? sampleProducts : [];
       }
 
-      const products = (data || []) as unknown as ProductType[];
+      const products = ((data || []) as unknown as ProductType[]).filter(
+        isPubliclyVisibleProduct,
+      );
 
       if (useDemoData) {
         return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
@@ -85,7 +88,7 @@ export const productServerService = {
       const supabase = createPublicServerSupabase();
 
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(supabase, select).eq('product_id', id)).maybeSingle(),
+        (select) => onlyActiveProducts(productSelect(supabase, select).eq('product_id', id)).maybeSingle(),
         'Server product detail query timed out',
       );
 
@@ -94,7 +97,9 @@ export const productServerService = {
         return useDemoData ? findSampleProduct(id) : null;
       }
 
-      return (data as unknown as ProductType) || (useDemoData ? findSampleProduct(id) : null);
+      const product = (data as unknown as ProductType) || null;
+      if (product && isPubliclyVisibleProduct(product)) return product;
+      return useDemoData ? findSampleProduct(id) : null;
     } catch (error) {
       console.error('Error in getProductById:', error);
       return useDemoData ? findSampleProduct(id) : null;
@@ -107,7 +112,7 @@ export const productServerService = {
 
       // Search by slug first.
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(supabase, select).eq('slug', slug)).maybeSingle(),
+        (select) => onlyActiveProducts(productSelect(supabase, select).eq('slug', slug)).maybeSingle(),
         'Server product slug query timed out',
       );
 
@@ -116,7 +121,7 @@ export const productServerService = {
         return useDemoData ? findSampleProduct(slug) : null;
       }
 
-      if (data) {
+      if (data && isPubliclyVisibleProduct(data as unknown as ProductType)) {
         return data as unknown as ProductType;
       }
 
@@ -126,7 +131,7 @@ export const productServerService = {
       if (!Number.isNaN(numericId)) {
         const { data: productById, error: idError } = await runProductQuery(
           (select) =>
-            onlyVisibleProducts(
+            onlyActiveProducts(
               productSelect(supabase, select).eq('product_id', numericId),
             ).maybeSingle(),
           'Server product id query timed out',
@@ -137,7 +142,9 @@ export const productServerService = {
           return useDemoData ? findSampleProduct(slug) : null;
         }
 
-        return (productById as unknown as ProductType) || (useDemoData ? findSampleProduct(slug) : null);
+        const product = (productById as unknown as ProductType) || null;
+        if (product && isPubliclyVisibleProduct(product)) return product;
+        return useDemoData ? findSampleProduct(slug) : null;
       }
 
       return useDemoData ? findSampleProduct(slug) : null;
@@ -152,7 +159,7 @@ export const productServerService = {
       const supabase = createPublicServerSupabase();
 
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(supabase, select).eq('category_id', categoryId)).order('title'),
+        (select) => onlyActiveProducts(productSelect(supabase, select).eq('category_id', categoryId)).order('title'),
         'Server category product query timed out',
       );
 
@@ -163,7 +170,9 @@ export const productServerService = {
           : [];
       }
 
-      const products = (data || []) as unknown as ProductType[];
+      const products = ((data || []) as unknown as ProductType[]).filter(
+        isPubliclyVisibleProduct,
+      );
       const mergedProducts = useDemoData ? mergeWithSampleProducts(products) : products;
 
       return mergedProducts.filter((product) => product.category_id === categoryId);
@@ -180,7 +189,7 @@ export const productServerService = {
       const supabase = createPublicServerSupabase();
 
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(supabase, select).ilike('title', `%${query}%`)).order('title'),
+        (select) => onlyActiveProducts(productSelect(supabase, select).ilike('title', `%${query}%`)).order('title'),
         'Server product search query timed out',
       );
 
@@ -195,7 +204,7 @@ export const productServerService = {
 
       const products = useDemoData
         ? mergeWithSampleProducts((data || []) as unknown as ProductType[])
-        : ((data || []) as unknown as ProductType[]);
+        : ((data || []) as unknown as ProductType[]).filter(isPubliclyVisibleProduct);
 
       const fallbackProducts = sampleProducts.filter((product) =>
         product.title.toLowerCase().includes(query.toLowerCase())
