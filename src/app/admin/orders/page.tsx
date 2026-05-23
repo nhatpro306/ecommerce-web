@@ -24,7 +24,10 @@ import {
 } from "@/services/admin/adminOrderService";
 import { formatCurrency } from "@/utils/formatCurrency";
 
-import { updateAdminOrderStatusAction } from "./actions";
+import {
+  deleteAdminOrderAction,
+  updateAdminOrderStatusAction,
+} from "./actions";
 
 const statusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
@@ -163,6 +166,40 @@ export default function AdminOrdersPage() {
     } catch (error) {
       console.error("Error updating order status:", error);
       toast.error("Không thể cập nhật trạng thái");
+    }
+  };
+
+  const handleCancelOrder = async (orderId: number) => {
+    try {
+      await updateAdminOrderStatusAction(orderId, "cancelled");
+      toast.success("Đã hủy đơn hàng");
+      fetchOrders();
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast.error("Không thể hủy đơn hàng");
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: number) => {
+    const confirmed =
+      typeof window === "undefined"
+        ? true
+        : window.confirm(
+            "Xóa đơn hàng này? Đơn hàng chưa hủy sẽ được chuyển sang trạng thái đã hủy thay vì xóa vĩnh viễn để bảo vệ lịch sử bán hàng.",
+          );
+    if (!confirmed) return;
+
+    try {
+      const result = await deleteAdminOrderAction(orderId);
+      if (result.status === "deleted") {
+        toast.success("Đã xóa đơn hàng");
+      } else {
+        toast.warning(result.reason);
+      }
+      fetchOrders();
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      toast.error("Không thể xóa đơn hàng");
     }
   };
 
@@ -348,7 +385,7 @@ export default function AdminOrdersPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
                       <Select
                         value={order.status}
                         onValueChange={(value) => handleStatusChange(order.id, value || order.status)}
@@ -375,6 +412,14 @@ export default function AdminOrdersPage() {
                       >
                         <Eye className="mr-1 h-3 w-3" />
                         Chi tiết
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => handleDeleteOrder(order.id)}
+                      >
+                        Xóa
                       </Button>
                     </div>
                   </td>
@@ -436,6 +481,8 @@ export default function AdminOrdersPage() {
             setSelectedOrder(null);
           }}
           order={selectedOrder}
+          onCancelOrder={handleCancelOrder}
+          onDeleteOrder={handleDeleteOrder}
         />
       )}
     </div>

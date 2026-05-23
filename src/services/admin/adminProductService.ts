@@ -64,38 +64,24 @@ export const adminProductService = {
       const products = data || [];
       const productIds = products.map((product) => product.product_id);
 
-      const [variantsByProduct, imagesByProduct] = await Promise.all([
-        this.getVariantsByProduct(productIds),
-        this.getImagesByProduct(productIds),
-      ]);
+      const [variantsByProduct, imagesByProduct, reviewsByProduct] =
+        await Promise.all([
+          this.getVariantsByProduct(productIds),
+          this.getImagesByProduct(productIds),
+          this.getReviewStatsByProduct(productIds),
+        ]);
 
-      const productsWithStats = await Promise.all(
-        products.map(async (product) => {
-          const { data: reviewStats } = await supabase
-            .from("reviews")
-            .select("rating")
-            .eq("product_id", product.product_id);
-
-          const reviews = reviewStats || [];
-          const totalReviews = reviews.length;
-          const averageRating =
-            totalReviews > 0
-              ? reviews.reduce((sum, review) => sum + review.rating, 0) /
-                totalReviews
-              : 0;
-
-          return {
-            ...product,
-            category: product.categories,
-            images: imagesByProduct[product.product_id] || [],
-            variants: variantsByProduct[product.product_id] || [],
-            total_reviews: totalReviews,
-            average_rating: Number(averageRating.toFixed(1)),
-          };
-        }),
-      );
-
-      return productsWithStats;
+      return products.map((product) => {
+        const reviewStats = reviewsByProduct[product.product_id];
+        return {
+          ...product,
+          category: product.categories,
+          images: imagesByProduct[product.product_id] || [],
+          variants: variantsByProduct[product.product_id] || [],
+          total_reviews: reviewStats?.total ?? 0,
+          average_rating: reviewStats?.average ?? 0,
+        };
+      });
     } catch (err) {
       console.error("Failed to get all products:", err);
       throw err;
@@ -125,6 +111,40 @@ export const adminProductService = {
         return acc;
       },
       {},
+    );
+  },
+
+  async getReviewStatsByProduct(
+    productIds: string[],
+  ): Promise<Record<string, { total: number; average: number }>> {
+    if (productIds.length === 0) return {};
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("product_id, rating")
+      .in("product_id", productIds);
+
+    if (error) {
+      console.warn("Product reviews are not available:", error.message);
+      return {};
+    }
+
+    const accumulator: Record<string, { total: number; sum: number }> = {};
+    for (const review of data || []) {
+      const existing = accumulator[review.product_id] || { total: 0, sum: 0 };
+      existing.total += 1;
+      existing.sum += review.rating;
+      accumulator[review.product_id] = existing;
+    }
+
+    return Object.fromEntries(
+      Object.entries(accumulator).map(([productId, value]) => [
+        productId,
+        {
+          total: value.total,
+          average: Number((value.sum / value.total).toFixed(1)),
+        },
+      ]),
     );
   },
 
