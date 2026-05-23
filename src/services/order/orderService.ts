@@ -40,18 +40,31 @@ export const orderService = {
     customerNote,
   }: CreateOrderParams) {
     try {
-      // Validate input parameters
       if (!userId) {
-        throw new Error("User ID is required");
+        throw new Error("Vui lòng đăng nhập để đặt hàng.");
       }
       if (!items || items.length === 0) {
-        throw new Error("Order items are required");
+        throw new Error("Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
       }
       if (!shippingAddress || !shippingAddress.id) {
-        throw new Error("Shipping address is required");
+        throw new Error("Vui lòng nhập đầy đủ địa chỉ giao hàng.");
       }
       if (!totalAmount || totalAmount <= 0) {
-        throw new Error("Total amount must be greater than 0");
+        throw new Error("Tổng tiền không hợp lệ. Vui lòng kiểm tra lại giỏ hàng.");
+      }
+
+      const sanitizedItems = items
+        .filter((item) => item.product_id && item.quantity > 0)
+        .map((item) => ({
+          product_id: item.product_id,
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+          selected_size: item.selected_size,
+          selected_color: item.selected_color,
+        }));
+
+      if (sanitizedItems.length === 0) {
+        throw new Error("Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
       }
 
       const activeCart = await getActiveCart();
@@ -67,23 +80,30 @@ export const orderService = {
             customer_phone: customerPhone,
             customer_email: customerEmail || null,
             customer_note: customerNote || null,
-            items: items.map((item) => ({
-              product_id: item.product_id,
-              variant_id: item.variant_id,
-              quantity: item.quantity,
-              selected_size: item.selected_size,
-              selected_color: item.selected_color,
-            })),
+            items: sanitizedItems,
           },
         },
       );
 
       if (checkoutError) {
-        const message =
-          checkoutError.message.includes("Not enough stock") ||
-          checkoutError.message.includes("Variant is no longer available")
-            ? "Một sản phẩm vừa hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng."
-            : checkoutError.message;
+        const raw = checkoutError.message || "";
+        let message = "Đặt hàng thất bại, vui lòng thử lại.";
+
+        if (raw.includes("Checkout requires at least one item")) {
+          message = "Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.";
+        } else if (
+          raw.includes("Not enough stock") ||
+          raw.includes("Variant is no longer available")
+        ) {
+          message = "Một sản phẩm vừa hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng.";
+        } else if (raw.includes("Shipping address does not belong")) {
+          message = "Địa chỉ giao hàng không hợp lệ. Vui lòng thử lại.";
+        } else if (raw.includes("Authentication required")) {
+          message = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+        } else if (raw) {
+          message = raw;
+        }
+
         toast.error(message);
         throw new Error(message);
       }
@@ -95,21 +115,19 @@ export const orderService = {
         .single();
 
       if (orderFetchError || !order) {
-        throw new Error(orderFetchError?.message || "Đơn hàng đã được tạo nhưng không thể tải lại.");
+        throw new Error(
+          "Đơn hàng đã được tạo nhưng không thể tải lại. Vui lòng kiểm tra trong trang đơn hàng.",
+        );
       }
 
       return order;
     } catch (error) {
       console.error("Error in createOrder:", error);
 
-      // Re-throw with better error context
       if (error instanceof Error) {
         throw error;
-      } else {
-        throw new Error(
-          `Unknown error occurred while creating order: ${JSON.stringify(error)}`,
-        );
       }
+      throw new Error("Đặt hàng thất bại, vui lòng thử lại.");
     }
   },
 
