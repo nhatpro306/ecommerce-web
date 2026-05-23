@@ -6,6 +6,7 @@ import {
   mergeWithSampleProducts,
   sampleProducts,
 } from '@/utils/sampleProducts';
+import { isPubliclyVisibleProduct } from '@/utils/productVisibility';
 import { useDemoData } from '@/utils/demoData';
 import { withTimeout } from '@/utils/withTimeout';
 
@@ -27,7 +28,7 @@ function productSelect(select = FULL_PRODUCT_SELECT) {
   return supabase.from('products').select(select);
 }
 
-function onlyVisibleProducts<T extends { or: Function }>(query: T): T {
+function onlyActiveProducts<T extends { or: Function }>(query: T): T {
   return query.or('is_active.eq.true,is_active.is.null') as T;
 }
 
@@ -57,15 +58,17 @@ export const productService = {
   async getProducts(): Promise<ProductType[]> {
     try {
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(select)).order('title'),
-        'Không thể tải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+        (select) => onlyActiveProducts(productSelect(select)).order('title'),
+        'Không thềEtải sản phẩm. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
         throw toUserFacingQueryError('Products', error);
       }
 
-      const products = (data || []) as unknown as ProductType[];
+      const products = ((data || []) as unknown as ProductType[]).filter(
+        isPubliclyVisibleProduct,
+      );
       if (useDemoData) {
         return products.length > 0 ? mergeWithSampleProducts(products) : sampleProducts;
       }
@@ -82,8 +85,8 @@ export const productService = {
   async getProductById(id: string): Promise<ProductType | null> {
     try {
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(select).eq('product_id', id)).single(),
-        'Không thể tải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
+        (select) => onlyActiveProducts(productSelect(select).eq('product_id', id)).single(),
+        'Không thềEtải chi tiết sản phẩm. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
@@ -93,7 +96,9 @@ export const productService = {
         throw toUserFacingQueryError('Product', error);
       }
 
-      return (data as unknown as ProductType) || (useDemoData ? findSampleProduct(id) : null);
+      const product = (data as unknown as ProductType) || null;
+      if (product && isPubliclyVisibleProduct(product)) return product;
+      return useDemoData ? findSampleProduct(id) : null;
     } catch (error) {
       const fallbackProduct = useDemoData ? findSampleProduct(id) : null;
       if (fallbackProduct) return fallbackProduct;
@@ -104,8 +109,8 @@ export const productService = {
   async getProductsByCategory(categoryId: number): Promise<ProductType[]> {
     try {
       const { data, error } = await runProductQuery(
-        (select) => onlyVisibleProducts(productSelect(select).eq('category_id', categoryId)).order('title'),
-        'Không thể tải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
+        (select) => onlyActiveProducts(productSelect(select).eq('category_id', categoryId)).order('title'),
+        'Không thềEtải sản phẩm theo danh mục. Kết nối Supabase phản hồi quá lâu.',
       );
 
       if (error) {
@@ -114,7 +119,7 @@ export const productService = {
 
       const products = useDemoData
         ? mergeWithSampleProducts((data || []) as unknown as ProductType[])
-        : ((data || []) as unknown as ProductType[]);
+        : ((data || []) as unknown as ProductType[]).filter(isPubliclyVisibleProduct);
       return products.filter((product) => product.category_id === categoryId);
     } catch (error) {
       if (useDemoData) {
@@ -128,3 +133,4 @@ export const productService = {
     }
   },
 };
+

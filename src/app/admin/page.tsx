@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
+  ArrowRight,
   Package,
   Settings,
   ShoppingCart,
@@ -22,6 +23,8 @@ import { adminOrderService } from "@/services/admin/adminOrderService";
 import { adminProductService } from "@/services/admin/adminProductService";
 import { adminUserService } from "@/services/admin/adminUserService";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { getSellableStock } from "@/utils/productVisibility";
+import type { ProductType } from "@/types";
 
 interface DashboardStats {
   products: {
@@ -55,6 +58,8 @@ export default function AdminDashboard() {
   const { isAdmin, loading: adminLoading, error: adminError } = useAdmin();
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<Array<{ id: number; status: string; total: number; created_at?: string; profile?: { username: string; email: string } }>>([]);
+  const [lowStockItems, setLowStockItems] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,6 +82,10 @@ export default function AdminDashboard() {
           adminOrderService.getOrderAnalytics(),
           adminUserService.getUserAnalytics(),
         ]);
+      const allProducts = await adminProductService.getAllProducts();
+      const lowStock = allProducts
+        .filter((product) => getSellableStock(product) <= 5)
+        .slice(0, 8);
 
       setStats({
         products: {
@@ -97,6 +106,8 @@ export default function AdminDashboard() {
           newThisMonth: userAnalytics.newUsersThisMonth,
         },
       });
+      setRecentOrders(orderAnalytics.recentOrders.slice(0, 8));
+      setLowStockItems(lowStock);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -220,6 +231,26 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
+      <section className="border border-zinc-200 bg-white p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-black uppercase tracking-[0.16em]">Quick actions</h2>
+          <Link href="/admin/settings" className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-900">
+            Cấu hình
+          </Link>
+        </div>
+        <div className="grid gap-2 md:grid-cols-3">
+          <Link href="/admin/products" className="flex items-center justify-between border border-zinc-200 px-4 py-3 text-sm font-medium hover:bg-zinc-50">
+            Thêm / sửa sản phẩm <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/admin/orders" className="flex items-center justify-between border border-zinc-200 px-4 py-3 text-sm font-medium hover:bg-zinc-50">
+            Xử lý đơn hàng <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/admin/users" className="flex items-center justify-between border border-zinc-200 px-4 py-3 text-sm font-medium hover:bg-zinc-50">
+            Quản lý người dùng <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="border border-zinc-200 p-5">
           <h2 className="flex items-center text-lg font-black uppercase">
@@ -278,6 +309,76 @@ export default function AdminDashboard() {
                 </p>
               </div>
             )}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="border border-zinc-200 bg-white p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-[0.16em]">Đơn hàng gần đây</h2>
+            <Link href="/admin/orders" className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-900">
+              Xem tất cả
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase tracking-[0.12em] text-zinc-500">
+                <tr>
+                  <th className="pb-2 text-left">Mã đơn</th>
+                  <th className="pb-2 text-left">Khách</th>
+                  <th className="pb-2 text-left">Trạng thái</th>
+                  <th className="pb-2 text-right">Tổng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-3 text-zinc-500">Không có dữ liệu</td>
+                  </tr>
+                )}
+                {recentOrders.map((order) => (
+                  <tr key={order.id} className="border-t border-zinc-100">
+                    <td className="py-2 font-semibold">#{order.id}</td>
+                    <td className="py-2">{order.profile?.username || order.profile?.email || "Khách lẻ"}</td>
+                    <td className="py-2">{order.status}</td>
+                    <td className="py-2 text-right font-semibold">{formatCurrency(order.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="border border-zinc-200 bg-white p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-[0.16em]">Sản phẩm sắp hết</h2>
+            <Link href="/admin/products?status=hidden-web" className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-900">
+              Kiểm tra web
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase tracking-[0.12em] text-zinc-500">
+                <tr>
+                  <th className="pb-2 text-left">Sản phẩm</th>
+                  <th className="pb-2 text-right">Tồn kho</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lowStockItems.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="py-3 text-zinc-500">Không có dữ liệu</td>
+                  </tr>
+                )}
+                {lowStockItems.map((product) => (
+                  <tr key={product.product_id} className="border-t border-zinc-100">
+                    <td className="py-2">{product.title}</td>
+                    <td className="py-2 text-right font-semibold">{getSellableStock(product)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ProductType } from "@/types";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getProductImage } from "@/utils/productImages";
+import { getSellableStock } from "@/utils/productVisibility";
 
 interface ProductCardProps {
   product: ProductType;
@@ -10,6 +11,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const imageUrl = getProductImage(product);
+  const sellableStock = getSellableStock(product);
   const price = Number(product.price || 0);
   const productHref = `/products/${product.slug || product.product_id}`;
 
@@ -36,10 +38,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </p>
 
           <p className="text-xs font-semibold text-zinc-700">
-            {product.stock > 0 ? "Còn hàng" : "Hết hàng"}
+            {sellableStock > 0 ? "Còn hàng" : "Hết hàng"}
           </p>
         </div>
       </article>
     </Link>
   );
 }
+
