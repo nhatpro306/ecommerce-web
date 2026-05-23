@@ -27,6 +27,8 @@ interface OrderDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderWithDetails;
+  onCancelOrder?: (orderId: number) => Promise<void> | void;
+  onDeleteOrder?: (orderId: number) => Promise<void> | void;
 }
 
 const getStatusColor = (status: string) => {
@@ -71,6 +73,8 @@ export function OrderDetailsModal({
   isOpen,
   onClose,
   order,
+  onCancelOrder,
+  onDeleteOrder,
 }: OrderDetailsModalProps) {
   const [orderDetails, setOrderDetails] = useState<OrderWithDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -309,7 +313,33 @@ export function OrderDetailsModal({
           </div>
         </ScrollArea>
 
-        <div className="flex justify-end border-t pt-4">
+        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {onCancelOrder && activeOrder.status !== "cancelled" && (
+              <Button
+                variant="outline"
+                className="rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                onClick={async () => {
+                  await onCancelOrder(activeOrder.id);
+                  onClose();
+                }}
+              >
+                Hủy đơn hàng
+              </Button>
+            )}
+            {onDeleteOrder && (
+              <Button
+                variant="outline"
+                className="rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={async () => {
+                  await onDeleteOrder(activeOrder.id);
+                  onClose();
+                }}
+              >
+                Xóa đơn hàng
+              </Button>
+            )}
+          </div>
           <Button variant="outline" className="rounded-none" onClick={onClose}>
             Đóng
           </Button>

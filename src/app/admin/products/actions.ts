@@ -235,3 +235,80 @@ export async function deactivateAdminProductAction(
   revalidatePath("/");
   return true;
 }
+
+export type DeleteProductResult =
+  | { status: "deleted" }
+  | { status: "hidden"; reason: string };
+
+export async function deleteAdminProductAction(
+  productId: string,
+): Promise<DeleteProductResult> {
+  await requireAdmin();
+  const supabase = await createServerSupabase();
+
+  // Refuse to hard-delete a product that is already linked to historical
+  // order data. Cancelling/hiding the product is safer than breaking past
+  // orders.
+  const { count: orderItemCount, error: orderItemError } = await supabase
+    .from("order_items")
+    .select("id", { count: "exact", head: true })
+    .eq("product_id", productId);
+
+  if (orderItemError) {
+    throw new Error(orderItemError.message);
+  }
+
+  if ((orderItemCount ?? 0) > 0) {
+    const { error: hideError } = await supabase
+      .from("products")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("product_id", productId);
+
+    if (hideError) {
+      throw new Error(hideError.message);
+    }
+
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
+    revalidatePath("/");
+    return {
+      status: "hidden",
+      reason:
+        "Không thể xóa sản phẩm vì sản phẩm đã có trong đơn hàng. Hệ thống đã chuyển sang trạng thái ẩn để giữ lại lịch sử đơn hàng.",
+    };
+  }
+
+  // No FK conflict — try a hard delete. cart_items / product_variants /
+  // product_images cascade on delete; reviews cascade on delete.
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("product_id", productId);
+
+  if (error) {
+    // Last-ditch safety net: if a constraint we did not detect blocks
+    // the delete, fall back to hiding the product.
+    const { error: hideError } = await supabase
+      .from("products")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("product_id", productId);
+
+    if (hideError) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
+    revalidatePath("/");
+    return {
+      status: "hidden",
+      reason:
+        "Không thể xóa sản phẩm vì sản phẩm còn dữ liệu liên quan. Hệ thống đã chuyển sang trạng thái ẩn.",
+    };
+  }
+
+  revalidatePath("/admin/products");
+  revalidatePath("/products");
+  revalidatePath("/");
+  return { status: "deleted" };
+}

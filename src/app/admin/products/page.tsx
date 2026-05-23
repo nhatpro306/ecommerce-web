@@ -34,10 +34,12 @@ import { getActiveVariantStock, getSellableStock } from "@/utils/productVisibili
 import {
   createAdminProductAction,
   deactivateAdminProductAction,
+  deleteAdminProductAction,
   updateAdminProductAction,
 } from "./actions";
 
 type StatusFilter = "all" | "active" | "inactive" | "hidden-web";
+type SortKey = "newest" | "price-asc" | "price-desc" | "stock-asc" | "stock-desc";
 
 function getTotalStock(product: ProductWithDetails) {
   return getSellableStock(product);
@@ -80,8 +82,11 @@ export default function AdminProductsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] =
+    useState<ProductWithDetails | null>(null);
+  const [hidingProduct, setHidingProduct] =
     useState<ProductWithDetails | null>(null);
   const [deletingProduct, setDeletingProduct] =
     useState<ProductWithDetails | null>(null);
@@ -106,12 +111,17 @@ export default function AdminProductsPage() {
   const handleCreateProduct = async (productData: CreateProductData) => {
     try {
       const createdProduct = await createAdminProductAction(productData);
-      toast.success("Đã tạo sản phẩm");
+      toast.success("Tạo sản phẩm thành công");
       fetchProducts();
       return createdProduct;
     } catch (error) {
       console.error("Error creating product:", error);
-      toast.error("Không thể tạo sản phẩm");
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Không thể tạo sản phẩm";
+      toast.error(message);
+      throw error instanceof Error ? error : new Error(message);
     }
   };
 
@@ -126,19 +136,40 @@ export default function AdminProductsPage() {
       return updatedProduct;
     } catch (error) {
       console.error("Error updating product:", error);
-      toast.error("Không thể cập nhật sản phẩm");
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Không thể cập nhật sản phẩm";
+      toast.error(message);
+      throw error instanceof Error ? error : new Error(message);
+    }
+  };
+
+  const handleHideProduct = async (productId: string) => {
+    try {
+      await deactivateAdminProductAction(productId);
+      toast.success("Đã ẩn sản phẩm khỏi storefront");
+      setHidingProduct(null);
+      fetchProducts();
+    } catch (error) {
+      console.error("Error hiding product:", error);
+      toast.error("Không thể ẩn sản phẩm");
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      await deactivateAdminProductAction(productId);
-      toast.success("Đã ẩn sản phẩm khỏi storefront");
+      const result = await deleteAdminProductAction(productId);
+      if (result.status === "deleted") {
+        toast.success("Đã xóa sản phẩm");
+      } else {
+        toast.warning(result.reason);
+      }
       setDeletingProduct(null);
       fetchProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
-      toast.error("Không thể ẩn sản phẩm");
+      toast.error("Không thể xóa sản phẩm. Vui lòng thử lại.");
     }
   };
 
@@ -155,7 +186,7 @@ export default function AdminProductsPage() {
   const filteredProducts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return products.filter((product) => {
+    const filtered = products.filter((product) => {
       const totalStock = getTotalStock(product);
       const isActive = product.is_active !== false;
       const skuText = [
@@ -191,7 +222,26 @@ export default function AdminProductsPage() {
 
       return true;
     });
-  }, [categoryFilter, lowStockOnly, products, searchTerm, statusFilter]);
+
+    return [...filtered].sort((left, right) => {
+      switch (sortKey) {
+        case "price-asc":
+          return left.price - right.price;
+        case "price-desc":
+          return right.price - left.price;
+        case "stock-asc":
+          return getTotalStock(left) - getTotalStock(right);
+        case "stock-desc":
+          return getTotalStock(right) - getTotalStock(left);
+        case "newest":
+        default: {
+          const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0;
+          const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0;
+          return rightTime - leftTime;
+        }
+      }
+    });
+  }, [categoryFilter, lowStockOnly, products, searchTerm, sortKey, statusFilter]);
 
   const totalProducts = products.length;
   const activeProducts = products.filter((product) => product.is_active !== false).length;
@@ -263,7 +313,7 @@ export default function AdminProductsPage() {
 
       <Card className="rounded-none">
         <CardContent className="space-y-4 p-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_160px_160px_160px_auto]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <Input
@@ -278,6 +328,7 @@ export default function AdminProductsPage() {
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
               className="h-10 rounded-none border border-zinc-200 bg-white px-3 text-sm"
+              aria-label="Lọc theo trạng thái"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang bán</option>
@@ -289,6 +340,7 @@ export default function AdminProductsPage() {
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
               className="h-10 rounded-none border border-zinc-200 bg-white px-3 text-sm"
+              aria-label="Lọc theo danh mục"
             >
               <option value="all">Tất cả danh mục</option>
               {categories.map((category) => (
@@ -296,6 +348,19 @@ export default function AdminProductsPage() {
                   {category}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value as SortKey)}
+              className="h-10 rounded-none border border-zinc-200 bg-white px-3 text-sm"
+              aria-label="Sắp xếp"
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="price-asc">Giá tăng dần</option>
+              <option value="price-desc">Giá giảm dần</option>
+              <option value="stock-asc">Tồn kho tăng dần</option>
+              <option value="stock-desc">Tồn kho giảm dần</option>
             </select>
 
             <label className="flex h-10 items-center gap-2 border border-zinc-200 px-3 text-sm">
@@ -389,7 +454,7 @@ export default function AdminProductsPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <Link href={`/products/${product.slug || product.product_id}`}>
                     <Button variant="outline" className="h-10 w-full rounded-none">
                       Xem
@@ -404,10 +469,17 @@ export default function AdminProductsPage() {
                   </Button>
                   <Button
                     variant="outline"
+                    onClick={() => setHidingProduct(product)}
+                    className="h-10 rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                  >
+                    Ẩn
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => setDeletingProduct(product)}
                     className="h-10 rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
-                    Ẩn
+                    Xóa
                   </Button>
                 </div>
               </CardContent>
@@ -540,11 +612,19 @@ export default function AdminProductsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setHidingProduct(product)}
+                          className="rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                        >
+                          Ẩn
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setDeletingProduct(product)}
                           className="rounded-none text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
-                          Ẩn
+                          Xóa
                         </Button>
                       </div>
                     </td>
@@ -592,11 +672,19 @@ export default function AdminProductsPage() {
       />
 
       <DeleteConfirmModal
+        isOpen={!!hidingProduct}
+        onClose={() => setHidingProduct(null)}
+        onConfirm={() => handleHideProduct(hidingProduct!.product_id)}
+        title="Ẩn sản phẩm"
+        description={`Ẩn "${hidingProduct?.title}" khỏi storefront? Sản phẩm vẫn còn trong database và đơn hàng cũ không bị ảnh hưởng.`}
+      />
+
+      <DeleteConfirmModal
         isOpen={!!deletingProduct}
         onClose={() => setDeletingProduct(null)}
         onConfirm={() => handleDeleteProduct(deletingProduct!.product_id)}
-        title="Ẩn sản phẩm"
-        description={`Ẩn "${deletingProduct?.title}" khỏi storefront? Sản phẩm sẽ không bị xóa khỏi database.`}
+        title="Xóa sản phẩm vĩnh viễn"
+        description={`Xóa "${deletingProduct?.title}" khỏi database. Nếu sản phẩm có trong đơn hàng cũ, hệ thống sẽ chuyển sang trạng thái ẩn thay vì xóa để bảo vệ lịch sử.`}
       />
     </div>
   );
