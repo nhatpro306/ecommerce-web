@@ -3,7 +3,7 @@ import { CategoryType } from '../../types';
 import { isNoRowsError, toUserFacingQueryError } from '@/utils/errorHandling';
 import { withTimeout } from '@/utils/withTimeout';
 
-const CATEGORY_QUERY_TIMEOUT_MS = 8000;
+const CATEGORY_QUERY_TIMEOUT_MS = 4000;
 
 export const categoryService = {
   async getCategories(): Promise<CategoryType[]> {
