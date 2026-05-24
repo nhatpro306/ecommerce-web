@@ -9,6 +9,16 @@ export type UploadedProductImage = {
   path: string;
 };
 
+type SupabaseLikeError = {
+  code?: string;
+  message?: string;
+  name?: string;
+  statusCode?: string | number;
+  error?: string;
+  details?: string;
+  hint?: string;
+};
+
 function getImageExtension(file: File): string {
   if (file.type === "image/png") return "png";
   if (file.type === "image/webp") return "webp";
@@ -17,24 +27,40 @@ function getImageExtension(file: File): string {
 
 function getSupabaseErrorMessage(
   operation: string,
-  error: {
-    message?: string;
-    name?: string;
-    statusCode?: string | number;
-    error?: string;
-  },
+  error: SupabaseLikeError,
   context?: string,
 ) {
   return [
     operation,
     context,
+    error.code ? `code ${error.code}` : null,
     error.statusCode ? `status ${error.statusCode}` : null,
     error.name,
     error.error,
+    error.details,
+    error.hint,
     error.message,
   ]
     .filter(Boolean)
     .join(" - ");
+}
+
+function logSupabaseError(
+  operation: string,
+  error: SupabaseLikeError,
+  context?: Record<string, unknown>,
+) {
+  console.error("[productImageUpload]", {
+    operation,
+    code: error.code,
+    statusCode: error.statusCode,
+    name: error.name,
+    error: error.error,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    ...context,
+  });
 }
 
 export function validateProductImageFile(file: File): string | null {
@@ -54,6 +80,7 @@ export async function uploadProductImage(
   file: File,
 ): Promise<UploadedProductImage> {
   const validationError = validateProductImageFile(file);
+
   if (validationError) {
     throw new Error(validationError);
   }
@@ -70,6 +97,12 @@ export async function uploadProductImage(
     });
 
   if (uploadError) {
+    logSupabaseError("storage_upload_failed", uploadError, {
+      productId,
+      bucket: PRODUCT_IMAGE_BUCKET,
+      path,
+    });
+
     throw new Error(
       getSupabaseErrorMessage(
         "Không thể upload ảnh lên Supabase Storage",
@@ -79,9 +112,57 @@ export async function uploadProductImage(
     );
   }
 
-  const { data } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(path);
+  const { data } = supabase.storage
+    .from(PRODUCT_IMAGE_BUCKET)
+    .getPublicUrl(path);
 
-  return { path, url: data.publicUrl };
+  if (!data.publicUrl) {
+    throw new Error("Không thể lấy URL công khai của ảnh sau khi upload.");
+  }
+
+  return {
+    path,
+    url: data.publicUrl,
+  };
+}
+
+async function rollbackUploadedImages(images: UploadedProductImage[]) {
+  if (images.length === 0) return;
+
+  const paths = images.map((image) => image.path);
+
+  const { error } = await supabase.storage
+    .from(PRODUCT_IMAGE_BUCKET)
+    .remove(paths);
+
+  if (error) {
+    logSupabaseError("rollback_storage_images_failed", error, {
+      bucket: PRODUCT_IMAGE_BUCKET,
+      paths,
+    });
+  }
+}
+
+async function rollbackProductImageMetadata(
+  productId: string,
+  images: UploadedProductImage[],
+) {
+  if (images.length === 0) return;
+
+  const urls = images.map((image) => image.url);
+
+  const { error } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("product_id", productId)
+    .in("url", urls);
+
+  if (error) {
+    logSupabaseError("rollback_product_image_metadata_failed", error, {
+      productId,
+      urls,
+    });
+  }
 }
 
 export async function uploadAndAttachProductImages(
@@ -100,94 +181,114 @@ export async function uploadAndAttachProductImages(
   const invalidFileError = files
     .map((file) => validateProductImageFile(file))
     .find((message): message is string => Boolean(message));
+
   if (invalidFileError) {
     throw new Error(invalidFileError);
   }
 
+  const safePrimaryIndex =
+    primaryIndex >= 0 && primaryIndex < files.length ? primaryIndex : 0;
+
   const uploadedImages: UploadedProductImage[] = [];
+  let metadataInserted = false;
 
-  for (const file of files) {
-    const uploaded = await uploadProductImage(productId, file);
-    uploadedImages.push(uploaded);
-  }
+  try {
+    for (const file of files) {
+      const uploaded = await uploadProductImage(productId, file);
+      uploadedImages.push(uploaded);
+    }
 
-  const { error: resetPrimaryError } = await supabase
-    .from("product_images")
-    .update({ is_primary: false })
-    .eq("product_id", productId);
-
-  if (resetPrimaryError) {
-    throw new Error(
-      getSupabaseErrorMessage(
-        "Không thể bỏ đánh dấu ảnh chính cũ trong bảng product_images",
-        resetPrimaryError,
-        `product_id=${productId}`,
-      ),
-    );
-  }
-
-  for (const [index, file] of files.entries()) {
-    const uploaded = uploadedImages[index];
-    const { data: existingRows, error: lookupError } = await supabase
+    const { error: resetPrimaryError } = await supabase
       .from("product_images")
-      .select("id")
-      .eq("product_id", productId)
-      .eq("url", uploaded.url)
-      .limit(1);
+      .update({ is_primary: false })
+      .eq("product_id", productId);
 
-    if (lookupError) {
-      console.error("Product image metadata lookup failed", {
+    if (resetPrimaryError) {
+      logSupabaseError("reset_primary_images_failed", resetPrimaryError, {
         productId,
-        path: uploaded.path,
-        error: lookupError,
       });
-      throw new Error(
-        "Không thể lưu ảnh sản phẩm. Vui lòng thử lại hoặc kiểm tra cấu hình Supabase.",
-      );
-    }
 
-    if (existingRows && existingRows.length > 0) {
-      continue;
-    }
-
-    const { error: imageError } = await supabase.from("product_images").insert({
-      product_id: productId,
-      url: uploaded.url,
-      alt_text: file.name,
-      sort_order: index,
-      is_primary: index === primaryIndex,
-    });
-
-    if (imageError) {
       throw new Error(
         getSupabaseErrorMessage(
-          "Không thể lưu URL ảnh vào bảng product_images",
-          imageError,
-          `product_id=${productId}, url=${uploaded.url}`,
+          "Không thể cập nhật metadata ảnh. Bảng product_images có thể đang thiếu hoặc chưa cấu hình đúng",
+          resetPrimaryError,
+          `product_id=${productId}`,
         ),
       );
     }
-  }
 
-  const primaryUploadedImage =
-    uploadedImages[primaryIndex] || uploadedImages[0] || null;
+    for (const [index, file] of files.entries()) {
+      const uploaded = uploadedImages[index];
 
-  if (primaryUploadedImage) {
+      const { error: imageError } = await supabase.from("product_images").insert({
+        product_id: productId,
+        url: uploaded.url,
+        alt_text: file.name,
+        sort_order: index,
+        is_primary: index === safePrimaryIndex,
+      });
+
+      if (imageError) {
+        logSupabaseError("metadata_insert_failed", imageError, {
+          productId,
+          path: uploaded.path,
+          url: uploaded.url,
+          fileName: file.name,
+        });
+
+        throw new Error(
+          getSupabaseErrorMessage(
+            "Không thể lưu metadata ảnh vào bảng product_images. Vui lòng kiểm tra bảng product_images trong Supabase",
+            imageError,
+            `product_id=${productId}, url=${uploaded.url}`,
+          ),
+        );
+      }
+    }
+
+    metadataInserted = true;
+
+    const primaryUploadedImage = uploadedImages[safePrimaryIndex];
+
+    if (!primaryUploadedImage) {
+      throw new Error("Không tìm thấy ảnh chính sau khi upload.");
+    }
+
     const { error: productError } = await supabase
       .from("products")
       .update({ image: primaryUploadedImage.url })
       .eq("product_id", productId);
 
     if (productError) {
+      logSupabaseError("product_main_image_update_failed", productError, {
+        productId,
+        url: primaryUploadedImage.url,
+      });
+
       throw new Error(
         getSupabaseErrorMessage(
-          "Không thể cập nhật ảnh chính trong bảng products",
+          "Ảnh đã upload nhưng không thể cập nhật ảnh chính trong bảng products",
           productError,
           `product_id=${productId}`,
         ),
       );
     }
-  }
 
-  return uploadedImages;
+    return uploadedImages;
+  } catch (error) {
+    console.error("[productImageUpload] upload_and_attach_failed", {
+      productId,
+      uploadedCount: uploadedImages.length,
+      metadataInserted,
+      error,
+    });
+
+    if (metadataInserted) {
+      await rollbackProductImageMetadata(productId, uploadedImages);
+    }
+
+    await rollbackUploadedImages(uploadedImages);
+
+    throw error;
+  }
 }
