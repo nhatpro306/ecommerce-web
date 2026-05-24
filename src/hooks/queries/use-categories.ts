@@ -18,18 +18,7 @@ export function useCategories(options?: UseQueryOptions<CategoryType[]>) {
 		queryFn: categoryService.getCategories,
 		staleTime: 10 * 60 * 1000, // 10 minutes (categories rarely change)
 		gcTime: 30 * 60 * 1000, // 30 minutes cache
-		retry: (failureCount, error) => {
-			if (
-				error instanceof Error &&
-				(error.message.includes(UNABLE_TO_REACH_DATABASE) ||
-					error.message.includes('404') ||
-					error.message.includes('permission') ||
-					error.message.includes('do not have permission'))
-			) {
-				return false
-			}
-			return failureCount < 1
-		},
+		retry: false,
 		throwOnError: false,
 		...options,
 	})

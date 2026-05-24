@@ -167,6 +167,7 @@ export async function uploadAndAttachProductImages(
         ),
       );
     }
+  }
 
   const primaryUploadedImage =
     uploadedImages[primaryIndex] || uploadedImages[0] || null;

@@ -16,7 +16,7 @@ import {
   Users,
   ChevronRight,
   User,
-  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -57,14 +57,20 @@ import {
   indicatorVariants,
 } from "@/components/motion/animation-variants";
 
-// Default icons for each category
 const categoryIcons: Record<string, React.ElementType> = {
-  "Tất cả": Home,
   "T-Shirts": Shirt,
   Hoodies: Shirt,
   Pants: Shirt,
   Accessories: Watch,
 };
+
+const FALLBACK_CATEGORY_ITEMS = [
+  { name: "Tất cả", icon: Home, href: "/products" },
+  { name: "T-Shirts", icon: Shirt, href: "/products" },
+  { name: "Hoodies", icon: Shirt, href: "/products" },
+  { name: "Pants", icon: Shirt, href: "/products" },
+  { name: "Accessories", icon: Watch, href: "/products" },
+];
 
 export default function Sidebar() {
   const [mounted, setMounted] = useState(false);
@@ -75,12 +81,7 @@ export default function Sidebar() {
   const { state } = useSidebar();
 
   // Use the TanStack Query hook instead of manual state management
-  const {
-    data: categories,
-    isLoading: loading,
-    error: categoriesError,
-    refetch: refetchCategories,
-  } = useCategories();
+  const { data: categories, isLoading: loading } = useCategories();
 
   const isCollapsed = state === "collapsed";
 
@@ -92,15 +93,18 @@ export default function Sidebar() {
     return null;
   }
 
-  // Mapping of categories from DB to display with icons and hrefs
-  const categoryItems = [
-    { name: "Tất cả", icon: Home, href: "/products" },
-    ...(categories || []).map((category) => ({
-      name: category.name,
-      icon: categoryIcons[category.name] || Smartphone,
-      href: "/products",
-    })),
-  ];
+  // Use DB categories when available, fall back to hardcoded list while loading or on error
+  const categoryItems =
+    categories && categories.length > 0
+      ? [
+          { name: "Tất cả", icon: Home, href: "/products" },
+          ...categories.map((category) => ({
+            name: category.name,
+            icon: categoryIcons[category.name] || Smartphone,
+            href: "/products",
+          })),
+        ]
+      : FALLBACK_CATEGORY_ITEMS;
 
   // Filter categories based on authentication status
   const displayCategories = user
@@ -270,110 +274,76 @@ export default function Sidebar() {
           <SidebarGroup>
             {!isCollapsed && (
               <Motion variants={itemVariants} initial="closed" animate="open">
-                <SidebarGroupLabel className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                <SidebarGroupLabel className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wider uppercase">
                   Danh mục
+                  {loading && (
+                    <Loader2 className="h-3 w-3 animate-spin opacity-50" />
+                  )}
                 </SidebarGroupLabel>
               </Motion>
             )}
             <SidebarGroupContent>
               <SidebarMenu>
-                {loading ? (
-                  <div className="animate-pulse space-y-2">
-                    {[1, 2, 3].map((n) => (
-                      <div
-                        key={n}
-                        className={cn(
-                          "bg-muted rounded-lg",
-                          isCollapsed ? "h-10 w-10" : "h-10",
-                        )}
-                      />
-                    ))}
-                  </div>
-                ) : categoriesError ? (
-                  <div
-                    className={cn(
-                      "bg-destructive/10 text-destructive border-destructive/20 space-y-2 rounded-lg border p-2 text-xs",
-                      isCollapsed && "px-1",
-                    )}
-                  >
-                    {!isCollapsed && (
-                      <p className="leading-snug font-medium">
-                        Không thể tải danh mục
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => void refetchCategories()}
-                      className="bg-background/80 text-foreground hover:bg-background flex w-full cursor-pointer items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs font-medium"
-                      title="Tải lại danh mục"
-                    >
-                      <RefreshCw className="h-3 w-3 shrink-0" />
-                      {!isCollapsed && <span>Thử lại</span>}
-                    </button>
-                  </div>
-                ) : (
-                  <Motion
-                    variants={staggerVariants}
-                    initial="closed"
-                    animate="open"
-                  >
-                    {displayCategories.map((category) => {
-                      const isActive = pathname === category.href;
-                      const Icon = category.icon;
+                <Motion
+                  variants={staggerVariants}
+                  initial="closed"
+                  animate="open"
+                >
+                  {displayCategories.map((category) => {
+                    const isActive = pathname === category.href;
+                    const Icon = category.icon;
 
-                      return (
-                        <Motion
-                          key={category.name}
-                          variants={itemVariants}
-                          initial="closed"
-                          animate="open"
-                        >
-                          <SidebarMenuItem>
-                            <SidebarMenuButton
-                              render={<Link href={category.href} />}
-                              isActive={isActive}
+                    return (
+                      <Motion
+                        key={category.name}
+                        variants={itemVariants}
+                        initial="closed"
+                        animate="open"
+                      >
+                        <SidebarMenuItem>
+                          <SidebarMenuButton
+                            render={<Link href={category.href} />}
+                            isActive={isActive}
+                            className={cn(
+                              "group relative transition-all duration-200",
+                              isActive
+                                ? "bg-primary/10 text-primary border-primary/20 border"
+                                : "hover:translate-x-1",
+                            )}
+                            tooltip={category.name}
+                          >
+                            <Icon
                               className={cn(
-                                "group relative transition-all duration-200",
+                                "h-4 w-4 transition-all duration-200",
                                 isActive
-                                  ? "bg-primary/10 text-primary border-primary/20 border"
-                                  : "hover:translate-x-1",
+                                  ? "text-primary"
+                                  : "text-muted-foreground group-hover:text-foreground",
                               )}
-                              tooltip={category.name}
-                            >
-                              <Icon
-                                className={cn(
-                                  "h-4 w-4 transition-all duration-200",
-                                  isActive
-                                    ? "text-primary"
-                                    : "text-muted-foreground group-hover:text-foreground",
-                                )}
+                            />
+                            {!isCollapsed && (
+                              <span className="text-sm font-medium">
+                                {category.name}
+                              </span>
+                            )}
+                            {isActive && (
+                              <Motion
+                                variants={indicatorVariants}
+                                initial="closed"
+                                animate="open"
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 30,
+                                }}
+                                className="bg-primary absolute right-2 h-2 w-2 rounded-full"
                               />
-                              {!isCollapsed && (
-                                <span className="text-sm font-medium">
-                                  {category.name}
-                                </span>
-                              )}
-                              {/* Active indicator */}
-                              {isActive && (
-                                <Motion
-                                  variants={indicatorVariants}
-                                  initial="closed"
-                                  animate="open"
-                                  transition={{
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 30,
-                                  }}
-                                  className="bg-primary absolute right-2 h-2 w-2 rounded-full"
-                                />
-                              )}
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        </Motion>
-                      );
-                    })}
-                  </Motion>
-                )}
+                            )}
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      </Motion>
+                    );
+                  })}
+                </Motion>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
