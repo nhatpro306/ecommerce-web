@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
+import { getPaymentMethodLabel } from "@/lib/i18n/status";
 import { supabase } from "@/lib/supabase/client";
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -20,7 +21,7 @@ interface BankConfig {
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const orderId = searchParams.get("order_id");
   const paymentMethod = searchParams.get("payment_method");
   const total = Number(searchParams.get("total") || 0);
@@ -28,10 +29,7 @@ function SuccessContent() {
   const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setIsLoading(false);
-    }, 700);
-
+    const timeoutId = window.setTimeout(() => setIsLoading(false), 700);
     return () => window.clearTimeout(timeoutId);
   }, []);
 
@@ -44,14 +42,12 @@ function SuccessContent() {
         .maybeSingle();
 
       if (error || !data) return;
-
       setStoreBankConfig({
         name: data.bank_name || "Vietcombank",
         accountName: data.bank_account_name || "RESEY",
         accountNumber: data.bank_account_number || "0123456789",
       });
     }
-
     loadStoreSettings();
   }, []);
 
@@ -60,28 +56,23 @@ function SuccessContent() {
       storeBankConfig || {
         name: process.env.NEXT_PUBLIC_BANK_NAME || "Vietcombank",
         accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "RESEY",
-        accountNumber:
-          process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
+        accountNumber: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
       },
     [storeBankConfig],
   );
-  const paymentMethodLabel =
-    paymentMethod === "bank_transfer"
-      ? "Chuyển khoản ngân hàng"
-      : "Thanh toán khi nhận hàng (COD)";
+
+  const paymentMethodLabel = getPaymentMethodLabel(paymentMethod || "cod", locale);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white py-12">
         <Card className="mx-auto max-w-md rounded-none">
           <CardHeader>
-            <CardTitle>{t("checkout_submitting")}</CardTitle>
+            <CardTitle>{t("checkout.submitting")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-8">
             <LoadingSpinner />
-            <p className="mt-4 text-zinc-500">
-              Vui lòng chờ trong khi hệ thống xác nhận đơn hàng.
-            </p>
+            <p className="mt-4 text-zinc-500">{t("success.pleaseWaitConfirm")}</p>
           </CardContent>
         </Card>
       </div>
@@ -100,45 +91,28 @@ function SuccessContent() {
         <CardContent className="space-y-6">
           <div className="space-y-2 text-center">
             <p className="text-zinc-500">{t("success_thanks")}</p>
-            {orderId && <p className="text-sm text-zinc-500">Mã đơn hàng: #{orderId}</p>}
-            {total > 0 && (
-              <p className="text-sm text-zinc-500">
-                Tổng thanh toán: {formatCurrency(total)}
-              </p>
-            )}
-            <p className="text-sm text-zinc-500">
-              Phương thức thanh toán: {paymentMethodLabel}
-            </p>
+            {orderId && <p className="text-sm text-zinc-500">{t("success.orderCode")}: #{orderId}</p>}
+            {total > 0 && <p className="text-sm text-zinc-500">{t("success.totalAmount")}: {formatCurrency(total)}</p>}
+            <p className="text-sm text-zinc-500">{t("success.paymentMethod")}: {paymentMethodLabel}</p>
           </div>
 
           {paymentMethod === "bank_transfer" && (
             <div className="border border-zinc-200 bg-zinc-50 p-4 text-sm">
-              <p className="font-bold uppercase tracking-[0.12em]">
-                {t("success_bank_info_title")}
-              </p>
-              <p className="mt-3">Ngân hàng: {bankConfig.name}</p>
-              <p>Chủ tài khoản: {bankConfig.accountName}</p>
-              <p>Số tài khoản: {bankConfig.accountNumber}</p>
-              <p className="mt-3 font-bold">Nội dung: ORDER-{orderId}</p>
+              <p className="font-bold uppercase tracking-[0.12em]">{t("success_bank_info_title")}</p>
+              <p className="mt-3">{t("checkout.bankName")}: {bankConfig.name}</p>
+              <p>{t("checkout.bankAccountName")}: {bankConfig.accountName}</p>
+              <p>{t("checkout.bankAccountNumber")}: {bankConfig.accountNumber}</p>
+              <p className="mt-3 font-bold">{t("success.bankContent")}: ORDER-{orderId}</p>
             </div>
           )}
 
-          <div className="border border-zinc-200 p-4 text-sm text-zinc-600">
-            {t("success_contact_note")}
-          </div>
+          <div className="border border-zinc-200 p-4 text-sm text-zinc-600">{t("success_contact_note")}</div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Button
-              onClick={() => router.push("/profile")}
-              variant="outline"
-              className="cursor-pointer rounded-none"
-            >
+            <Button onClick={() => router.push("/profile")} variant="outline" className="cursor-pointer rounded-none">
               {t("success_view_order")}
             </Button>
-            <Button
-              onClick={() => router.push("/")}
-              className="cursor-pointer rounded-none bg-zinc-950 text-white hover:bg-zinc-800"
-            >
+            <Button onClick={() => router.push("/")} className="cursor-pointer rounded-none bg-zinc-950 text-white hover:bg-zinc-800">
               {t("success_continue")}
             </Button>
           </div>
@@ -154,7 +128,7 @@ function LoadingFallback() {
     <div className="min-h-screen bg-white py-12">
       <Card className="mx-auto max-w-md rounded-none">
         <CardHeader>
-          <CardTitle>{t("loading")}</CardTitle>
+          <CardTitle>{t("common.loading")}</CardTitle>
         </CardHeader>
         <CardContent>
           <LoadingSpinner />
