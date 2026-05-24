@@ -7,31 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuthForm } from "@/hooks/useAuthForm";
+import { useI18n } from "@/lib/i18n";
 
 export function SignInForm({ message }: { message: string | null }) {
-  const {
-    formData,
-    loading,
-    error,
-    showPassword,
-    handleChange,
-    togglePasswordVisibility,
-    handleSubmit,
-  } = useAuthForm();
+  const { formData, loading, error, showPassword, handleChange, togglePasswordVisibility, handleSubmit } = useAuthForm();
+  const { t } = useI18n();
 
   return (
     <form onSubmit={handleSubmit}>
       <CardContent className="space-y-5">
-        {error && (
-          <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-        {message && (
-          <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
-            {message}
-          </div>
-        )}
+        {error && <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        {message && <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">{message}</div>}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -47,12 +33,9 @@ export function SignInForm({ message }: { message: string | null }) {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Mật khẩu</Label>
-            <Link
-              href="/reset-password"
-              className="text-sm font-medium text-zinc-700 underline underline-offset-4 hover:text-zinc-950"
-            >
-              Quên mật khẩu?
+            <Label htmlFor="password">{t("auth.password")}</Label>
+            <Link href="/reset-password" className="text-sm font-medium text-zinc-700 underline underline-offset-4 hover:text-zinc-950">
+              {t("auth.forgotPassword")}
             </Link>
           </div>
           <div className="relative">
@@ -71,33 +54,20 @@ export function SignInForm({ message }: { message: string | null }) {
               onClick={togglePasswordVisibility}
               tabIndex={-1}
             >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              <span className="sr-only">
-                {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-              </span>
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <span className="sr-only">{showPassword ? t("auth.hidePassword") : t("auth.showPassword")}</span>
             </button>
           </div>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button
-          type="submit"
-          className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
-          disabled={loading}
-        >
-          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+        <Button type="submit" className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800" disabled={loading}>
+          {loading ? t("auth.signInLoading") : t("auth.signIn")}
         </Button>
         <div className="text-center text-sm text-zinc-600">
-          Chưa có tài khoản?{" "}
-          <Link
-            href="/signup"
-            className="font-semibold text-zinc-950 underline underline-offset-4"
-          >
-            Đăng ký
+          {t("auth.noAccount")}{" "}
+          <Link href="/signup" className="font-semibold text-zinc-950 underline underline-offset-4">
+            {t("auth.signUp")}
           </Link>
         </div>
       </CardFooter>

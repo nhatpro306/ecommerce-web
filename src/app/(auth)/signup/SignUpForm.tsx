@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuthForm } from "@/hooks/useAuthForm";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 export default function SignUpForm() {
   const {
@@ -20,15 +21,12 @@ export default function SignUpForm() {
     toggleConfirmPasswordVisibility,
     handleSubmit,
   } = useAuthForm({ isSignUp: true });
+  const { t } = useI18n();
 
   return (
     <form onSubmit={handleSubmit}>
       <CardContent className="space-y-5">
-        {error && (
-          <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        {error && <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -43,7 +41,7 @@ export default function SignUpForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Mật khẩu</Label>
+          <Label htmlFor="password">{t("auth.password")}</Label>
           <div className="relative">
             <Input
               id="password"
@@ -60,19 +58,13 @@ export default function SignUpForm() {
               onClick={togglePasswordVisibility}
               tabIndex={-1}
             >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              <span className="sr-only">
-                {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-              </span>
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <span className="sr-only">{showPassword ? t("auth.hidePassword") : t("auth.showPassword")}</span>
             </button>
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
+          <Label htmlFor="confirmPassword">{t("auth.confirmPassword")}</Label>
           <div className="relative">
             <Input
               id="confirmPassword"
@@ -89,35 +81,22 @@ export default function SignUpForm() {
               onClick={toggleConfirmPasswordVisibility}
               tabIndex={-1}
             >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               <span className="sr-only">
-                {showConfirmPassword
-                  ? "Ẩn xác nhận mật khẩu"
-                  : "Hiện xác nhận mật khẩu"}
+                {showConfirmPassword ? t("auth.hideConfirmPassword") : t("auth.showConfirmPassword")}
               </span>
             </button>
           </div>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button
-          type="submit"
-          className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
-          disabled={loading}
-        >
-          {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
+        <Button type="submit" className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800" disabled={loading}>
+          {loading ? t("auth.signUpLoading") : t("auth.signUp")}
         </Button>
         <div className="text-center text-sm text-zinc-600">
-          Đã có tài khoản?{" "}
-          <Link
-            href="/signin"
-            className="font-semibold text-zinc-950 underline underline-offset-4"
-          >
-            Đăng nhập
+          {t("auth.haveAccount")}{" "}
+          <Link href="/signin" className="font-semibold text-zinc-950 underline underline-offset-4">
+            {t("auth.signIn")}
           </Link>
         </div>
       </CardFooter>
