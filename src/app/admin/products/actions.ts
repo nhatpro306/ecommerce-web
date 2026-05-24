@@ -32,6 +32,10 @@ function isMissingVariantTableError(error: { code?: string; message?: string }) 
   );
 }
 
+function schemaFixMessage(subject: string) {
+  return `Thiếu schema Supabase cho ${subject}. Vui lòng chạy migration mới nhất rồi thử lại.`;
+}
+
 function isMissingSalePriceColumnError(error: { code?: string; message?: string }) {
   const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
   return (
@@ -63,15 +67,7 @@ export async function createAdminProductAction(
     .single();
 
   if (error && isMissingSalePriceColumnError(error)) {
-    const { sale_price: _salePrice, ...legacyPayload } = insertPayload;
-    void _salePrice;
-    const retry = await supabase
-      .from("products")
-      .insert(legacyPayload)
-      .select()
-      .single();
-    data = retry.data;
-    error = retry.error;
+    throw new Error(schemaFixMessage("cột products.sale_price"));
   }
 
   if (error) {
@@ -104,16 +100,7 @@ export async function updateAdminProductAction(
     .single();
 
   if (error && isMissingSalePriceColumnError(error)) {
-    const { sale_price: _salePrice, ...legacyPayload } = updatePayload;
-    void _salePrice;
-    const retry = await supabase
-      .from("products")
-      .update(legacyPayload)
-      .eq("product_id", productId)
-      .select()
-      .single();
-    data = retry.data;
-    error = retry.error;
+    throw new Error(schemaFixMessage("cột products.sale_price"));
   }
 
   if (error) {
@@ -169,9 +156,7 @@ export async function syncAdminProductVariantsAction(
 
   if (fetchError) {
     if (isMissingVariantTableError(fetchError)) {
-      revalidatePath("/admin/products");
-      revalidatePath("/products");
-      return [];
+      throw new Error(schemaFixMessage("bảng product_variants"));
     }
     throw new Error(fetchError.message);
   }
@@ -191,9 +176,7 @@ export async function syncAdminProductVariantsAction(
 
     if (deactivateError) {
       if (isMissingVariantTableError(deactivateError)) {
-        revalidatePath("/admin/products");
-        revalidatePath("/products");
-        return [];
+        throw new Error(schemaFixMessage("bảng product_variants"));
       }
       throw new Error(deactivateError.message);
     }
@@ -212,9 +195,7 @@ export async function syncAdminProductVariantsAction(
 
   if (error) {
     if (isMissingVariantTableError(error)) {
-      revalidatePath("/admin/products");
-      revalidatePath("/products");
-      return [];
+      throw new Error(schemaFixMessage("bảng product_variants"));
     }
     throw new Error(error.message);
   }

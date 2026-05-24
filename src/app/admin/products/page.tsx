@@ -112,7 +112,6 @@ export default function AdminProductsPage() {
   const handleCreateProduct = async (productData: CreateProductData) => {
     try {
       const createdProduct = await createAdminProductAction(productData);
-      toast.success("Tạo sản phẩm thành công");
       fetchProducts();
       return createdProduct;
     } catch (error) {
@@ -132,7 +131,6 @@ export default function AdminProductsPage() {
   ) => {
     try {
       const updatedProduct = await updateAdminProductAction(productId, productData);
-      toast.success("Đã cập nhật sản phẩm");
       fetchProducts();
       return updatedProduct;
     } catch (error) {

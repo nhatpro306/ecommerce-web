@@ -324,17 +324,18 @@ export function ProductFormModal({
         is_active: variant.is_active,
       }));
 
-      const syncedVariants = await syncAdminProductVariantsAction(
-        savedProduct.product_id,
-        variantPayload,
-      );
-
-      if (variantPayload.length > 0 && syncedVariants.length === 0) {
-        toast.info(
-          "Sản phẩm đã lưu bằng tồn kho cơ bản. Variant size/màu sẽ hoạt động khi database có bảng product_variants.",
+      let variantSyncFailed = false;
+      try {
+        await syncAdminProductVariantsAction(savedProduct.product_id, variantPayload);
+      } catch (variantError) {
+        variantSyncFailed = true;
+        console.error("Product variant sync failed:", variantError);
+        toast.warning(
+          "Sản phẩm đã được lưu, nhưng biến thể size/màu chưa được đồng bộ.",
         );
       }
 
+      let imageUploadFailed = false;
       if (selectedFiles.length > 0) {
         try {
           const uploadedImages = await uploadAndAttachProductImages(
@@ -360,11 +361,26 @@ export function ProductFormModal({
             ...previous,
             imageFiles: `Upload ảnh thất bại: ${uploadMessage}`,
           }));
-          toast.warning("Upload ảnh thất bại. Xem chi tiết lỗi trong form.");
-          return;
+          imageUploadFailed = true;
+          toast.warning(
+            "Sản phẩm đã được lưu, nhưng ảnh sản phẩm chưa được tải lên.",
+          );
+          toast.warning(
+            "Vui lòng kiểm tra lại ảnh sản phẩm trước khi hiển thị sản phẩm trên cửa hàng.",
+          );
         }
       }
 
+      if (variantSyncFailed || imageUploadFailed) {
+        setErrors((previous) => ({
+          ...previous,
+          submit:
+            "Sản phẩm đã lưu một phần. Vui lòng kiểm tra lại biến thể và ảnh trước khi mở bán.",
+        }));
+        return;
+      }
+
+      toast.success(product ? "Đã cập nhật sản phẩm" : "Tạo sản phẩm thành công");
       onClose();
     } catch (error) {
       console.error("Error submitting product:", error);
