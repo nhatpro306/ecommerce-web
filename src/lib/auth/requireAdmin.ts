@@ -23,7 +23,7 @@ export async function requireAdmin(): Promise<AdminUser> {
     .eq("profile_id", user.id)
     .single();
 
-  if (profileError || !profile || profile.role !== "admin" || !profile.is_active) {
+  if (profileError || !profile || profile.role !== "admin" || profile.is_active === false) {
     throw new Error("Admin access required");
   }
 

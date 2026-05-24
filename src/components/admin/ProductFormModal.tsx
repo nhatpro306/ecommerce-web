@@ -52,6 +52,7 @@ interface FormData {
   description: string;
   material: string;
   price: string;
+  sale_price: string;
   image: string;
   stock: string;
   sku: string;
@@ -75,7 +76,7 @@ const defaultVariant = (): VariantDraft => ({
   size: "M",
   color: "Đen",
   sku: "",
-  stock: "0",
+  stock: "10",
   price_override: "",
   is_active: true,
 });
@@ -140,6 +141,7 @@ export function ProductFormModal({
     description: "",
     material: "",
     price: "",
+    sale_price: "",
     image: "",
     stock: "",
     sku: "",
@@ -154,6 +156,8 @@ export function ProductFormModal({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
+  const [newColorInput, setNewColorInput] = useState("");
+  const [newSizeInput, setNewSizeInput] = useState("");
 
   const {
     data: categories,
@@ -170,6 +174,7 @@ export function ProductFormModal({
         description: product.description || "",
         material: product.material || "",
         price: product.price?.toString() || "",
+        sale_price: product.sale_price?.toString() || "",
         image: product.image || "",
         stock: product.stock?.toString() || "",
         sku: product.sku || "",
@@ -185,6 +190,7 @@ export function ProductFormModal({
         description: "",
         material: "",
         price: "",
+        sale_price: "",
         image: "",
         stock: "",
         sku: "",
@@ -282,6 +288,9 @@ export function ProductFormModal({
         description: formData.description.trim(),
         material: formData.material.trim() || undefined,
         price: Number.parseFloat(formData.price),
+        sale_price: formData.sale_price.trim()
+          ? Number.parseFloat(formData.sale_price)
+          : null,
         image: formData.image.trim() || undefined,
         stock: productStock,
         sizes: parseList(formData.sizes).length > 0 ? parseList(formData.sizes) : variantSizes,
@@ -391,8 +400,8 @@ export function ProductFormModal({
   };
 
   const addColorVariants = () => {
-    const color = window.prompt("Nhập màu mới, ví dụ: Đen");
-    if (!color?.trim()) return;
+    const color = newColorInput.trim();
+    if (!color) return;
 
     const sizes = parseList(formData.sizes).length > 0
       ? parseList(formData.sizes)
@@ -402,18 +411,19 @@ export function ProductFormModal({
       ...previous,
       ...sizes.map((size) => ({
         size,
-        color: color.trim(),
-        sku: formData.sku ? `${formData.sku}-${color.trim()}-${size}`.toUpperCase() : "",
+        color,
+        sku: formData.sku ? `${formData.sku}-${color}-${size}`.toUpperCase() : "",
         stock: "0",
         price_override: "",
         is_active: true,
       })),
     ]);
+    setNewColorInput("");
   };
 
   const addSizeVariants = () => {
-    const size = window.prompt("Nhập size mới, ví dụ: XL");
-    if (!size?.trim()) return;
+    const size = newSizeInput.trim();
+    if (!size) return;
 
     const colors = parseList(formData.colors).length > 0
       ? parseList(formData.colors)
@@ -422,14 +432,15 @@ export function ProductFormModal({
     setVariants((previous) => [
       ...previous,
       ...colors.map((color) => ({
-        size: size.trim(),
+        size,
         color,
-        sku: formData.sku ? `${formData.sku}-${color}-${size.trim()}`.toUpperCase() : "",
+        sku: formData.sku ? `${formData.sku}-${color}-${size}`.toUpperCase() : "",
         stock: "0",
         price_override: "",
         is_active: true,
       })),
     ]);
+    setNewSizeInput("");
   };
 
   const removeVariant = (index: number) => {
@@ -529,7 +540,7 @@ export function ProductFormModal({
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div>
                 <Label htmlFor="price">Giá bán *</Label>
                 <Input
@@ -543,6 +554,22 @@ export function ProductFormModal({
                 />
                 <p className="mt-1 text-xs text-zinc-500">Nhập giá bán bằng VND</p>
                 {errors.price && <p className="mt-1 text-sm text-rose-600">{errors.price}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="sale_price">Giá khuyến mãi</Label>
+                <Input
+                  id="sale_price"
+                  type="number"
+                  min="0"
+                  value={formData.sale_price}
+                  onChange={(event) => handleInputChange("sale_price", event.target.value)}
+                  placeholder="Để trống nếu không giảm giá"
+                  className="h-12 text-base"
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Nhập giá khuyến mãi để hiển thị giá gạch ngang
+                </p>
               </div>
 
               <div>
@@ -640,18 +667,63 @@ export function ProductFormModal({
                 <p className="text-xs text-zinc-500">
                   Tồn kho tổng hiện tại: {getVariantTotalStock()} sản phẩm
                 </p>
+                {getVariantTotalStock() === 0 && (
+                  <p className="text-xs font-bold text-amber-600">
+                    Tổng tồn kho = 0. Sản phẩm sẽ không hiển thị trên trang sản phẩm cho đến khi có tồn kho.
+                  </p>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={addColorVariants}>
-                Thêm màu
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={addSizeVariants}>
-                Thêm size
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-                <Plus className="mr-2 h-4 w-4" />
-                Thêm size/màu
-              </Button>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="flex gap-1">
+                  <Input
+                    placeholder="Thêm màu mới (vd: Đỏ)"
+                    value={newColorInput}
+                    onChange={(event) => setNewColorInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addColorVariants();
+                      }
+                    }}
+                    className="h-9 w-40 rounded-none text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none"
+                    onClick={addColorVariants}
+                  >
+                    + Màu
+                  </Button>
+                </div>
+                <div className="flex gap-1">
+                  <Input
+                    placeholder="Thêm size mới (vd: XL)"
+                    value={newSizeInput}
+                    onChange={(event) => setNewSizeInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addSizeVariants();
+                      }
+                    }}
+                    className="h-9 w-36 rounded-none text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none"
+                    onClick={addSizeVariants}
+                  >
+                    + Size
+                  </Button>
+                </div>
+                <Button type="button" variant="outline" size="sm" className="rounded-none" onClick={addVariant}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Thêm thủ công
+                </Button>
               </div>
             </div>
 

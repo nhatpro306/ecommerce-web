@@ -104,15 +104,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       try {
-        // Get or create active cart
         const cart = await cartService.getOrCreateCart();
         if (cart) {
           setActiveCartId(cart.id);
 
-          // Get cart items
-          const items = await cartService.getCartItems(cart.id);
+          const localItems = readLocalCart();
+          if (localItems.length > 0) {
+            await Promise.all(
+              localItems.map((item) =>
+                cartService
+                  .addItemToCart(cart.id, item.product_id, item.price, item.quantity, {
+                    size: item.selected_size ?? undefined,
+                    color: item.selected_color ?? undefined,
+                    variantId: item.variant_id ?? undefined,
+                    variantInfo: {
+                      size: item.selected_size,
+                      color: item.selected_color,
+                    },
+                  })
+                  .catch((error) => {
+                    console.warn("Failed to sync local cart item:", error);
+                  }),
+              ),
+            );
+            writeLocalCart([]);
+          }
 
-          // Transform to CartItem format
+          const items = await cartService.getCartItems(cart.id);
           const formattedItems: CartItem[] = items.map((item) => ({
             ...item.product,
             quantity: item.quantity,
@@ -123,8 +141,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             variant_info: item.variant_info,
           }));
 
-          const localItems = readLocalCart();
-          setCartItems([...formattedItems, ...localItems]);
+          setCartItems(formattedItems);
           setSubtotal(cart.total_price);
           setTotalItems(cart.total_items);
         }
