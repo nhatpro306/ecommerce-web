@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { OrderType } from "@/types";
+import type {
+  OrderFilters,
+  OrderWithDetails,
+} from "@/services/admin/adminOrderService";
 
 const validStatuses = [
   "pending",
@@ -12,6 +16,89 @@ const validStatuses = [
   "delivered",
   "cancelled",
 ];
+
+function applyOrderFilters<T extends { eq: Function; gte: Function; lte: Function }>(
+  query: T,
+  filters: OrderFilters,
+): T {
+  let nextQuery = query;
+
+  if (filters.status) nextQuery = nextQuery.eq("status", filters.status) as T;
+  if (filters.dateFrom) nextQuery = nextQuery.gte("created_at", filters.dateFrom) as T;
+  if (filters.dateTo) nextQuery = nextQuery.lte("created_at", filters.dateTo) as T;
+
+  return nextQuery;
+}
+
+export async function getAdminOrdersAction(
+  filters: OrderFilters = {},
+  page: number = 1,
+  limit: number = 20,
+): Promise<{ orders: OrderWithDetails[]; total: number }> {
+  await requireAdmin();
+  const supabase = await createServerSupabase();
+
+  let query = supabase.from("orders").select(`
+    *,
+    profiles!orders_user_id_fkey (
+      username,
+      email
+    ),
+    addresses!orders_shipping_address_id_fkey (
+      street,
+      city,
+      state,
+      zip_code,
+      country
+    ),
+    order_items (
+      id,
+      order_id,
+      product_id,
+      variant_id,
+      quantity,
+      price,
+      selected_size,
+      selected_color,
+      product_title_snapshot,
+      product_image_snapshot,
+      sku_snapshot,
+      size_snapshot,
+      color_snapshot,
+      products (
+        product_id,
+        title,
+        image
+      )
+    )
+  `);
+  query = applyOrderFilters(query, filters);
+
+  let countQuery = supabase
+    .from("orders")
+    .select("*", { count: "exact", head: true });
+  countQuery = applyOrderFilters(countQuery, filters);
+
+  const [{ count, error: countError }, { data, error }] = await Promise.all([
+    countQuery,
+    query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * limit, page * limit - 1),
+  ]);
+
+  if (countError) {
+    throw new Error(countError.message);
+  }
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    orders: (data || []) as unknown as OrderWithDetails[],
+    total: count || 0,
+  };
+}
 
 export async function updateAdminOrderStatusAction(
   orderId: number,

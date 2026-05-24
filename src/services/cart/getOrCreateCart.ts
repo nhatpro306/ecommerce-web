@@ -1,10 +1,5 @@
-import { getActiveCart } from './getActiveCart';
-import { createCart } from './createCart';
+import { getOrCreateCart as getOrCreateCartFromService } from "./cartService";
 
 export async function getOrCreateCart() {
-  const cart = await getActiveCart();
-  if (cart) {
-    return cart;
-  }
-  return await createCart();
+  return getOrCreateCartFromService();
 }

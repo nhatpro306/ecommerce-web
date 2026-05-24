@@ -32,6 +32,7 @@ import { getProductImage } from "@/utils/productImages";
 import { getActiveVariantStock, getSellableStock } from "@/utils/productVisibility";
 
 import {
+  activateAdminProductAction,
   createAdminProductAction,
   deactivateAdminProductAction,
   deleteAdminProductAction,
@@ -154,6 +155,17 @@ export default function AdminProductsPage() {
     } catch (error) {
       console.error("Error hiding product:", error);
       toast.error("Không thể ẩn sản phẩm");
+    }
+  };
+
+  const handleActivateProduct = async (productId: string) => {
+    try {
+      await activateAdminProductAction(productId);
+      toast.success("Đã hiển thị sản phẩm trên storefront");
+      fetchProducts();
+    } catch (error) {
+      console.error("Error activating product:", error);
+      toast.error("Không thể hiển thị sản phẩm");
     }
   };
 
@@ -467,13 +479,23 @@ export default function AdminProductsPage() {
                   >
                     Sửa
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setHidingProduct(product)}
-                    className="h-10 rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-                  >
-                    Ẩn
-                  </Button>
+                  {isActive ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => setHidingProduct(product)}
+                      className="h-10 rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                    >
+                      Ẩn
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleActivateProduct(product.product_id)}
+                      className="h-10 rounded-none text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                    >
+                      Hiện
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => setDeletingProduct(product)}
@@ -609,14 +631,25 @@ export default function AdminProductsPage() {
                           <Edit className="h-3 w-3" />
                           Sửa
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setHidingProduct(product)}
-                          className="rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-                        >
-                          Ẩn
-                        </Button>
+                        {isActive ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setHidingProduct(product)}
+                            className="rounded-none text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                          >
+                            Ẩn
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleActivateProduct(product.product_id)}
+                            className="rounded-none text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                          >
+                            Hiện
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

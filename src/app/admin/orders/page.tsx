@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  adminOrderService,
   OrderFilters,
   OrderWithDetails,
 } from "@/services/admin/adminOrderService";
@@ -26,6 +25,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 
 import {
   deleteAdminOrderAction,
+  getAdminOrdersAction,
   updateAdminOrderStatusAction,
 } from "./actions";
 
@@ -139,12 +139,8 @@ export default function AdminOrdersPage() {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await adminOrderService.getAllOrders(
-        filters,
-        currentPage,
-        pageLimit,
-      );
-      setOrders(data.orders);
+      const data = await getAdminOrdersAction(filters, currentPage, pageLimit);
+      setOrders(data.orders as OrderWithDetails[]);
       setTotalOrders(data.total);
     } catch (error) {
       console.error("Error fetching orders:", error);

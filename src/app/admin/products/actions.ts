@@ -236,6 +236,27 @@ export async function deactivateAdminProductAction(
   return true;
 }
 
+export async function activateAdminProductAction(
+  productId: string,
+): Promise<boolean> {
+  await requireAdmin();
+  const supabase = await createServerSupabase();
+
+  const { error } = await supabase
+    .from("products")
+    .update({ is_active: true, updated_at: new Date().toISOString() })
+    .eq("product_id", productId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/products");
+  revalidatePath("/products");
+  revalidatePath("/");
+  return true;
+}
+
 export type DeleteProductResult =
   | { status: "deleted" }
   | { status: "hidden"; reason: string };

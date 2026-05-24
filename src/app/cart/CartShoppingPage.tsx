@@ -7,6 +7,7 @@ import { useCart } from "@/context/CartContext";
 import ShoppingSkeleton from "@/components/ShoppingSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/lib/i18n";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getProductImage } from "@/utils/productImages";
 
@@ -14,6 +15,7 @@ export default function CartShoppingPage() {
   const { cartItems, removeFromCart, updateQuantity, subtotal, isLoading } =
     useCart();
   const { user } = useAuth();
+  const { t } = useI18n();
 
   if (isLoading) {
     return <ShoppingSkeleton />;
@@ -27,34 +29,26 @@ export default function CartShoppingPage() {
           className="inline-flex items-center text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 hover:text-zinc-950"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Tiếp tục mua sắm
+          {t("cart_continue_shopping")}
         </Link>
 
         <div className="mt-6 border-b border-zinc-200 pb-5">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-            Giỏ hàng
+            {t("nav_cart")}
           </p>
-          <h1 className="mt-2 text-3xl font-black uppercase">
-            Giỏ hàng của bạn
-          </h1>
+          <h1 className="mt-2 text-3xl font-black uppercase">{t("cart_title")}</h1>
           {!user && cartItems.length > 0 && (
-            <p className="mt-3 text-sm text-zinc-600">
-              Bạn có thể xem giỏ hàng trước. Khi thanh toán, hệ thống sẽ yêu cầu đăng nhập.
-            </p>
+            <p className="mt-3 text-sm text-zinc-600">{t("cart_guest_notice")}</p>
           )}
         </div>
 
         {cartItems.length === 0 ? (
           <div className="py-16 text-center">
-            <h2 className="text-2xl font-black uppercase">
-              Giỏ hàng đang trống
-            </h2>
-            <p className="mt-3 text-zinc-600">
-              Chọn sản phẩm RESEY để bắt đầu đơn hàng.
-            </p>
+            <h2 className="text-2xl font-black uppercase">{t("cart_empty_title")}</h2>
+            <p className="mt-3 text-zinc-600">{t("cart_empty_sub")}</p>
             <Link href="/products">
               <Button className="mt-6 h-12 rounded-none bg-zinc-950 px-7 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
-                Xem sản phẩm
+                {t("cart_view_products")}
               </Button>
             </Link>
           </div>
@@ -89,8 +83,8 @@ export default function CartShoppingPage() {
                           {item.description}
                         </p>
                         <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                          Size: {item.selected_size || "-"} / Màu:{" "}
-                          {item.selected_color || "-"}
+                          {t("product_size_label")}: {item.selected_size || "-"} /{" "}
+                          {t("product_color_label")}: {item.selected_color || "-"}
                         </p>
                         <p className="mt-3 text-sm font-bold">
                           {formatCurrency(item.price)}
@@ -147,10 +141,10 @@ export default function CartShoppingPage() {
             </div>
 
             <aside className="border border-zinc-200 p-5 lg:sticky lg:top-28 lg:self-start">
-              <h2 className="text-lg font-black uppercase">Tóm tắt đơn hàng</h2>
+              <h2 className="text-lg font-black uppercase">{t("checkout_order_summary")}</h2>
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span>Tạm tính</span>
+                  <span>{t("cart_subtotal")}</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -158,13 +152,13 @@ export default function CartShoppingPage() {
                   <span>Miễn phí</span>
                 </div>
                 <div className="flex justify-between border-t border-zinc-200 pt-4 text-lg font-black">
-                  <span>Tổng cộng</span>
+                  <span>{t("checkout_total")}</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
               </div>
               <Link href={user ? "/checkout" : "/signin"}>
                 <Button className="mt-5 h-12 w-full rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800">
-                  {user ? "Tiến hành thanh toán" : "Đăng nhập để thanh toán"}
+                  {user ? t("cart_checkout_button") : t("nav_signin")}
                 </Button>
               </Link>
             </aside>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { addressService } from "@/services/address/addressService";
 import { orderService } from "@/services/order/orderService";
@@ -28,6 +29,7 @@ export default function CheckoutClient() {
   const router = useRouter();
   const { user } = useAuth();
   const { cartItems, subtotal, clearCart } = useCart();
+  const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
@@ -180,10 +182,10 @@ export default function CheckoutClient() {
         <section className="lg:col-span-2">
           <div className="border-b border-zinc-200 pb-5">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">
-              Thanh toán
+              {t("checkout_section_label")}
             </p>
             <h1 className="mt-2 text-3xl font-black uppercase">
-              Thông tin giao hàng
+              {t("checkout_title")}
             </h1>
           </div>
 
@@ -272,7 +274,7 @@ export default function CheckoutClient() {
 
           <div className="mt-8">
             <h2 className="text-xs font-bold uppercase tracking-[0.2em]">
-              Phương thức thanh toán
+              {t("checkout_payment_label")}
             </h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {[
@@ -314,7 +316,7 @@ export default function CheckoutClient() {
         </section>
 
         <aside className="border border-zinc-200 p-5 lg:sticky lg:top-28 lg:self-start">
-          <h2 className="text-lg font-black uppercase">Đơn hàng của bạn</h2>
+          <h2 className="text-lg font-black uppercase">{t("checkout_order_summary")}</h2>
           <div className="mt-5 space-y-4">
             {cartItems.map((item) => (
               <div
@@ -336,7 +338,7 @@ export default function CheckoutClient() {
             ))}
           </div>
           <div className="mt-5 flex justify-between border-t border-zinc-200 pt-5 text-lg font-black">
-            <span>Tổng</span>
+            <span>{t("checkout_total")}</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
           <Button
@@ -344,7 +346,7 @@ export default function CheckoutClient() {
             className="mt-5 h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
             disabled={isSubmitting || !canSubmit}
           >
-            {isSubmitting ? "Đang xử lý..." : "Đặt hàng"}
+            {isSubmitting ? t("checkout_submitting") : t("checkout_submit")}
           </Button>
         </aside>
       </div>

@@ -6,23 +6,33 @@ import { createPublicServerSupabase } from "@/lib/supabase/public-server";
 import { productServerService } from "@/services/product/productServerService";
 import type { StoreSettingsType } from "@/types";
 
-const categories = [
-  { label: "Tất cả sản phẩm", href: "/products" },
-  { label: "Áo", href: "/products?category=T-Shirts" },
-  { label: "Quần", href: "/products?category=Pants" },
-  { label: "Phụ kiện", href: "/products?category=Accessories" },
-];
-
 export default async function Home() {
   const supabase = createPublicServerSupabase();
-  const { data } = await supabase.from("store_settings").select("*").eq("id", 1).maybeSingle();
+  const { data } = await supabase
+    .from("store_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
   const settings = (data || {}) as StoreSettingsType;
 
   const products = await productServerService.getProducts();
   const featuredProducts = products.slice(0, 8);
 
+  const { data: dbCategories } = await supabase
+    .from("categories")
+    .select("id, name")
+    .order("name");
+
+  const categoryLinks = [
+    { label: "Tất cả sản phẩm", href: "/products" },
+    ...((dbCategories || []) as { id: number; name: string }[]).map((cat) => ({
+      label: cat.name,
+      href: `/products?category=${encodeURIComponent(cat.name)}`,
+    })),
+  ];
+
   const heroBadge = settings.hero_badge_text || "RESEY / Bộ sưu tập mới";
-  const heroTitle = settings.hero_title || "Phong cách phố.";
+  const heroTitle = settings.hero_title || "Phong cách phố";
   const heroTitleLine2 = settings.slogan || "Dấu ấn riêng.";
   const heroSubtitle =
     settings.hero_subtitle ||
@@ -32,10 +42,10 @@ export default async function Home() {
   const heroPrimaryUrl = settings.hero_primary_button_url || "/products?sort=latest";
   const heroSecondaryText = settings.hero_secondary_button_text || "Xem bộ sưu tập";
   const heroSecondaryUrl = settings.hero_secondary_button_url || "/products";
-  const storyTitle = settings.story_title || "RESEY: bản sắc đường phố, tinh thần hiện đại.";
+  const storyTitle = settings.story_title || "RESEY: bản sắc đường phố tinh thần hiện đại.";
   const storyDescription =
     settings.story_description ||
-    "RESEY lấy cảm hứng từ nhịp sống thành phố và văn hóa local brand Việt Nam. Mỗi sản phẩm tập trung vào form mặc hằng ngày, chất liệu bền và chi tiết đủ nổi bật để bạn tự tin xuất hiện ở bất kỳ đâu.";
+    "RESEY lấy cảm hứng từ nhịp sống thành phố và văn hóa local brand Việt Nam. Mỗi sản phẩm tập trung vào form mặc hằng ngày, chất liệu bền và chi tiết đủ nổi bật để bạn tự tin xuất hiện ở bất kể đâu.";
 
   return (
     <div className="min-h-screen bg-white text-zinc-950">
@@ -83,9 +93,9 @@ export default async function Home() {
 
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {categories.map((category) => (
+          {categoryLinks.map((category) => (
             <Link
-              key={category.label}
+              key={category.href}
               href={category.href}
               className="border border-zinc-200 px-4 py-6 text-center text-xs font-black uppercase tracking-[0.18em] transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
             >
@@ -137,4 +147,3 @@ export default async function Home() {
     </div>
   );
 }
-

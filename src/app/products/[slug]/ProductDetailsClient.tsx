@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
+import { useI18n } from "@/lib/i18n";
 import { ProductType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -28,6 +29,7 @@ export default function ProductDetailsClient({
   product,
 }: ProductDetailsClientProps) {
   const { addToCart } = useCart();
+  const { t } = useI18n();
   const { data: allProducts = [] } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
@@ -83,13 +85,18 @@ export default function ProductDetailsClient({
   const hasSizeOptions = availableSizes.length > 0;
   const hasColorOptions = availableColors.length > 0;
 
-  const relatedProducts = useMemo(
-    () =>
-      allProducts
-        .filter((item) => item.product_id !== product.product_id)
-        .slice(0, 4),
-    [allProducts, product.product_id],
-  );
+  const relatedProducts = useMemo(() => {
+    const sameCategory = allProducts.filter(
+      (item) =>
+        item.product_id !== product.product_id &&
+        item.category_id != null &&
+        item.category_id === product.category_id,
+    );
+    if (sameCategory.length >= 2) return sameCategory.slice(0, 4);
+    return allProducts
+      .filter((item) => item.product_id !== product.product_id)
+      .slice(0, 4);
+  }, [allProducts, product.product_id, product.category_id]);
 
   useEffect(() => {
     if (currentStock > 0 && quantity > currentStock) {
@@ -445,7 +452,7 @@ export default function ProductDetailsClient({
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 border-b border-zinc-200 pb-4">
           <h2 className="text-2xl font-black uppercase">
-            Sản phẩm liên quan
+            {t("product_related_title")}
           </h2>
         </div>
 

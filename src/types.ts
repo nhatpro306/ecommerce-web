@@ -5,6 +5,7 @@
   description: string;
   material?: string;
   price: number;
+  sale_price?: number | null;
   image?: string;
   stock: number;
   sizes?: string[];
