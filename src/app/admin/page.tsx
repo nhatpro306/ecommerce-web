@@ -47,11 +47,42 @@ interface DashboardStats {
 }
 
 const statCards = [
-  { key: "revenue", label: "Doanh thu", icon: TrendingUp },
-  { key: "products", label: "Sản phẩm", icon: Package },
-  { key: "orders", label: "Đơn chờ xử lý", icon: ShoppingCart },
-  { key: "users", label: "Người dùng", icon: Users },
+  { key: "revenue", label: "Doanh thu", icon: TrendingUp, tint: "brand" },
+  { key: "products", label: "Sản phẩm", icon: Package, tint: "emerald" },
+  { key: "orders", label: "Đơn chờ xử lý", icon: ShoppingCart, tint: "amber" },
+  { key: "users", label: "Người dùng", icon: Users, tint: "sky" },
 ];
+
+const tintStyles: Record<string, { card: string; icon: string; label: string; value: string; topBar: string }> = {
+  brand: {
+    card: "bg-gradient-to-br from-[#fef9f9] to-[#fdf4f4] border-[#f4d4d4]",
+    icon: "bg-[#6e0f11] border-[#6e0f11] text-white",
+    label: "text-[#6e0f11]",
+    value: "text-[#6e0f11]",
+    topBar: "bg-[#6e0f11] h-1 w-full absolute top-0 left-0",
+  },
+  emerald: {
+    card: "bg-white border-zinc-200",
+    icon: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    label: "text-zinc-500",
+    value: "text-zinc-950",
+    topBar: "bg-emerald-700 h-1 w-full absolute top-0 left-0",
+  },
+  amber: {
+    card: "bg-white border-zinc-200",
+    icon: "bg-amber-50 border-amber-200 text-amber-700",
+    label: "text-zinc-500",
+    value: "text-zinc-950",
+    topBar: "bg-amber-500 h-1 w-full absolute top-0 left-0",
+  },
+  sky: {
+    card: "bg-white border-zinc-200",
+    icon: "bg-sky-50 border-sky-200 text-sky-700",
+    label: "text-zinc-500",
+    value: "text-zinc-950",
+    topBar: "bg-sky-600 h-1 w-full absolute top-0 left-0",
+  },
+};
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -189,16 +220,25 @@ export default function AdminDashboard() {
         {statCards.map((card) => {
           const Icon = card.icon;
           const data = statValues[card.key];
+          const t = tintStyles[card.tint] ?? tintStyles.sky;
           return (
-            <div key={card.key} className="border border-zinc-200 p-5">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+            <div
+              key={card.key}
+              className={`relative overflow-hidden rounded-none border p-5 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] ${t.card}`}
+            >
+              <div className={t.topBar} />
+              <div className="mt-1 flex items-start justify-between gap-2">
+                <p className={`text-[11px] font-bold uppercase tracking-[0.14em] leading-snug flex-1 ${t.label}`}>
                   {card.label}
                 </p>
-                <Icon className="h-5 w-5 text-zinc-400" />
+                <span className={`inline-flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center border ${t.icon}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
               </div>
-              <p className="mt-4 text-2xl font-black">{data.value}</p>
-              <p className="mt-1 text-sm text-zinc-500">{data.helper}</p>
+              <p className={`mt-4 text-[26px] font-black tracking-tight tabular-nums ${t.value}`}>
+                {data.value}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">{data.helper}</p>
             </div>
           );
         })}

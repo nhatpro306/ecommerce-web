@@ -27,7 +27,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 text-black backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+      <div className="mx-auto flex h-[88px] max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-3 lg:hidden">
           <SidebarTrigger className="text-black hover:bg-zinc-100 hover:text-black" />
         </div>
@@ -51,7 +51,7 @@ export function Navbar() {
             width={92}
             height={56}
             priority
-            className="h-11 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
         </Link>
 
