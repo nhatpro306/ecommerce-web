@@ -5,6 +5,24 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* RESEY Brand tokens */
+  --resey-maroon: #6e0f11;
+  --resey-maroon-ink: #4c0a0c;
+  --resey-maroon-light: #fdf4f4;
+  --resey-maroon-border: #f4d4d4;
+
+  /* Status (admin only) */
+  --status-pending-bg: #fef9c3;
+  --status-pending-fg: #854d0e;
+  --status-processing-bg: #dbeafe;
+  --status-processing-fg: #1e40af;
+  --status-shipped-bg: #e0f2fe;
+  --status-shipped-fg: #075985;
+  --status-delivered-bg: #d1fae5;
+  --status-delivered-fg: #065f46;
+  --status-cancelled-bg: #fee2e2;
+  --status-cancelled-fg: #991b1b;
+
   --radius: 0.625rem;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
