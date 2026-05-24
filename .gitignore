@@ -51,3 +51,8 @@ tsconfig.tsbuildinfo
 .env.production.local.bak
 *.tsbuildinfo
 
+.mcp.json
+.obsidian/
+Untitled.canvas
+CODEX_PLAN.md
+FIX_PRODUCT_CREATION.md
