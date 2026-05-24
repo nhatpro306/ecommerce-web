@@ -1,7 +1,9 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/lib/i18n";
 
 interface AuthFormState {
   email: string;
@@ -25,11 +27,10 @@ interface UseAuthFormReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
 }
 
-export function useAuthForm({
-  isSignUp = false,
-}: UseAuthFormProps = {}): UseAuthFormReturn {
+export function useAuthForm({ isSignUp = false }: UseAuthFormProps = {}): UseAuthFormReturn {
   const router = useRouter();
   const { signIn, signUp } = useAuth();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,37 +42,28 @@ export function useAuthForm({
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword((prev) => !prev);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!formData.email || !formData.password) {
-      setError("Vui lòng nhập email và mật khẩu.");
+      setError(t("auth.emailPasswordRequired"));
       return;
     }
 
     if (isSignUp) {
       if (formData.password !== formData.confirmPassword) {
-        setError("Mật khẩu xác nhận không khớp.");
+        setError(t("auth.passwordMismatch"));
         return;
       }
-
       if (formData.password.length < 6) {
-        setError("Mật khẩu phải có ít nhất 6 ký tự.");
+        setError(t("auth.passwordMinLength"));
         return;
       }
     }
@@ -84,15 +76,11 @@ export function useAuthForm({
         await signIn(formData.email, formData.password);
       }
       router.push("/");
-    } catch (error: unknown) {
+    } catch (err: unknown) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : `An error occurred during sign ${isSignUp ? "up" : "in"}`;
+        err instanceof Error ? err.message : isSignUp ? t("auth.signUpError") : t("auth.signInError");
       setError(errorMessage);
-      if (isSignUp) {
-        console.error(error);
-      }
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -108,5 +96,5 @@ export function useAuthForm({
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
     handleSubmit,
-  } ;
+  };
 }

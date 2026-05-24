@@ -1,16 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import {
-  Check,
-  Minus,
-  Plus,
-  RotateCcw,
-  Shield,
-  ShoppingCart,
-  Truck,
-} from "lucide-react";
+import { Check, Minus, Plus, RotateCcw, Shield, ShoppingCart, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { useI18n } from "@/lib/i18n";
@@ -21,13 +13,9 @@ import { getProductImage } from "@/utils/productImages";
 import { useProducts } from "@/hooks/queries";
 import { ProductCard } from "@/components/ProductCard";
 
-type ProductDetailsClientProps = {
-  product: ProductType;
-};
+type ProductDetailsClientProps = { product: ProductType };
 
-export default function ProductDetailsClient({
-  product,
-}: ProductDetailsClientProps) {
+export default function ProductDetailsClient({ product }: ProductDetailsClientProps) {
   const { addToCart } = useCart();
   const { t } = useI18n();
   const { data: allProducts = [] } = useProducts();
@@ -43,12 +31,10 @@ export default function ProductDetailsClient({
   );
 
   const availableColors = activeVariants.length
-    ? Array.from(
-        new Set(activeVariants.map((variant) => variant.color)),
-      )
+    ? Array.from(new Set(activeVariants.map((variant) => variant.color)))
     : product.colors?.length
       ? product.colors
-      : ["Đen", "Trắng", "Xám"];
+      : ["Black", "White", "Gray"];
 
   const availableSizes = activeVariants.length
     ? Array.from(
@@ -63,13 +49,13 @@ export default function ProductDetailsClient({
       : ["S", "M", "L", "XL"];
 
   const selectedVariant = activeVariants.find(
-    (variant) =>
-      variant.size === selectedSize && variant.color === selectedColor,
+    (variant) => variant.size === selectedSize && variant.color === selectedColor,
   );
 
   const currentStock = selectedVariant?.stock ?? product.stock;
   const currentPrice = selectedVariant?.price_override ?? product.price;
   const productImage = getProductImage(product);
+
   const galleryImages = useMemo(() => {
     const imageSet = new Set<string>();
     imageSet.add(productImage);
@@ -82,6 +68,7 @@ export default function ProductDetailsClient({
       .forEach((url) => imageSet.add(url));
     return Array.from(imageSet);
   }, [activeVariants, product.images, productImage]);
+
   const hasSizeOptions = availableSizes.length > 0;
   const hasColorOptions = availableColors.length > 0;
 
@@ -93,15 +80,11 @@ export default function ProductDetailsClient({
         item.category_id === product.category_id,
     );
     if (sameCategory.length >= 2) return sameCategory.slice(0, 4);
-    return allProducts
-      .filter((item) => item.product_id !== product.product_id)
-      .slice(0, 4);
+    return allProducts.filter((item) => item.product_id !== product.product_id).slice(0, 4);
   }, [allProducts, product.product_id, product.category_id]);
 
   useEffect(() => {
-    if (currentStock > 0 && quantity > currentStock) {
-      setQuantity(currentStock);
-    }
+    if (currentStock > 0 && quantity > currentStock) setQuantity(currentStock);
   }, [currentStock, quantity]);
 
   useEffect(() => {
@@ -109,47 +92,20 @@ export default function ProductDetailsClient({
   }, [productImage, selectedVariant?.image_url]);
 
   useEffect(() => {
-    if (
-      selectedSize &&
-      activeVariants.length > 0 &&
-      !availableSizes.includes(selectedSize)
-    ) {
+    if (selectedSize && activeVariants.length > 0 && !availableSizes.includes(selectedSize)) {
       setSelectedSize("");
     }
   }, [activeVariants.length, availableSizes, selectedSize]);
 
   const handleAddToCart = async () => {
-    if (hasSizeOptions && !selectedSize) {
-      toast.error("Vui lòng chọn kích thước");
-      return;
-    }
-
-    if (hasColorOptions && !selectedColor) {
-      toast.error("Vui lòng chọn màu sắc");
-      return;
-    }
-
-    if (activeVariants.length > 0 && !selectedVariant) {
-      toast.error("Phiên bản size/màu này hiện không khả dụng.");
-      return;
-    }
-
-    if (currentStock <= 0) {
-      toast.error("Sản phẩm đã hết hàng.");
-      return;
-    }
-
-    if (quantity > currentStock) {
-      toast.error("Số lượng vượt quá tồn kho hiện tại.");
-      return;
-    }
+    if (hasSizeOptions && !selectedSize) return toast.error(t("products.chooseSizeError"));
+    if (hasColorOptions && !selectedColor) return toast.error(t("products.chooseColorError"));
+    if (activeVariants.length > 0 && !selectedVariant) return toast.error(t("products.variantUnavailable"));
+    if (currentStock <= 0) return toast.error(t("products.outOfStockError"));
+    if (quantity > currentStock) return toast.error(t("products.quantityExceedsStock"));
 
     const added = await addToCart(
-      {
-        ...product,
-        price: currentPrice,
-        stock: currentStock,
-      },
+      { ...product, price: currentPrice, stock: currentStock },
       {
         size: selectedSize || undefined,
         color: selectedColor || undefined,
@@ -158,7 +114,6 @@ export default function ProductDetailsClient({
         sku: selectedVariant?.sku || product.sku || null,
       },
     );
-
     if (!added) return;
 
     setIsAddedToCart(true);
@@ -170,15 +125,8 @@ export default function ProductDetailsClient({
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-2">
         <div className="space-y-3">
           <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
-            <Image
-              src={activeImage || productImage}
-              alt={product.title}
-              fill
-              priority
-              className="object-cover"
-            />
+            <Image src={activeImage || productImage} alt={product.title} fill priority className="object-cover" />
           </div>
-
           {galleryImages.length > 1 && (
             <div className="grid grid-cols-5 gap-2">
               {galleryImages.map((image) => (
@@ -186,19 +134,9 @@ export default function ProductDetailsClient({
                   key={image}
                   type="button"
                   onClick={() => setActiveImage(image)}
-                  className={`relative aspect-[4/5] overflow-hidden border ${
-                    (activeImage || productImage) === image
-                      ? "border-black"
-                      : "border-zinc-200"
-                  }`}
+                  className={`relative aspect-[4/5] overflow-hidden border ${(activeImage || productImage) === image ? "border-black" : "border-zinc-200"}`}
                 >
-                  <Image
-                    src={image}
-                    alt={`${product.title} thumbnail`}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                  />
+                  <Image src={image} alt={`${product.title} thumbnail`} fill sizes="96px" className="object-cover" />
                 </button>
               ))}
             </div>
@@ -206,44 +144,25 @@ export default function ProductDetailsClient({
         </div>
 
         <div className="flex flex-col justify-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-            RESEY
-          </p>
-
-          <h1 className="text-4xl font-black uppercase leading-none md:text-5xl">
-            {product.title}
-          </h1>
-
-          <p className="mt-5 text-2xl font-bold">
-            {formatCurrency(currentPrice)}
-          </p>
-
-          <p className="mt-5 leading-7 text-zinc-600">
-            {product.description}
-          </p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">RESEY</p>
+          <h1 className="text-4xl font-black uppercase leading-none md:text-5xl">{product.title}</h1>
+          <p className="mt-5 text-2xl font-bold">{formatCurrency(currentPrice)}</p>
+          <p className="mt-5 leading-7 text-zinc-600">{product.description}</p>
 
           <div className="mt-6 border-y border-zinc-200 py-5 text-sm">
             <div className="flex justify-between py-2">
-              <span className="font-bold uppercase tracking-[0.14em]">
-                Chất liệu
-              </span>
+              <span className="font-bold uppercase tracking-[0.14em]">{t("products.material")}</span>
               <span>{product.material || "Cotton blend"}</span>
             </div>
-
             <div className="flex justify-between py-2">
-              <span className="font-bold uppercase tracking-[0.14em]">
-                Tồn kho
-              </span>
-              <span>{currentStock > 0 ? `Còn ${currentStock}` : "Hết hàng"}</span>
+              <span className="font-bold uppercase tracking-[0.14em]">{t("products.stock")}</span>
+              <span>{currentStock > 0 ? t("products.inStock") : t("products.outOfStock")}</span>
             </div>
           </div>
 
           <div className="mt-6 space-y-5">
             <div>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Chọn màu sắc
-              </h2>
-
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">{t("products.selectColor")}</h2>
               <div className="flex flex-wrap gap-2">
                 {availableColors.map((color) => (
                   <button
@@ -264,51 +183,42 @@ export default function ProductDetailsClient({
                 ))}
               </div>
               {hasColorOptions && !selectedColor && (
-                <p className="mt-2 text-xs text-zinc-500">
-                  Vui lòng chọn màu trước khi chọn size.
-                </p>
+                <p className="mt-2 text-xs text-zinc-500">{t("products.sizeSelectHint")}</p>
               )}
             </div>
 
             <div>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Chọn kích thước
-              </h2>
-
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">{t("products.selectSize")}</h2>
               <div className="flex flex-wrap gap-2">
                 {availableSizes.map((size) => {
                   const sizeVariant = activeVariants.find(
-                    (variant) =>
-                      variant.color === selectedColor && variant.size === size,
+                    (variant) => variant.color === selectedColor && variant.size === size,
                   );
                   const disabled = activeVariants.length > 0
                     ? !selectedColor || !sizeVariant || sizeVariant.stock <= 0
                     : currentStock <= 0;
-
                   return (
-                  <button
-                    key={size}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setSelectedSize(size)}
-                    className={`border px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] ${
-                      selectedSize === size
-                        ? "border-zinc-950 bg-zinc-950 text-white"
-                        : disabled
-                          ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400"
-                          : "border-zinc-300 bg-white text-zinc-950 hover:border-zinc-950"
-                    }`}
-                  >
-                    {size}
-                  </button>
+                    <button
+                      key={size}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setSelectedSize(size)}
+                      className={`border px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] ${
+                        selectedSize === size
+                          ? "border-zinc-950 bg-zinc-950 text-white"
+                          : disabled
+                            ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400"
+                            : "border-zinc-300 bg-white text-zinc-950 hover:border-zinc-950"
+                      }`}
+                    >
+                      {size}
+                    </button>
                   );
                 })}
               </div>
               {hasSizeOptions && !selectedSize && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  {selectedColor
-                    ? "Vui lòng chọn kích thước phù hợp trước khi đặt hàng."
-                    : "Chọn màu sắc trước để xem size còn hàng."}
+                  {selectedColor ? t("products.sizeSelectHintWithColor") : t("products.sizeSelectHintNoColor")}
                 </p>
               )}
             </div>
@@ -316,41 +226,20 @@ export default function ProductDetailsClient({
             {selectedColor && selectedSize && (
               <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm font-semibold text-zinc-800">
                 {currentStock <= 0
-                  ? "Hết hàng"
+                  ? t("products.outOfStock")
                   : currentStock <= 3
-                    ? `Chỉ còn ${currentStock} sản phẩm`
-                    : "Còn hàng"}
+                    ? t("products.stockFewLeft", undefined, { count: currentStock })
+                    : t("products.inStock")}
                 {selectedVariant?.sku ? ` / SKU: ${selectedVariant.sku}` : ""}
               </div>
             )}
 
             <div>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">
-                Số lượng
-              </h2>
-
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">{t("products.quantity")}</h2>
               <div className="inline-flex border border-zinc-300">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                  className="flex h-12 w-12 items-center justify-center"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-
-                <span className="flex h-12 w-14 items-center justify-center border-x border-zinc-300 text-sm font-bold">
-                  {quantity}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuantity((value) => Math.min(currentStock, value + 1))
-                  }
-                  className="flex h-12 w-12 items-center justify-center"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="flex h-12 w-12 items-center justify-center"><Minus className="h-4 w-4" /></button>
+                <span className="flex h-12 w-14 items-center justify-center border-x border-zinc-300 text-sm font-bold">{quantity}</span>
+                <button type="button" onClick={() => setQuantity((value) => Math.min(currentStock, value + 1))} className="flex h-12 w-12 items-center justify-center"><Plus className="h-4 w-4" /></button>
               </div>
             </div>
 
@@ -361,16 +250,16 @@ export default function ProductDetailsClient({
               onClick={handleAddToCart}
             >
               {currentStock <= 0 ? (
-                "Hết hàng"
+                t("products.outOfStock")
               ) : isAddedToCart ? (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Đã thêm vào giỏ
+                  {t("products.addedToCart")}
                 </>
               ) : (
                 <>
                   <ShoppingCart className="mr-2 h-4 w-4" />
-                  Thêm vào giỏ - {formatCurrency(currentPrice * quantity)}
+                  {t("products.addToCart")} - {formatCurrency(currentPrice * quantity)}
                 </>
               )}
             </Button>
@@ -378,20 +267,14 @@ export default function ProductDetailsClient({
 
           <div className="mt-8 grid gap-3 text-sm sm:grid-cols-3">
             {[
-              [Truck, "Giao nhanh", "Nội thành 1-2 ngày"],
-              [Shield, "Thanh toán", "COD / chuyển khoản"],
-              [RotateCcw, "Đổi trả", "Trong vòng 7 ngày"],
+              [Truck, t("products.fastShipping"), t("products.fastShippingDesc")],
+              [Shield, t("products.payment"), t("products.paymentDesc")],
+              [RotateCcw, t("products.returnPolicy"), t("products.returnPolicyDesc")],
             ].map(([Icon, title, description]) => (
               <div key={String(title)} className="border border-zinc-200 p-4">
                 <Icon className="mb-3 h-5 w-5" />
-
-                <p className="font-bold uppercase tracking-[0.12em]">
-                  {String(title)}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-500">
-                  {String(description)}
-                </p>
+                <p className="font-bold uppercase tracking-[0.12em]">{String(title)}</p>
+                <p className="mt-1 text-xs text-zinc-500">{String(description)}</p>
               </div>
             ))}
           </div>
@@ -401,65 +284,29 @@ export default function ProductDetailsClient({
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="grid gap-6 border-y border-zinc-200 py-8 md:grid-cols-2">
           <div>
-            <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              Mô tả sản phẩm
-            </h2>
-
-            <p className="mt-4 leading-7 text-zinc-600">
-              {product.description}
-            </p>
+            <h2 className="text-sm font-black uppercase tracking-[0.2em]">{t("products.description")}</h2>
+            <p className="mt-4 leading-7 text-zinc-600">{product.description}</p>
           </div>
-
           <div>
-            <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              Bảng size
-            </h2>
-
+            <h2 className="text-sm font-black uppercase tracking-[0.2em]">{t("products.sizeGuide")}</h2>
             <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
-              <div className="font-bold">Size</div>
-              <div className="font-bold">Ngực</div>
-              <div className="font-bold">Dài áo</div>
-              <div className="font-bold">Vai</div>
-
-              <div>S</div>
-              <div>52</div>
-              <div>68</div>
-              <div>48</div>
-
-              <div>M</div>
-              <div>54</div>
-              <div>70</div>
-              <div>50</div>
-
-              <div>L</div>
-              <div>56</div>
-              <div>72</div>
-              <div>52</div>
-
-              <div>XL</div>
-              <div>58</div>
-              <div>74</div>
-              <div>54</div>
+              <div className="font-bold">Size</div><div className="font-bold">Chest</div><div className="font-bold">Length</div><div className="font-bold">Shoulder</div>
+              <div>S</div><div>52</div><div>68</div><div>48</div>
+              <div>M</div><div>54</div><div>70</div><div>50</div>
+              <div>L</div><div>56</div><div>72</div><div>52</div>
+              <div>XL</div><div>58</div><div>74</div><div>54</div>
             </div>
-
-            <p className="mt-3 text-xs text-zinc-500">
-              Đơn vị: cm, sai số 1-2cm.
-            </p>
+            <p className="mt-3 text-xs text-zinc-500">Unit: cm, ±1-2cm tolerance.</p>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 border-b border-zinc-200 pb-4">
-          <h2 className="text-2xl font-black uppercase">
-            {t("product_related_title")}
-          </h2>
+          <h2 className="text-2xl font-black uppercase">{t("products.related")}</h2>
         </div>
-
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
-          {relatedProducts.map((item) => (
-            <ProductCard key={item.product_id} product={item} />
-          ))}
+          {relatedProducts.map((item) => <ProductCard key={item.product_id} product={item} />)}
         </div>
       </section>
     </div>

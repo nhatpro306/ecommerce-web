@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, Package, Settings, ShoppingCart, Users, User, LogOut, Store } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  Settings,
+  ShoppingCart,
+  Users,
+  User,
+  LogOut,
+  Store,
+} from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/context/AuthContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -24,14 +33,16 @@ interface AdminLayoutProps {
 }
 
 const navItems = [
-  { href: "/admin", label: "Tổng quan", icon: LayoutDashboard },
-  { href: "/admin/products", label: "Sản phẩm", icon: Package },
-  { href: "/admin/orders", label: "Đơn hàng", icon: ShoppingCart },
-  { href: "/admin/users", label: "Người dùng", icon: Users },
-  { href: "/admin/settings", label: "Cài đặt", icon: Settings },
+  { href: "/admin", labelKey: "admin.overview", icon: LayoutDashboard },
+  { href: "/admin/products", labelKey: "admin.products", icon: Package },
+  { href: "/admin/orders", labelKey: "admin.orders", icon: ShoppingCart },
+  { href: "/admin/users", labelKey: "admin.users", icon: Users },
+  { href: "/admin/settings", labelKey: "admin.settings", icon: Settings },
 ];
 
-function displayName(user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) {
+function displayName(
+  user: { email?: string | null; user_metadata?: Record<string, unknown> } | null,
+) {
   const fromMeta =
     (user?.user_metadata?.full_name as string | undefined) ||
     (user?.user_metadata?.name as string | undefined);
@@ -64,9 +75,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
       <div className="container mx-auto py-8">
         <div className="border border-rose-200 bg-rose-50 p-4 text-rose-700">
-          <p className="text-lg font-bold">{t("admin_no_permission")}</p>
+          <p className="text-lg font-bold">{t("admin.noPermission")}</p>
           <Link href="/profile" className="mt-2 inline-block text-sm underline">
-            {t("admin_go_profile")}
+            {t("admin.goProfile")}
           </Link>
         </div>
       </div>
@@ -78,7 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside className="h-fit border border-zinc-200 bg-white">
         <div className="border-b border-zinc-200 px-4 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">RESEY</p>
-          <p className="text-base font-black text-zinc-900">Admin Panel</p>
+          <p className="text-base font-black text-zinc-900">{t("admin.panel")}</p>
         </div>
         <nav className="p-2">
           {navItems.map((item) => {
@@ -90,7 +101,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 className="mb-1 flex items-center gap-2 border border-transparent px-3 py-2 text-sm font-medium text-zinc-700 hover:border-zinc-200 hover:bg-zinc-50"
               >
                 <Icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -99,7 +110,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       <section className="min-w-0">
         <header className="mb-4 flex items-center justify-between border border-zinc-200 bg-white px-4 py-3">
-          <p className="text-sm font-semibold text-zinc-700">RESEY Admin</p>
+          <p className="text-sm font-semibold text-zinc-700">{t("admin.title")}</p>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <DropdownMenu>
@@ -111,7 +122,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </Avatar>
                     <div className="text-left">
                       <p className="max-w-[140px] truncate text-xs font-semibold">{displayName(user)}</p>
-                      <p className="text-[11px] text-zinc-500">{t("admin_role")}</p>
+                      <p className="text-[11px] text-zinc-500">{t("admin.role")}</p>
                     </div>
                   </Button>
                 }
@@ -124,20 +135,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  {t("admin_profile")}
+                  {t("admin.profile")}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/admin/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
-                  {t("admin_store_settings")}
+                  {t("admin.storeSettings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/")}>
                   <Store className="mr-2 h-4 w-4" />
-                  {t("admin_back_storefront")}
+                  {t("admin.backStorefront")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  {t("admin_signout")}
+                  {t("nav.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -148,4 +159,3 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   );
 }
-
