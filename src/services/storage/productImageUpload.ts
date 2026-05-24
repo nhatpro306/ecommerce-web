@@ -136,7 +136,7 @@ async function rollbackUploadedImages(images: UploadedProductImage[]) {
     .remove(paths);
 
   if (error) {
-    logSupabaseError("rollback_storage_images_failed", error, {
+    logSupabaseError("rollback_uploaded_images_failed", error, {
       bucket: PRODUCT_IMAGE_BUCKET,
       paths,
     });
@@ -210,7 +210,7 @@ export async function uploadAndAttachProductImages(
 
       throw new Error(
         getSupabaseErrorMessage(
-          "Không thể cập nhật metadata ảnh. Bảng product_images có thể đang thiếu hoặc chưa cấu hình đúng",
+          "Không thể cập nhật metadata ảnh. Vui lòng kiểm tra quyền update bảng product_images trong Supabase",
           resetPrimaryError,
           `product_id=${productId}`,
         ),
@@ -238,7 +238,7 @@ export async function uploadAndAttachProductImages(
 
         throw new Error(
           getSupabaseErrorMessage(
-            "Không thể lưu metadata ảnh vào bảng product_images. Vui lòng kiểm tra bảng product_images trong Supabase",
+            "Không thể lưu metadata ảnh vào bảng product_images. Vui lòng kiểm tra RLS/policy hoặc schema Supabase",
             imageError,
             `product_id=${productId}, url=${uploaded.url}`,
           ),
@@ -277,6 +277,7 @@ export async function uploadAndAttachProductImages(
     return uploadedImages;
   } catch (error) {
     console.error("[productImageUpload] upload_and_attach_failed", {
+      operation: "upload_and_attach_product_images",
       productId,
       uploadedCount: uploadedImages.length,
       metadataInserted,
