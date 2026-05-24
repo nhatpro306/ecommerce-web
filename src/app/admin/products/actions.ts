@@ -32,22 +32,47 @@ function isMissingVariantTableError(error: { code?: string; message?: string }) 
   );
 }
 
+function isMissingSalePriceColumnError(error: { code?: string; message?: string }) {
+  const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+  return (
+    message.includes("sale_price") &&
+    (message.includes("column") ||
+      message.includes("schema cache") ||
+      message.includes("does not exist") ||
+      message.includes("pgrst"))
+  );
+}
+
 export async function createAdminProductAction(
   productData: CreateProductData,
 ): Promise<ProductType> {
   await requireAdmin();
   const supabase = await createServerSupabase();
 
-  const { data, error } = await supabase
+  const insertPayload = {
+    ...productData,
+    is_active: productData.is_active ?? true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  let { data, error } = await supabase
     .from("products")
-    .insert({
-      ...productData,
-      is_active: productData.is_active ?? true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .insert(insertPayload)
     .select()
     .single();
+
+  if (error && isMissingSalePriceColumnError(error)) {
+    const { sale_price: _salePrice, ...legacyPayload } = insertPayload;
+    void _salePrice;
+    const retry = await supabase
+      .from("products")
+      .insert(legacyPayload)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -66,15 +91,30 @@ export async function updateAdminProductAction(
   await requireAdmin();
   const supabase = await createServerSupabase();
 
-  const { data, error } = await supabase
+  const updatePayload = {
+    ...productData,
+    updated_at: new Date().toISOString(),
+  };
+
+  let { data, error } = await supabase
     .from("products")
-    .update({
-      ...productData,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("product_id", productId)
     .select()
     .single();
+
+  if (error && isMissingSalePriceColumnError(error)) {
+    const { sale_price: _salePrice, ...legacyPayload } = updatePayload;
+    void _salePrice;
+    const retry = await supabase
+      .from("products")
+      .update(legacyPayload)
+      .eq("product_id", productId)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     throw new Error(error.message);
