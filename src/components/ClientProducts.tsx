@@ -9,6 +9,7 @@ import { ProductFilter } from "@/components/ProductFilter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState } from "@/components/ErrorState";
 import { FilterOptions, useProducts } from "@/hooks/queries";
+import { useI18n } from "@/lib/i18n";
 import { ProductType } from "@/types";
 import { getSellableStock } from "@/utils/productVisibility";
 
@@ -107,6 +108,7 @@ export default function ClientProducts({
   initialSort = "default",
   initialStock = "all",
 }: ClientProductsProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const {
@@ -182,10 +184,10 @@ export default function ClientProducts({
     });
 
     return [
-      { value: "all", label: "Tất cả danh mục" },
+      { value: "all", label: t("clientProducts.allCategories") },
       ...Array.from(categoryMap.entries()).map(([value, label]) => ({ value, label })),
     ];
-  }, [products]);
+  }, [products, t]);
 
   const sizeOptions = useMemo(() => {
     const sizes = new Set<string>(["S", "M", "L", "XL"]);
@@ -194,10 +196,10 @@ export default function ClientProducts({
     });
 
     return [
-      { value: "all", label: "Tất cả size" },
+      { value: "all", label: t("clientProducts.allSizes") },
       ...Array.from(sizes).map((size) => ({ value: size, label: size })),
     ];
-  }, [products]);
+  }, [products, t]);
 
   const colorOptions = useMemo(() => {
     const colors = new Set<string>(["Black", "White", "Gray", "Beige"]);
@@ -206,10 +208,10 @@ export default function ClientProducts({
     });
 
     return [
-      { value: "all", label: "Tất cả màu" },
+      { value: "all", label: t("clientProducts.allColors") },
       ...Array.from(colors).map((color) => ({ value: color, label: color })),
     ];
-  }, [products]);
+  }, [products, t]);
 
   const resetFilters = () => {
     setFilters(DEFAULT_FILTERS);
@@ -236,7 +238,7 @@ export default function ClientProducts({
       >
         <Input
           type="text"
-          placeholder="Tìm sản phẩm..."
+          placeholder={t("clientProducts.searchPlaceholder")}
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           className="h-12 rounded-none border-zinc-300 text-center text-sm"
@@ -257,8 +259,8 @@ export default function ClientProducts({
         className="flex flex-col items-center justify-between gap-4 border-y border-zinc-200 py-4 sm:flex-row"
       >
         <div className="text-sm text-zinc-500">
-          Hiển thị {processedProducts.length}/{products.length} sản phẩm
-          {isFetching && products.length > 0 ? " · Đang cập nhật..." : ""}
+          {t("clientProducts.showing", undefined, { shown: processedProducts.length, total: products.length })}
+          {isFetching && products.length > 0 ? ` · ${t("clientProducts.updating")}` : ""}
         </div>
 
         {hasActiveFilters && (
@@ -266,7 +268,7 @@ export default function ClientProducts({
             onClick={resetFilters}
             className="bg-zinc-950 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-zinc-800"
           >
-            Xóa bộ lọc
+            {t("clientProducts.clearFilters")}
           </button>
         )}
       </motion.div>
@@ -281,13 +283,13 @@ export default function ClientProducts({
               exit={{ opacity: 0 }}
               className="flex min-h-[200px] items-center justify-center text-sm text-zinc-500"
             >
-              Đang tải sản phẩm...
+              {t("clientProducts.loadingProducts")}
             </motion.div>
           ) : error && products.length === 0 ? (
             <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ErrorState
-                title="Không thể tải sản phẩm"
-                description="Không thể tải danh sách sản phẩm từ Supabase. Vui lòng thử lại hoặc kiểm tra cấu hình môi trường."
+                title={t("clientProducts.loadFailTitle")}
+                description={t("clientProducts.loadFailDesc")}
                 onRetry={retry}
                 error={error}
                 type="network"
@@ -296,11 +298,11 @@ export default function ClientProducts({
           ) : processedProducts.length === 0 ? (
             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <ErrorState
-                title={products.length === 0 ? "Chưa có sản phẩm" : "Không có sản phẩm phù hợp"}
+                title={products.length === 0 ? t("clientProducts.emptyTitle") : t("clientProducts.noMatchTitle")}
                 description={
                   products.length === 0
-                    ? "Hiện chưa có sản phẩm nào được hiển thị trên cửa hàng."
-                    : "Thử từ khóa khác hoặc điều chỉnh bộ lọc để xem thêm sản phẩm."
+                    ? t("clientProducts.emptyDesc")
+                    : t("clientProducts.noMatchDesc")
                 }
                 showRetry={false}
                 type="not-found"
@@ -311,7 +313,7 @@ export default function ClientProducts({
                     onClick={resetFilters}
                     className="bg-zinc-950 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white"
                   >
-                    Xóa toàn bộ bộ lọc
+                    {t("clientProducts.clearAllFilters")}
                   </button>
                 </div>
               )}
