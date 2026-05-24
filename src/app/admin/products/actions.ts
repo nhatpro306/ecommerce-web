@@ -21,14 +21,55 @@ export interface AdminVariantInput {
   is_active: boolean;
 }
 
+type SupabaseLikeError = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function logSupabaseError(
+  operation: string,
+  error: SupabaseLikeError,
+  context?: Record<string, unknown>,
+) {
+  console.error("[admin/products]", {
+    operation,
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    ...context,
+  });
+}
+
+function getSupabaseErrorMessage(
+  operation: string,
+  error: SupabaseLikeError,
+  context?: string,
+) {
+  return [
+    operation,
+    context,
+    error.code ? `code ${error.code}` : null,
+    error.message,
+    error.details,
+    error.hint,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+}
+
 function isMissingVariantTableError(error: { code?: string; message?: string }) {
   const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+
   return (
-    message.includes("product_variants") ||
-    message.includes("schema cache") ||
-    message.includes("does not exist") ||
-    message.includes("pgrst200") ||
-    message.includes("42p01")
+    message.includes("product_variants") &&
+    (message.includes("schema cache") ||
+      message.includes("does not exist") ||
+      message.includes("relation") ||
+      message.includes("pgrst200") ||
+      message.includes("42p01"))
   );
 }
 
@@ -36,8 +77,12 @@ function schemaFixMessage(subject: string) {
   return `Thiếu schema Supabase cho ${subject}. Vui lòng chạy migration mới nhất rồi thử lại.`;
 }
 
-function isMissingSalePriceColumnError(error: { code?: string; message?: string }) {
+function isMissingSalePriceColumnError(error: {
+  code?: string;
+  message?: string;
+}) {
   const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+
   return (
     message.includes("sale_price") &&
     (message.includes("column") ||
@@ -45,6 +90,16 @@ function isMissingSalePriceColumnError(error: { code?: string; message?: string 
       message.includes("does not exist") ||
       message.includes("pgrst"))
   );
+}
+
+function revalidateProductPaths(slugOrId?: string) {
+  revalidatePath("/admin/products");
+  revalidatePath("/products");
+  revalidatePath("/");
+
+  if (slugOrId) {
+    revalidatePath(`/products/${slugOrId}`);
+  }
 }
 
 export async function createAdminProductAction(
@@ -60,23 +115,27 @@ export async function createAdminProductAction(
     updated_at: new Date().toISOString(),
   };
 
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("products")
     .insert(insertPayload)
     .select()
     .single();
 
-  if (error && isMissingSalePriceColumnError(error)) {
-    throw new Error(schemaFixMessage("cột products.sale_price"));
-  }
-
   if (error) {
-    throw new Error(error.message);
+    logSupabaseError("create_product_failed", error, {
+      insertPayload,
+    });
+
+    if (isMissingSalePriceColumnError(error)) {
+      throw new Error(schemaFixMessage("cột products.sale_price"));
+    }
+
+    throw new Error(
+      getSupabaseErrorMessage("Không thể tạo sản phẩm", error),
+    );
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/");
+  revalidateProductPaths(data?.slug || data?.product_id);
   return data as ProductType;
 }
 
@@ -87,30 +146,42 @@ export async function updateAdminProductAction(
   await requireAdmin();
   const supabase = await createServerSupabase();
 
+  if (!productId?.trim()) {
+    throw new Error("Thiếu product_id. Không thể cập nhật sản phẩm.");
+  }
+
   const updatePayload = {
     ...productData,
     updated_at: new Date().toISOString(),
   };
 
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("products")
     .update(updatePayload)
     .eq("product_id", productId)
     .select()
     .single();
 
-  if (error && isMissingSalePriceColumnError(error)) {
-    throw new Error(schemaFixMessage("cột products.sale_price"));
-  }
-
   if (error) {
-    throw new Error(error.message);
+    logSupabaseError("update_product_failed", error, {
+      productId,
+      updatePayload,
+    });
+
+    if (isMissingSalePriceColumnError(error)) {
+      throw new Error(schemaFixMessage("cột products.sale_price"));
+    }
+
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Không thể cập nhật sản phẩm",
+        error,
+        `product_id=${productId}`,
+      ),
+    );
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/");
-  revalidatePath(`/products/${data.slug || productId}`);
+  revalidateProductPaths(data?.slug || productId);
   return data as ProductType;
 }
 
@@ -121,7 +192,13 @@ export async function syncAdminProductVariantsAction(
   await requireAdmin();
   const supabase = await createServerSupabase();
 
-  const normalizedVariants = variants.map((variant) => {
+  if (!productId?.trim()) {
+    throw new Error("Thiếu product_id. Không thể đồng bộ biến thể sản phẩm.");
+  }
+
+  const safeVariants = Array.isArray(variants) ? variants : [];
+
+  const normalizedVariants = safeVariants.map((variant) => {
     const parsed = productVariantSchema.parse({
       product_id: productId,
       size: variant.size,
@@ -135,17 +212,22 @@ export async function syncAdminProductVariantsAction(
 
     return {
       ...parsed,
-      id: variant.id,
+      id: variant.id || undefined,
       updated_at: new Date().toISOString(),
     };
   });
 
   const duplicateKeys = new Set<string>();
+
   for (const variant of normalizedVariants) {
-    const key = `${variant.size.trim().toLowerCase()}::${variant.color.trim().toLowerCase()}`;
+    const key = `${variant.size.trim().toLowerCase()}::${variant.color
+      .trim()
+      .toLowerCase()}`;
+
     if (duplicateKeys.has(key)) {
       throw new Error(`Duplicate variant: ${variant.size} / ${variant.color}`);
     }
+
     duplicateKeys.add(key);
   }
 
@@ -155,15 +237,27 @@ export async function syncAdminProductVariantsAction(
     .eq("product_id", productId);
 
   if (fetchError) {
+    logSupabaseError("fetch_existing_variants_failed", fetchError, {
+      productId,
+    });
+
     if (isMissingVariantTableError(fetchError)) {
       throw new Error(schemaFixMessage("bảng product_variants"));
     }
-    throw new Error(fetchError.message);
+
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Không thể tải biến thể sản phẩm hiện tại",
+        fetchError,
+        `product_id=${productId}`,
+      ),
+    );
   }
 
   const incomingIds = normalizedVariants
     .map((variant) => variant.id)
     .filter((id): id is string => Boolean(id));
+
   const idsToDeactivate = (existingVariants || [])
     .map((variant) => variant.id as string)
     .filter((id) => !incomingIds.includes(id));
@@ -171,49 +265,96 @@ export async function syncAdminProductVariantsAction(
   if (idsToDeactivate.length > 0) {
     const { error: deactivateError } = await supabase
       .from("product_variants")
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString(),
+      })
       .in("id", idsToDeactivate);
 
     if (deactivateError) {
+      logSupabaseError("deactivate_old_variants_failed", deactivateError, {
+        productId,
+        idsToDeactivate,
+      });
+
       if (isMissingVariantTableError(deactivateError)) {
         throw new Error(schemaFixMessage("bảng product_variants"));
       }
-      throw new Error(deactivateError.message);
+
+      throw new Error(
+        getSupabaseErrorMessage(
+          "Không thể ẩn biến thể sản phẩm cũ",
+          deactivateError,
+          `product_id=${productId}`,
+        ),
+      );
     }
   }
 
-  if (normalizedVariants.length === 0) {
-    revalidatePath("/admin/products");
-    revalidatePath("/products");
-    return [];
-  }
+  let synced: ProductVariantType[] = [];
 
-  const { data, error } = await supabase
-    .from("product_variants")
-    .upsert(normalizedVariants, { onConflict: "product_id,size,color" })
-    .select();
+  if (normalizedVariants.length > 0) {
+    /**
+     * Important:
+     * Không dùng onConflict: "product_id,size,color" ở đây.
+     * Schema hiện tại của bạn chưa có unique constraint cho bộ
+     * product_id + size + color, nên upsert theo bộ đó có thể gây lỗi 500.
+     *
+     * Dùng primary key id:
+     * - variant có id  -> update
+     * - variant chưa id -> insert mới
+     */
+    const { data, error } = await supabase
+      .from("product_variants")
+      .upsert(normalizedVariants, { onConflict: "id" })
+      .select();
 
-  if (error) {
-    if (isMissingVariantTableError(error)) {
-      throw new Error(schemaFixMessage("bảng product_variants"));
+    if (error) {
+      logSupabaseError("upsert_variants_failed", error, {
+        productId,
+        normalizedVariants,
+      });
+
+      if (isMissingVariantTableError(error)) {
+        throw new Error(schemaFixMessage("bảng product_variants"));
+      }
+
+      throw new Error(
+        getSupabaseErrorMessage(
+          "Không thể đồng bộ biến thể sản phẩm",
+          error,
+          `product_id=${productId}`,
+        ),
+      );
     }
-    throw new Error(error.message);
+
+    synced = (data || []) as ProductVariantType[];
   }
 
-  const synced = (data || []) as ProductVariantType[];
   const activeVariants = synced.filter((variant) => variant.is_active !== false);
+
   const totalStock = activeVariants.reduce(
     (total, variant) => total + Number(variant.stock || 0),
     0,
   );
+
   const sizes = Array.from(
-    new Set(activeVariants.map((variant) => variant.size.trim()).filter(Boolean)),
-  );
-  const colors = Array.from(
-    new Set(activeVariants.map((variant) => variant.color.trim()).filter(Boolean)),
+    new Set(
+      activeVariants
+        .map((variant) => variant.size.trim())
+        .filter(Boolean),
+    ),
   );
 
-  await supabase
+  const colors = Array.from(
+    new Set(
+      activeVariants
+        .map((variant) => variant.color.trim())
+        .filter(Boolean),
+    ),
+  );
+
+  const { error: productUpdateError } = await supabase
     .from("products")
     .update({
       stock: totalStock,
@@ -223,16 +364,36 @@ export async function syncAdminProductVariantsAction(
     })
     .eq("product_id", productId);
 
-  const { data: productForPath } = await supabase
+  if (productUpdateError) {
+    logSupabaseError("update_product_variant_summary_failed", productUpdateError, {
+      productId,
+      stock: totalStock,
+      sizes,
+      colors,
+    });
+
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Đã lưu biến thể nhưng không thể cập nhật tổng tồn kho/sizes/colors cho sản phẩm",
+        productUpdateError,
+        `product_id=${productId}`,
+      ),
+    );
+  }
+
+  const { data: productForPath, error: productForPathError } = await supabase
     .from("products")
     .select("slug")
     .eq("product_id", productId)
     .maybeSingle();
 
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/");
-  revalidatePath(`/products/${productForPath?.slug || productId}`);
+  if (productForPathError) {
+    logSupabaseError("fetch_product_slug_after_variant_sync_failed", productForPathError, {
+      productId,
+    });
+  }
+
+  revalidateProductPaths(productForPath?.slug || productId);
   return synced;
 }
 
@@ -242,18 +403,33 @@ export async function deactivateAdminProductAction(
   await requireAdmin();
   const supabase = await createServerSupabase();
 
+  if (!productId?.trim()) {
+    throw new Error("Thiếu product_id. Không thể ẩn sản phẩm.");
+  }
+
   const { error } = await supabase
     .from("products")
-    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
     .eq("product_id", productId);
 
   if (error) {
-    throw new Error(error.message);
+    logSupabaseError("deactivate_product_failed", error, {
+      productId,
+    });
+
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Không thể ẩn sản phẩm",
+        error,
+        `product_id=${productId}`,
+      ),
+    );
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/");
+  revalidateProductPaths(productId);
   return true;
 }
 
@@ -263,18 +439,33 @@ export async function activateAdminProductAction(
   await requireAdmin();
   const supabase = await createServerSupabase();
 
+  if (!productId?.trim()) {
+    throw new Error("Thiếu product_id. Không thể bật sản phẩm.");
+  }
+
   const { error } = await supabase
     .from("products")
-    .update({ is_active: true, updated_at: new Date().toISOString() })
+    .update({
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    })
     .eq("product_id", productId);
 
   if (error) {
-    throw new Error(error.message);
+    logSupabaseError("activate_product_failed", error, {
+      productId,
+    });
+
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Không thể bật sản phẩm",
+        error,
+        `product_id=${productId}`,
+      ),
+    );
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/");
+  revalidateProductPaths(productId);
   return true;
 }
 
@@ -288,31 +479,55 @@ export async function deleteAdminProductAction(
   await requireAdmin();
   const supabase = await createServerSupabase();
 
-  // Refuse to hard-delete a product that is already linked to historical
-  // order data. Cancelling/hiding the product is safer than breaking past
-  // orders.
+  if (!productId?.trim()) {
+    throw new Error("Thiếu product_id. Không thể xóa sản phẩm.");
+  }
+
   const { count: orderItemCount, error: orderItemError } = await supabase
     .from("order_items")
     .select("id", { count: "exact", head: true })
     .eq("product_id", productId);
 
   if (orderItemError) {
-    throw new Error(orderItemError.message);
+    logSupabaseError("check_order_items_before_delete_failed", orderItemError, {
+      productId,
+    });
+
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Không thể kiểm tra dữ liệu đơn hàng trước khi xóa sản phẩm",
+        orderItemError,
+        `product_id=${productId}`,
+      ),
+    );
   }
 
   if ((orderItemCount ?? 0) > 0) {
     const { error: hideError } = await supabase
       .from("products")
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString(),
+      })
       .eq("product_id", productId);
 
     if (hideError) {
-      throw new Error(hideError.message);
+      logSupabaseError("hide_product_with_orders_failed", hideError, {
+        productId,
+        orderItemCount,
+      });
+
+      throw new Error(
+        getSupabaseErrorMessage(
+          "Không thể ẩn sản phẩm đã có trong đơn hàng",
+          hideError,
+          `product_id=${productId}`,
+        ),
+      );
     }
 
-    revalidatePath("/admin/products");
-    revalidatePath("/products");
-    revalidatePath("/");
+    revalidateProductPaths(productId);
+
     return {
       status: "hidden",
       reason:
@@ -320,28 +535,40 @@ export async function deleteAdminProductAction(
     };
   }
 
-  // No FK conflict — try a hard delete. cart_items / product_variants /
-  // product_images cascade on delete; reviews cascade on delete.
   const { error } = await supabase
     .from("products")
     .delete()
     .eq("product_id", productId);
 
   if (error) {
-    // Last-ditch safety net: if a constraint we did not detect blocks
-    // the delete, fall back to hiding the product.
+    logSupabaseError("hard_delete_product_failed", error, {
+      productId,
+    });
+
     const { error: hideError } = await supabase
       .from("products")
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString(),
+      })
       .eq("product_id", productId);
 
     if (hideError) {
-      throw new Error(error.message);
+      logSupabaseError("fallback_hide_product_after_delete_failed", hideError, {
+        productId,
+      });
+
+      throw new Error(
+        getSupabaseErrorMessage(
+          "Không thể xóa hoặc ẩn sản phẩm",
+          hideError,
+          `product_id=${productId}`,
+        ),
+      );
     }
 
-    revalidatePath("/admin/products");
-    revalidatePath("/products");
-    revalidatePath("/");
+    revalidateProductPaths(productId);
+
     return {
       status: "hidden",
       reason:
@@ -349,8 +576,6 @@ export async function deleteAdminProductAction(
     };
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/");
+  revalidateProductPaths(productId);
   return { status: "deleted" };
 }
