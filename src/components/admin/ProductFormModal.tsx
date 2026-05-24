@@ -342,17 +342,26 @@ export function ProductFormModal({
             selectedFiles,
             primaryImageIndex,
           );
-          const uploadedPrimaryImage = uploadedImages[primaryImageIndex]?.url;
+          const uploadedPrimaryImage =
+            uploadedImages[primaryImageIndex]?.url || uploadedImages[0]?.url;
           if (uploadedPrimaryImage) {
             await updateAdminProductAction(savedProduct.product_id, {
               image: uploadedPrimaryImage,
             });
           }
         } catch (uploadError) {
+          const uploadMessage =
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Không rõ nguyên nhân.";
+
           console.error("Product image upload failed:", uploadError);
-          toast.warning(
-            "Sản phẩm đã được lưu, nhưng upload ảnh thất bại. Vui lòng thử upload lại.",
-          );
+          setErrors((previous) => ({
+            ...previous,
+            imageFiles: `Upload ảnh thất bại: ${uploadMessage}`,
+          }));
+          toast.warning("Upload ảnh thất bại. Xem chi tiết lỗi trong form.");
+          return;
         }
       }
 

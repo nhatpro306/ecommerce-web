@@ -15,6 +15,43 @@ function getImageExtension(file: File): string {
   return "jpg";
 }
 
+function getSupabaseErrorMessage(
+  operation: string,
+  error: {
+    message?: string;
+    name?: string;
+    statusCode?: string | number;
+    error?: string;
+  },
+  context?: string,
+) {
+  return [
+    operation,
+    context,
+    error.statusCode ? `status ${error.statusCode}` : null,
+    error.name,
+    error.error,
+    error.message,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+}
+
+function isMissingProductImagesTableError(error: {
+  code?: string;
+  message?: string;
+}) {
+  const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+  return (
+    message.includes("product_images") ||
+    message.includes("schema cache") ||
+    message.includes("does not exist") ||
+    message.includes("pgrst200") ||
+    message.includes("pgrst205") ||
+    message.includes("42p01")
+  );
+}
+
 export function validateProductImageFile(file: File): string | null {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
     return "Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP.";
@@ -48,7 +85,13 @@ export async function uploadProductImage(
     });
 
   if (uploadError) {
-    throw new Error(uploadError.message);
+    throw new Error(
+      getSupabaseErrorMessage(
+        "Không thể upload ảnh lên Supabase Storage",
+        uploadError,
+        `bucket=${PRODUCT_IMAGE_BUCKET}, path=${path}`,
+      ),
+    );
   }
 
   const { data } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(path);
@@ -62,6 +105,7 @@ export async function uploadAndAttachProductImages(
   primaryIndex = 0,
 ): Promise<UploadedProductImage[]> {
   const uploadedImages: UploadedProductImage[] = [];
+  let canUseProductImagesTable = true;
 
   if (files.length > 0) {
     const { error: resetPrimaryError } = await supabase
@@ -70,35 +114,73 @@ export async function uploadAndAttachProductImages(
       .eq("product_id", productId);
 
     if (resetPrimaryError) {
-      throw new Error(resetPrimaryError.message);
+      if (isMissingProductImagesTableError(resetPrimaryError)) {
+        canUseProductImagesTable = false;
+      } else {
+        throw new Error(
+          getSupabaseErrorMessage(
+            "Không thể bỏ đánh dấu ảnh chính cũ trong bảng product_images",
+            resetPrimaryError,
+            `product_id=${productId}`,
+          ),
+        );
+      }
     }
   }
 
-  for (const [index, file] of files.entries()) {
-    const uploaded = await uploadProductImage(productId, file);
-    uploadedImages.push(uploaded);
+  if (!canUseProductImagesTable) {
+    const primaryFile = files[primaryIndex] || files[0];
+    if (primaryFile) {
+      const uploaded = await uploadProductImage(productId, primaryFile);
+      uploadedImages.push(uploaded);
+    }
+  } else {
+    for (const [index, file] of files.entries()) {
+      const uploaded = await uploadProductImage(productId, file);
+      uploadedImages.push(uploaded);
 
-    const { error: imageError } = await supabase.from("product_images").insert({
-      product_id: productId,
-      url: uploaded.url,
-      alt_text: file.name,
-      sort_order: index,
-      is_primary: index === primaryIndex,
-    });
+      const { error: imageError } = await supabase.from("product_images").insert({
+        product_id: productId,
+        url: uploaded.url,
+        alt_text: file.name,
+        sort_order: index,
+        is_primary: index === primaryIndex,
+      });
 
-    if (imageError) {
-      throw new Error(imageError.message);
+      if (imageError) {
+        if (isMissingProductImagesTableError(imageError)) {
+          canUseProductImagesTable = false;
+          // Fallback to products.image by keeping the first uploaded image.
+          break;
+        }
+        throw new Error(
+          getSupabaseErrorMessage(
+            "Không thể lưu URL ảnh vào bảng product_images",
+            imageError,
+            `product_id=${productId}, url=${uploaded.url}`,
+          ),
+        );
+      }
     }
   }
 
-  if (uploadedImages[primaryIndex]) {
+  const primaryUploadedImage =
+    uploadedImages[primaryIndex] || uploadedImages[0] || null;
+
+  if (primaryUploadedImage) {
     const { error: productError } = await supabase
       .from("products")
-      .update({ image: uploadedImages[primaryIndex].url })
+      .update({ image: primaryUploadedImage.url })
       .eq("product_id", productId);
 
     if (productError) {
-      throw new Error(productError.message);
+      throw new Error(
+        getSupabaseErrorMessage(
+          "Không thể cập nhật ảnh chính trong bảng products",
+          productError,
+          `product_id=${productId}`,
+        ),
+      );
     }
   }
 
