@@ -67,6 +67,22 @@ export interface OrderAnalytics {
   todayRevenue: number;
 }
 
+const ORDER_BASE_SELECT = `
+  id,
+  user_id,
+  status,
+  total,
+  shipping_address_id,
+  payment_method,
+  payment_id,
+  customer_name,
+  customer_phone,
+  customer_email,
+  customer_note,
+  created_at,
+  updated_at
+`;
+
 function applyOrderFilters<T extends { eq: Function; gte: Function; lte: Function }>(
   query: T,
   filters: OrderFilters,
@@ -118,6 +134,16 @@ function normalizeOrderItemProduct(
 ): OrderItemType["product"] {
   const product = Array.isArray(products) ? products[0] : products;
   return product || undefined;
+}
+
+function normalizeOrderProfile(
+  profile:
+    | { username?: string | null; email?: string | null }
+    | { username?: string | null; email?: string | null }[]
+    | null
+    | undefined,
+) {
+  return Array.isArray(profile) ? profile[0] : profile;
 }
 
 async function attachBestEffortOrderDetails(
@@ -290,7 +316,7 @@ export const adminOrderService = {
 
       let countQuery = supabase
         .from("orders")
-        .select("*", { count: "exact", head: true });
+        .select("id", { count: "exact", head: true });
       countQuery = applyOrderFilters(countQuery, filters);
       const { count } = await countQuery;
 
@@ -300,7 +326,7 @@ export const adminOrderService = {
 
       if (error) {
         if (isJoinOrPolicyError(error)) {
-          let basicQuery = supabase.from("orders").select("*");
+          let basicQuery = supabase.from("orders").select(ORDER_BASE_SELECT);
           basicQuery = applyOrderFilters(basicQuery, filters);
           const { data: basicData, error: basicError } = await basicQuery
             .order("created_at", { ascending: false })
@@ -379,7 +405,7 @@ export const adminOrderService = {
         if (isJoinOrPolicyError(error)) {
           const { data: basicData, error: basicError } = await supabase
             .from("orders")
-            .select("*")
+            .select(ORDER_BASE_SELECT)
             .eq("id", orderId)
             .single();
 
@@ -535,16 +561,22 @@ export const adminOrderService = {
 
       const recentOrders = (recentOrdersResult.data || []).map((order) => ({
         ...order,
-        profile: order.profiles,
-      })) as unknown as OrderWithDetails[];
+        profile: (() => {
+          const profile = normalizeOrderProfile(order.profiles);
+          return profile
+            ? {
+                username: profile.username || "Unknown",
+                email: profile.email || "Unknown",
+              }
+            : undefined;
+        })(),
+      })) as OrderWithDetails[];
 
       const customerStats = (customerRowsResult.data || []).reduce<Record<string, CustomerStat>>(
         (acc, order) => {
           const userId = order.user_id || "guest";
-          const profile = Array.isArray(order.profiles)
-            ? order.profiles[0]
-            : order.profiles;
           if (!acc[userId]) {
+            const profile = normalizeOrderProfile(order.profiles);
             acc[userId] = {
               userId,
               username: profile?.username || "Unknown",

@@ -76,7 +76,7 @@ export async function getAdminOrdersAction(
 
   let countQuery = supabase
     .from("orders")
-    .select("*", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true });
   countQuery = applyOrderFilters(countQuery, filters);
 
   const [{ count, error: countError }, { data, error }] = await Promise.all([

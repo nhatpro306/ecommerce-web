@@ -37,6 +37,90 @@ interface GetAllProductsOptions {
   limit?: number;
 }
 
+const PRODUCT_ADMIN_SELECT = `
+  product_id,
+  slug,
+  title,
+  description,
+  material,
+  price,
+  sale_price,
+  image,
+  stock,
+  sizes,
+  colors,
+  is_active,
+  sku,
+  category_id,
+  created_at,
+  updated_at,
+  categories!products_category_id_fkey (
+    id,
+    name
+  ),
+  product_images (
+    id,
+    product_id,
+    url,
+    alt_text,
+    sort_order,
+    is_primary,
+    created_at
+  ),
+  product_variants (
+    id,
+    product_id,
+    size,
+    color,
+    sku,
+    stock,
+    price_override,
+    image_url,
+    is_active,
+    created_at,
+    updated_at
+  )
+`;
+
+const PRODUCT_VARIANT_SELECT = `
+  id,
+  product_id,
+  size,
+  color,
+  sku,
+  stock,
+  price_override,
+  image_url,
+  is_active,
+  created_at,
+  updated_at
+`;
+
+const PRODUCT_IMAGE_SELECT = `
+  id,
+  product_id,
+  url,
+  alt_text,
+  sort_order,
+  is_primary,
+  created_at
+`;
+
+function normalizeProductCategory(
+  category:
+    | { id?: number | null; name?: string | null }
+    | { id?: number | null; name?: string | null }[]
+    | null
+    | undefined,
+) {
+  const value = Array.isArray(category) ? category[0] : category;
+  if (!value?.id || !value.name) return undefined;
+  return {
+    id: value.id,
+    name: value.name,
+  };
+}
+
 /**
  * Admin service for product reads. Mutations are routed through server actions
  * so admin permissions are enforced server-side.
@@ -53,21 +137,7 @@ export const adminProductService = {
 
       let query = supabase
         .from("products")
-        .select(
-          `
-          *,
-          categories!products_category_id_fkey (
-            id,
-            name
-          ),
-          product_images (
-            *
-          ),
-          product_variants (
-            *
-          )
-        `,
-        )
+        .select(PRODUCT_ADMIN_SELECT)
         .order("created_at", { ascending: false });
       if (limit && limit > 0) {
         query = query.limit(limit);
@@ -91,7 +161,7 @@ export const adminProductService = {
         const reviewStats = reviewsByProduct[product.product_id];
         return {
           ...product,
-          category: product.categories,
+          category: normalizeProductCategory(product.categories),
           images: product.product_images || [],
           variants: product.product_variants || [],
           total_reviews: reviewStats?.total ?? 0,
@@ -111,7 +181,7 @@ export const adminProductService = {
 
     const { data, error } = await supabase
       .from("product_variants")
-      .select("*")
+      .select(PRODUCT_VARIANT_SELECT)
       .in("product_id", productIds)
       .order("size", { ascending: true });
 
@@ -171,7 +241,7 @@ export const adminProductService = {
 
     const { data, error } = await supabase
       .from("product_images")
-      .select("*")
+      .select(PRODUCT_IMAGE_SELECT)
       .in("product_id", productIds)
       .order("sort_order", { ascending: true });
 
@@ -293,7 +363,7 @@ export const adminProductService = {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("product_id, slug, title, description, material, price, sale_price, image, stock, sizes, colors, is_active, sku, category_id, created_at, updated_at")
         .lt("stock", threshold)
         .order("stock", { ascending: true });
 
@@ -313,7 +383,7 @@ export const adminProductService = {
     try {
       const { count: totalProducts } = await supabase
         .from("products")
-        .select("*", { count: "exact", head: true });
+        .select("product_id", { count: "exact", head: true });
 
       const { data: categoryCounts } = await supabase.from("products").select(`
         category_id,
@@ -339,7 +409,7 @@ export const adminProductService = {
 
       const { count: lowStockCount } = await supabase
         .from("products")
-        .select("*", { count: "exact", head: true })
+        .select("product_id", { count: "exact", head: true })
         .lt("stock", 10);
 
       const { data: products } = await supabase

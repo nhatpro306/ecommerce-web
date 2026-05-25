@@ -3,6 +3,31 @@ import { ProductType, CartItemType, CartType, CartStatus } from '../../types';
 import { toast } from 'sonner';
 import { getClientUser } from '@/lib/supabase/clientUtils';
 
+const CART_SELECT = 'id, user_id, status, total_items, total_price, created_at, updated_at';
+const CART_ITEM_SELECT =
+  'id, cart_id, product_id, variant_id, quantity, price, selected_size, selected_color, variant_info, created_at, updated_at';
+const CART_ITEM_WITH_PRODUCT_SELECT = `
+  ${CART_ITEM_SELECT},
+  product:products (
+    product_id,
+    slug,
+    title,
+    description,
+    material,
+    price,
+    sale_price,
+    image,
+    stock,
+    sizes,
+    colors,
+    is_active,
+    sku,
+    category_id,
+    created_at,
+    updated_at
+  )
+`;
+
 export interface CartVariantOptions {
   variantId?: string;
   size?: string;
@@ -28,6 +53,10 @@ async function resolveCartUserId(options?: CartUserOptions) {
   return user?.id ?? null;
 }
 
+function normalizeJoinedProduct(product: ProductType | ProductType[] | null | undefined) {
+  return Array.isArray(product) ? product[0] : product;
+}
+
 export async function getActiveCart(options?: CartUserOptions) {
   try {
     const userId = await resolveCartUserId(options);
@@ -35,7 +64,7 @@ export async function getActiveCart(options?: CartUserOptions) {
 
     const { data, error } = await supabase
       .from('carts')
-      .select('*')
+      .select(CART_SELECT)
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
@@ -62,7 +91,7 @@ export async function createCart(options?: CartUserOptions) {
     const { data, error } = await supabase
       .from('carts')
       .insert({ user_id: userId, status: 'active' as CartStatus })
-      .select('*')
+      .select(CART_SELECT)
       .single();
 
     if (error) {
@@ -85,11 +114,11 @@ export async function getOrCreateCart(options?: CartUserOptions) {
   return await createCart(options);
 }
 
-export async function getCartItems(cartId: number) {
+export async function getCartItems(cartId: number): Promise<(CartItemType & { product: ProductType })[]> {
   try {
     const { data, error } = await supabase
       .from('cart_items')
-      .select(`*, product:products(*)`)
+      .select(CART_ITEM_WITH_PRODUCT_SELECT)
       .eq('cart_id', cartId);
 
     if (error) {
@@ -98,10 +127,16 @@ export async function getCartItems(cartId: number) {
       return [];
     }
 
-    return data.map((item: CartItemType & { product: ProductType }) => ({
-      ...item,
-      product: item.product as ProductType,
-    })) as (CartItemType & { product: ProductType })[];
+    return data.reduce<(CartItemType & { product: ProductType })[]>((items, item) => {
+      const product = normalizeJoinedProduct(item.product as ProductType | ProductType[] | null);
+      if (!product) return items;
+
+      items.push({
+        ...item,
+        product,
+      } as CartItemType & { product: ProductType });
+      return items;
+    }, []);
   } catch (error) {
     console.error('Error in getCartItems:', error);
     toast.error('Cart operation failed.');
@@ -122,7 +157,7 @@ export async function addItemToCart(
 
     let existingItemQuery = supabase
       .from('cart_items')
-      .select('*')
+      .select(CART_ITEM_SELECT)
       .eq('cart_id', cartId)
       .eq('product_id', productId);
 
@@ -150,7 +185,7 @@ export async function addItemToCart(
         .from('cart_items')
         .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
         .eq('id', existingItem.id)
-        .select('*')
+        .select(CART_ITEM_SELECT)
         .single();
 
       if (error) {
@@ -173,7 +208,7 @@ export async function addItemToCart(
       variant_info: options.variantInfo ?? {},
     };
 
-    const { data, error } = await supabase.from('cart_items').insert(insertPayload).select('*').single();
+    const { data, error } = await supabase.from('cart_items').insert(insertPayload).select(CART_ITEM_SELECT).single();
 
     if (error) {
       if (isMissingVariantIdColumn(error)) {
@@ -183,7 +218,7 @@ export async function addItemToCart(
         const { data: legacyData, error: legacyError } = await supabase
           .from('cart_items')
           .insert(legacyPayload)
-          .select('*')
+          .select(CART_ITEM_SELECT)
           .single();
 
         if (!legacyError) return legacyData as CartItemType;
@@ -214,7 +249,7 @@ export async function updateCartItemQuantity(cartItemId: number, quantity: numbe
       .from('cart_items')
       .update({ quantity, updated_at: new Date().toISOString() })
       .eq('id', cartItemId)
-      .select('*')
+      .select(CART_ITEM_SELECT)
       .single();
 
     if (error) {
@@ -271,7 +306,7 @@ export async function findCartItemByProductId(cartId: number, productId: string)
   try {
     const { data, error } = await supabase
       .from('cart_items')
-      .select('*')
+      .select(CART_ITEM_SELECT)
       .eq('cart_id', cartId)
       .eq('product_id', productId)
       .maybeSingle();
