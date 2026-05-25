@@ -1,11 +1,12 @@
-﻿import { createServerSupabase } from "@/lib/supabase/server";
+import { cache } from "react";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export type AdminUser = {
   id: string;
   email?: string;
 };
 
-export async function requireAdmin(): Promise<AdminUser> {
+export const requireAdmin = cache(async (): Promise<AdminUser> => {
   const supabase = await createServerSupabase();
 
   const {
@@ -28,4 +29,4 @@ export async function requireAdmin(): Promise<AdminUser> {
   }
 
   return { id: user.id, email: user.email };
-}
+});
