@@ -49,8 +49,9 @@ function displayName(
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { isAdmin, loading } = useAdmin();
-  const { user, signOut } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdmin();
+  const { user, signOut, loading: authLoading } = useAuth();
+  const loading = adminLoading || authLoading;
   const router = useRouter();
   const { t } = useI18n();
   const handleSignOut = async () => {

@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/lib/i18n";
+
+function safeReturnTo(value: string | null): string {
+  if (!value) return "/";
+  // Only allow same-origin paths to avoid open-redirects.
+  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  return value;
+}
 
 interface AuthFormState {
   email: string;
@@ -29,6 +36,8 @@ interface UseAuthFormReturn {
 
 export function useAuthForm({ isSignUp = false }: UseAuthFormProps = {}): UseAuthFormReturn {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = safeReturnTo(searchParams?.get("returnTo") ?? null);
   const { signIn, signUp } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
@@ -75,7 +84,8 @@ export function useAuthForm({ isSignUp = false }: UseAuthFormProps = {}): UseAut
       } else {
         await signIn(formData.email, formData.password);
       }
-      router.push("/");
+      router.push(returnTo);
+      router.refresh();
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : isSignUp ? t("auth.signUpError") : t("auth.signInError");
