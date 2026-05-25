@@ -169,6 +169,7 @@ export async function uploadAndAttachProductImages(
   productId: string,
   files: File[],
   primaryIndex = 0,
+  onProgress?: (progressPercent: number) => void,
 ): Promise<UploadedProductImage[]> {
   if (!productId?.trim()) {
     throw new Error("Thiếu mã sản phẩm. Không thể tải ảnh.");
@@ -193,9 +194,12 @@ export async function uploadAndAttachProductImages(
   let metadataInserted = false;
 
   try {
-    for (const file of files) {
+    onProgress?.(5);
+
+    for (const [index, file] of files.entries()) {
       const uploaded = await uploadProductImage(productId, file);
       uploadedImages.push(uploaded);
+      onProgress?.(Math.min(55, Math.round(((index + 1) / files.length) * 55)));
     }
 
     const { error: resetPrimaryError } = await supabase
@@ -244,6 +248,8 @@ export async function uploadAndAttachProductImages(
           ),
         );
       }
+
+      onProgress?.(Math.min(90, 55 + Math.round(((index + 1) / files.length) * 35)));
     }
 
     metadataInserted = true;
@@ -273,6 +279,8 @@ export async function uploadAndAttachProductImages(
         ),
       );
     }
+
+    onProgress?.(100);
 
     return uploadedImages;
   } catch (error) {

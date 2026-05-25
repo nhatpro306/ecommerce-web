@@ -395,7 +395,7 @@ export default function AdminDashboardClient() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/admin/products?create=1">
+          <Link href="/admin/products/new">
             <Button className="h-11 rounded-none bg-zinc-950 px-4 text-xs font-bold uppercase tracking-[0.14em] text-white hover:bg-zinc-800">
               <Plus className="mr-2 h-4 w-4" />
               Thêm sản phẩm
@@ -632,7 +632,7 @@ export default function AdminDashboardClient() {
         </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <QuickActionLink
-            href="/admin/products?create=1"
+            href="/admin/products/new"
             icon={PackagePlus}
             label="Thêm sản phẩm mới"
           />
