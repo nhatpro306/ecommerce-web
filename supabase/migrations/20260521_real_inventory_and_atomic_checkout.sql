@@ -1,4 +1,4 @@
-﻿-- RESEY production inventory, product images, store settings, and atomic checkout.
+-- RESEY production inventory, product images, store settings, and atomic checkout.
 -- Safe incremental migration: adds tables/columns/policies without dropping existing data.
 
 create extension if not exists pgcrypto;
