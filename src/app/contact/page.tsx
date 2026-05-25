@@ -10,7 +10,7 @@ export default function ContactPage() {
         { heading: "Email", body: "support@resey.uk" },
         {
           heading: "Hotline",
-          body: "Đang cập nhật. Trong thời gian này, vui lòng liên hệ qua email để được hỗ trợ nhanh nhất.",
+          body: "Vui lòng liên hệ qua email để nhận số hotline/Zalo hỗ trợ nhanh theo khung giờ vận hành.",
         },
         {
           heading: "Tư vấn sản phẩm",

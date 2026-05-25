@@ -217,18 +217,18 @@ export default function AdminOrdersPage() {
 
       <div className="overflow-hidden border border-zinc-200">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px] text-left text-sm">
+          <table className="w-full min-w-[1024px] text-left text-sm">
             <thead className="border-b bg-zinc-50 text-xs uppercase tracking-[0.14em] text-zinc-500">
               <tr>
                 <th className="px-4 py-3 font-bold">{t("orders.order")}</th>
                 <th className="px-4 py-3 font-bold">{t("orders.customer")}</th>
                 <th className="px-4 py-3 font-bold">{t("admin.products")}</th>
-                <th className="px-4 py-3 font-bold">{t("checkout.addressDetail")}</th>
+                <th className="px-4 py-3 font-bold">Địa chỉ giao hàng</th>
                 <th className="px-4 py-3 font-bold">{t("checkout.paymentMethod")}</th>
                 <th className="px-4 py-3 font-bold">{t("orders.paymentStatus")}</th>
                 <th className="px-4 py-3 font-bold">{t("orders.total")}</th>
                 <th className="px-4 py-3 font-bold">{t("status.pending")}</th>
-                <th className="px-4 py-3 text-right font-bold">{t("common.processing")}</th>
+                <th className="px-4 py-3 text-right font-bold">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">

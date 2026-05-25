@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { Filter, SortAsc } from "lucide-react";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ export function ProductFilter({
   sizeOptions = [{ value: "all", label: "Tất cả size" }],
   colorOptions = [{ value: "all", label: "Tất cả màu" }],
 }: ProductFilterProps) {
+  const [openMobile, setOpenMobile] = useState(false);
   const updateFilter = <Key extends keyof FilterOptions>(
     key: Key,
     value: FilterOptions[Key],
@@ -56,14 +58,23 @@ export function ProductFilter({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-card grid gap-4 rounded-lg border p-4 md:grid-cols-[auto_1fr]"
+      className="bg-card rounded-lg border p-4"
     >
-      <div className="flex items-center gap-2 text-sm font-medium">
+      <div className="flex items-center justify-between gap-2 text-sm font-medium">
+        <div className="flex items-center gap-2">
         <Filter className="h-4 w-4" />
         <span>Bộ lọc</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpenMobile((value) => !value)}
+          className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-700 md:hidden"
+        >
+          {openMobile ? "Đóng" : "Mở"}
+        </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className={`${openMobile ? "mt-4 grid" : "hidden"} gap-4 sm:grid-cols-2 lg:grid-cols-5 md:mt-4 md:grid`}>
         <div className="flex flex-col gap-2">
           <label className="text-muted-foreground text-xs font-medium">
             Sắp xếp

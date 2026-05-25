@@ -224,3 +224,12 @@
   border: 1px solid #1d4ed8 !important;
   color: white !important;
 }
+
+/* Hide injected Vercel toolbar on storefront to avoid overlapping checkout/product CTA. */
+#__vercel,
+#__vercel_toolbar,
+#__vercel-toolbar,
+[data-vercel-toolbar],
+[id*="vercel-toolbar"] {
+  display: none !important;
+}

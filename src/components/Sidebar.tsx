@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { AnimatePresence } from "motion/react";
 import {
   Home,
@@ -8,31 +9,14 @@ import {
   Watch,
   Smartphone,
   Search,
-  LogOut,
-  LayoutDashboard,
-  Settings,
-  Package,
-  ShoppingCart,
-  Users,
-  ChevronRight,
-  User,
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -44,10 +28,8 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/context/AuthContext";
-import { useAdmin } from "@/hooks/useAdmin";
 import { useCategories } from "@/hooks/queries";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Motion } from "@/components/motion/motion";
 import {
   contentVariants,
@@ -74,10 +56,7 @@ const FALLBACK_CATEGORY_ITEMS = [
 
 export default function Sidebar() {
   const [mounted, setMounted] = useState(false);
-  const { user, signOut } = useAuth();
-  const { isAdmin } = useAdmin();
   const pathname = usePathname();
-  const router = useRouter();
   const { state } = useSidebar();
 
   // Use the TanStack Query hook instead of manual state management
@@ -106,20 +85,8 @@ export default function Sidebar() {
         ]
       : FALLBACK_CATEGORY_ITEMS;
 
-  // Filter categories based on authentication status
-  const displayCategories = user
-    ? categoryItems
-    : categoryItems.filter((category) =>
-        ["Tất cả", "T-Shirts", "Accessories"].includes(category.name),
-      );
-
-  // Admin navigation items
-  const adminNavItems = [
-    { name: "Tổng quan admin", icon: Settings, href: "/admin" },
-    { name: "Sản phẩm", icon: Package, href: "/admin/products" },
-    { name: "Đơn hàng", icon: ShoppingCart, href: "/admin/orders" },
-    { name: "Người dùng", icon: Users, href: "/admin/users" },
-  ];
+  // Public sidebar shows every storefront category to every visitor.
+  const displayCategories = categoryItems;
 
   return (
     <ShadcnSidebar collapsible="icon" className="z-[70] border-r">
@@ -132,10 +99,14 @@ export default function Sidebar() {
             animate={isCollapsed ? "closed" : "open"}
             className="flex items-center space-x-2.5"
           >
-            <div className="from-primary to-primary/80 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg">
-              <span className="text-primary-foreground text-base font-bold">
-                E
-              </span>
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-white">
+              <Image
+                src="/brand/resey-logo.jpg"
+                alt="Logo RESEY"
+                width={36}
+                height={36}
+                className="h-full w-full object-contain"
+              />
             </div>
             {!isCollapsed && (
               <Motion
@@ -192,84 +163,6 @@ export default function Sidebar() {
           animate={isCollapsed ? "closed" : "open"}
           className="space-y-4"
         >
-          {/* Admin Navigation */}
-          {user && isAdmin && (
-            <SidebarGroup>
-              {!isCollapsed && (
-                <Motion variants={itemVariants} initial="closed" animate="open">
-                  <SidebarGroupLabel className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                    Quản trị
-                  </SidebarGroupLabel>
-                </Motion>
-              )}
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <Motion
-                    variants={staggerVariants}
-                    initial="closed"
-                    animate="open"
-                  >
-                    {adminNavItems.map((item) => {
-                      const isActive = pathname === item.href;
-                      const Icon = item.icon;
-
-                      return (
-                        <Motion
-                          key={item.name}
-                          variants={itemVariants}
-                          initial="closed"
-                          animate="open"
-                        >
-                          <SidebarMenuItem>
-                            <SidebarMenuButton
-                              render={<Link href={item.href} />}
-                              isActive={isActive}
-                              className={cn(
-                                "group relative transition-all duration-200",
-                                isActive
-                                  ? "border-primary/20 bg-primary/10 text-primary border"
-                                  : "hover:translate-x-1",
-                              )}
-                              tooltip={item.name}
-                            >
-                              <Icon
-                                className={cn(
-                                  "h-4 w-4 transition-all duration-200",
-                                  isActive
-                                    ? "text-primary"
-                                    : "text-muted-foreground group-hover:text-foreground",
-                                )}
-                              />
-                              {!isCollapsed && (
-                                <span className="text-sm font-medium">
-                                  {item.name}
-                                </span>
-                              )}
-                              {/* Active indicator */}
-                              {isActive && (
-                                <Motion
-                                  variants={indicatorVariants}
-                                  initial="closed"
-                                  animate="open"
-                                  transition={{
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 30,
-                                  }}
-                                  className="bg-primary absolute right-2 h-2 w-2 rounded-full"
-                                />
-                              )}
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        </Motion>
-                      );
-                    })}
-                  </Motion>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-
           {/* Categories Navigation */}
           <SidebarGroup>
             {!isCollapsed && (
@@ -349,122 +242,6 @@ export default function Sidebar() {
           </SidebarGroup>
         </Motion>
       </SidebarContent>
-
-      {/* User section */}
-      {user && (
-        <SidebarFooter>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                !isCollapsed ? (
-                  <Motion
-                    variants={contentVariants}
-                    initial={isCollapsed ? "closed" : "open"}
-                    animate={isCollapsed ? "closed" : "open"}
-                    className="bg-background/60 hover:bg-background/80 group border-border/30 flex cursor-pointer items-center rounded-xl border p-3 shadow-sm transition-all duration-200"
-                  >
-                    <Avatar className="ring-primary/20 h-9 w-9 ring-2">
-                      <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-br font-semibold">
-                        {user.email?.charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="ml-3 min-w-0 flex-1">
-                      <p className="text-foreground truncate text-sm font-medium">
-                        {user.email?.split("@")[0] || "Tài khoản"}
-                      </p>
-                      <p className="text-muted-foreground truncate text-xs">
-                        {user.email}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className="h-2 w-2 rounded-full bg-green-500"
-                        title="Online"
-                      />
-                      <ChevronRight className="text-muted-foreground group-hover:text-foreground h-4 w-4 transition-colors duration-200" />
-                    </div>
-                  </Motion>
-                ) : (
-                  <SidebarMenuButton
-                    size="lg"
-                    className="group cursor-pointer"
-                    tooltip={`${user.email?.split("@")[0] || "Tài khoản"}`}
-                  >
-                    <div className="relative">
-                      <Avatar className="ring-primary/20 group-hover:ring-primary/40 h-8 w-8 ring-2 transition-all duration-200">
-                        <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-br font-semibold">
-                          {user.email?.charAt(0).toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="border-background absolute -right-1 -bottom-1 h-3 w-3 rounded-full border-2 bg-green-500" />
-                    </div>
-                  </SidebarMenuButton>
-                )
-              }
-            />
-            <DropdownMenuContent
-              align="end"
-              side="right"
-              sideOffset={8}
-              className="bg-background/95 border-border/50 z-[80] w-56 backdrop-blur-xl"
-            >
-              <div className="flex items-center space-x-2 p-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-br">
-                    {user.email?.charAt(0).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">
-                    {user.email?.split("@")[0] || "Tài khoản"}
-                  </span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="focus:bg-muted/70 cursor-pointer"
-                onClick={() => router.replace("/profile")}
-              >
-                <User className="mr-2 h-4 w-4" />
-                <span>Tài khoản</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="focus:bg-muted/70 cursor-pointer"
-                onClick={() => router.replace("/cart")}
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                <span>Giỏ hàng</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="focus:bg-muted/70 cursor-pointer"
-                onClick={() => router.replace("/profile")}
-              >
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Đơn hàng của tôi</span>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem
-                  className="focus:bg-muted/70 cursor-pointer"
-                  onClick={() => router.replace("/admin")}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Trang admin</span>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={signOut}
-                className="focus:bg-muted/70 cursor-pointer transition-colors duration-200"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Đăng xuất</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarFooter>
-      )}
 
       <SidebarRail />
     </ShadcnSidebar>

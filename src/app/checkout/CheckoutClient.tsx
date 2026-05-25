@@ -14,11 +14,25 @@ import { supabase } from "@/lib/supabase/client";
 import { addressService } from "@/services/address/addressService";
 import { orderService } from "@/services/order/orderService";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getDistrictsByProvinceCode, getProvinces, getWardsByDistrictCode } from "@do-kevin/pc-vn";
 
 interface BankConfig {
   name: string;
   accountName: string;
   accountNumber: string;
+}
+interface ProvinceOption {
+  code: string;
+  name: string;
+}
+interface DistrictOption {
+  code: string;
+  name: string;
+}
+interface WardOption {
+  code: string;
+  name: string;
 }
 
 type PaymentMethod = "cod" | "bank_transfer";
@@ -32,6 +46,9 @@ export default function CheckoutClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState("");
+  const [selectedWardCode, setSelectedWardCode] = useState("");
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -69,6 +86,28 @@ export default function CheckoutClient() {
       },
     [storeBankConfig],
   );
+  const provinces = useMemo<ProvinceOption[]>(() => getProvinces().map((item) => ({ code: item.code, name: item.name })), []);
+  const districts = useMemo<DistrictOption[]>(
+    () =>
+      selectedProvinceCode
+        ? getDistrictsByProvinceCode(selectedProvinceCode).map((item) => ({
+            code: item.code,
+            name: item.name,
+          }))
+        : [],
+    [selectedProvinceCode],
+  );
+  const wards = useMemo<WardOption[]>(
+    () =>
+      selectedDistrictCode
+        ? getWardsByDistrictCode(selectedDistrictCode).map((item) => ({
+            code: item.code,
+            name: item.name,
+          }))
+        : [],
+    [selectedDistrictCode],
+  );
+  const transferCodePreview = useMemo(() => `ORDER-TEMP-${Date.now().toString().slice(-6)}`, []);
 
   const isPhoneValid = VIETNAMESE_PHONE_PATTERN.test(form.phone.trim());
   const canSubmit =
@@ -167,9 +206,83 @@ export default function CheckoutClient() {
             <Input className={inputClass} placeholder={t("checkout.emailOptional")} value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
             <Input className={inputClass} placeholder={t("checkout.addressDetail")} value={form.detailedAddress} onChange={(e) => setForm((p) => ({ ...p, detailedAddress: e.target.value }))} />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Input className={inputClass} placeholder={t("checkout.ward")} value={form.ward} onChange={(e) => setForm((p) => ({ ...p, ward: e.target.value }))} />
-              <Input className={inputClass} placeholder={t("checkout.district")} value={form.district} onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))} />
-              <Input className={inputClass} placeholder={t("checkout.province")} value={form.provinceCity} onChange={(e) => setForm((p) => ({ ...p, provinceCity: e.target.value }))} />
+              <Select
+                value={selectedProvinceCode}
+                onValueChange={(value) => {
+                  const nextValue = value || "";
+                  setSelectedProvinceCode(nextValue);
+                  setSelectedDistrictCode("");
+                  setSelectedWardCode("");
+                  const province = provinces.find((item) => item.code === nextValue);
+                  setForm((previous) => ({
+                    ...previous,
+                    provinceCity: province?.name || "",
+                    district: "",
+                    ward: "",
+                  }));
+                }}
+              >
+                <SelectTrigger className={inputClass}>
+                  <SelectValue placeholder={t("checkout.province")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {provinces.map((province) => (
+                    <SelectItem key={province.code} value={province.code}>
+                      {province.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedDistrictCode}
+                onValueChange={(value) => {
+                  const nextValue = value || "";
+                  setSelectedDistrictCode(nextValue);
+                  setSelectedWardCode("");
+                  const district = districts.find((item) => item.code === nextValue);
+                  setForm((previous) => ({
+                    ...previous,
+                    district: district?.name || "",
+                    ward: "",
+                  }));
+                }}
+                disabled={!selectedProvinceCode}
+              >
+                <SelectTrigger className={inputClass}>
+                  <SelectValue placeholder={t("checkout.district")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts.map((district) => (
+                    <SelectItem key={district.code} value={district.code}>
+                      {district.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedWardCode}
+                onValueChange={(value) => {
+                  const nextValue = value || "";
+                  setSelectedWardCode(nextValue);
+                  const ward = wards.find((item) => item.code === nextValue);
+                  setForm((previous) => ({
+                    ...previous,
+                    ward: ward?.name || "",
+                  }));
+                }}
+                disabled={!selectedDistrictCode}
+              >
+                <SelectTrigger className={inputClass}>
+                  <SelectValue placeholder={t("checkout.ward")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {wards.map((ward) => (
+                    <SelectItem key={ward.code} value={ward.code}>
+                      {ward.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {form.phone && !isPhoneValid && <p className="text-sm text-red-600">{t("checkout.phoneInvalid")}</p>}
             <Input className={inputClass} placeholder={t("checkout.note")} value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} />
@@ -201,6 +314,9 @@ export default function CheckoutClient() {
                 <p>{t("checkout.bankName")}: {bankConfig.name}</p>
                 <p>{t("checkout.bankAccountName")}: {bankConfig.accountName}</p>
                 <p>{t("checkout.bankAccountNumber")}: {bankConfig.accountNumber}</p>
+                <p className="mt-2">
+                  Nội dung chuyển khoản: <span className="font-semibold">{transferCodePreview}</span>
+                </p>
                 <p className="mt-2 text-zinc-600">{t("checkout.bankNote")}</p>
               </div>
             )}
@@ -224,9 +340,9 @@ export default function CheckoutClient() {
               </div>
             ))}
           </div>
-          <div className="mt-5 flex justify-between border-t border-zinc-200 pt-5 text-lg font-black">
+          <div className="mt-5 flex items-start justify-between gap-3 border-t border-zinc-200 pt-5 text-lg font-black">
             <span>{t("checkout.total")}</span>
-            <span>{formatCurrency(subtotal)}</span>
+            <span className="text-right">{formatCurrency(subtotal)}</span>
           </div>
           <Button
             onClick={submitOrder}

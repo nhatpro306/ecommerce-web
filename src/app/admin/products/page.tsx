@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Edit,
@@ -77,6 +78,7 @@ function hasImage(product: ProductWithDetails) {
 }
 
 export default function AdminProductsPage() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -95,6 +97,12 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("create") === "1") {
+      setShowCreateModal(true);
+    }
+  }, [searchParams]);
 
   const fetchProducts = async () => {
     try {
@@ -546,7 +554,7 @@ export default function AdminProductsPage() {
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="line-clamp-1 font-bold text-zinc-950">
+                          <p className="font-bold text-zinc-950">
                             {product.title}
                           </p>
                           <p className="mt-1 text-xs text-zinc-500">

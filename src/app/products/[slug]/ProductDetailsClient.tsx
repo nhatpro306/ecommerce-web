@@ -245,7 +245,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
 
             <Button
               size="lg"
-              className="h-14 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800"
+              className="h-14 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800 md:static md:h-14"
               disabled={currentStock <= 0}
               onClick={handleAddToCart}
             >
@@ -263,6 +263,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                 </>
               )}
             </Button>
+            <div className="h-20 md:hidden" />
           </div>
 
           <div className="mt-8 grid gap-3 text-sm sm:grid-cols-3">
@@ -280,6 +281,17 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
           </div>
         </div>
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white p-3 md:hidden">
+        <Button
+          size="lg"
+          className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.16em] text-white hover:bg-zinc-800"
+          disabled={currentStock <= 0}
+          onClick={handleAddToCart}
+        >
+          {currentStock <= 0 ? t("products.outOfStock") : `${t("products.addToCart")} - ${formatCurrency(currentPrice * quantity)}`}
+        </Button>
+      </div>
 
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="grid gap-6 border-y border-zinc-200 py-8 md:grid-cols-2">
