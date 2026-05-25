@@ -21,6 +21,13 @@ export interface AdminVariantInput {
   is_active: boolean;
 }
 
+export interface AdminProductImageInput {
+  url: string;
+  alt_text?: string | null;
+  sort_order: number;
+  is_primary: boolean;
+}
+
 type SupabaseLikeError = {
   code?: string;
   message?: string;
@@ -122,16 +129,16 @@ async function getPublishReadiness(
   if (productError || !product) {
     return {
       ok: false,
-      reasons: ["Khong th? t?i thong tin s?n ph?m ?? ki?m tra ??ng ban."],
+      reasons: ["Không thể tải thông tin sản phẩm để kiểm tra đăng bán."],
       slug: null as string | null,
     };
   }
 
-  if (!product.title?.trim()) reasons.push("Vui long nh?p ten s?n ph?m.");
-  if (!product.category_id) reasons.push("Vui long ch?n danh m?c.");
-  if (!(Number(product.price) > 0)) reasons.push("Vui long nh?p gia ban h?p l?.");
+  if (!product.title?.trim()) reasons.push("Vui lòng nhập tên sản phẩm.");
+  if (!product.category_id) reasons.push("Vui lòng chọn danh mục.");
+  if (!(Number(product.price) > 0)) reasons.push("Vui lòng nhập giá bán hợp lệ.");
   if (looksLikeTestProduct(product.title, product.description)) {
-    reasons.push("Khong th? ??ng ban s?n ph?m test/demo.");
+    reasons.push("Không thể đăng bán sản phẩm test/demo.");
   }
 
   const { data: images, error: imageError } = await supabase
@@ -139,9 +146,9 @@ async function getPublishReadiness(
     .select("id,is_primary")
     .eq("product_id", productId);
   if (imageError || !images || images.length === 0) {
-    reasons.push("Vui long t?i it nh?t 1 ?nh s?n ph?m.");
+    reasons.push("Vui lòng tải ít nhất 1 ảnh sản phẩm.");
   } else if (!images.some((image) => image.is_primary)) {
-    reasons.push("Vui long ch?n ?nh chinh cho s?n ph?m.");
+    reasons.push("Vui lòng chọn ảnh chính cho sản phẩm.");
   }
 
   const { data: variants, error: variantError } = await supabase
@@ -150,7 +157,7 @@ async function getPublishReadiness(
     .eq("product_id", productId);
 
   if (variantError && !isMissingVariantTableError(variantError)) {
-    reasons.push("Khong th? ki?m tra bi?n th? s?n ph?m.");
+    reasons.push("Không thể kiểm tra phân loại sản phẩm.");
   }
 
   const activeVariantStock = (variants || [])
@@ -159,7 +166,7 @@ async function getPublishReadiness(
 
   const sellableStock = variants && variants.length > 0 ? activeVariantStock : Number(product.stock || 0);
   if (!(sellableStock > 0)) {
-    reasons.push("Vui long nh?p t?n kho ho?c t?o bi?n th?.");
+    reasons.push("Vui lòng nhập tồn kho hoặc tạo phân loại.");
   }
 
   return { ok: reasons.length === 0, reasons, slug: product.slug || null };
@@ -518,6 +525,69 @@ export async function deactivateAdminProductAction(
         `product_id=${productId}`,
       ),
     );
+  }
+
+  revalidateProductPaths(productId);
+  return true;
+}
+
+export async function syncAdminProductImagesAction(
+  productId: string,
+  images: AdminProductImageInput[],
+): Promise<boolean> {
+  await requireAdmin();
+  const supabase = await createServerSupabase();
+
+  if (!productId?.trim()) {
+    throw new Error("Thiếu product_id. Không thể lưu ảnh sản phẩm.");
+  }
+
+  const normalizedImages = images
+    .filter((image) => image.url?.trim())
+    .map((image, index) => ({
+      product_id: productId,
+      url: image.url.trim(),
+      alt_text: image.alt_text || null,
+      sort_order: image.sort_order ?? index,
+      is_primary: image.is_primary,
+    }));
+
+  if (normalizedImages.length === 0) {
+    throw new Error("Vui lòng tải ít nhất 1 ảnh sản phẩm.");
+  }
+
+  if (!normalizedImages.some((image) => image.is_primary)) {
+    normalizedImages[0].is_primary = true;
+  }
+
+  const { error: deleteError } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("product_id", productId);
+
+  if (deleteError) {
+    logSupabaseError("delete_product_images_failed", deleteError, { productId });
+    throw new Error(getSupabaseErrorMessage("Không thể cập nhật ảnh sản phẩm", deleteError));
+  }
+
+  const { error: insertError } = await supabase
+    .from("product_images")
+    .insert(normalizedImages);
+
+  if (insertError) {
+    logSupabaseError("insert_product_images_failed", insertError, { productId });
+    throw new Error(getSupabaseErrorMessage("Không thể lưu ảnh sản phẩm", insertError));
+  }
+
+  const primaryImage = normalizedImages.find((image) => image.is_primary) ?? normalizedImages[0];
+  const { error: productImageError } = await supabase
+    .from("products")
+    .update({ image: primaryImage.url, updated_at: new Date().toISOString() })
+    .eq("product_id", productId);
+
+  if (productImageError) {
+    logSupabaseError("update_product_primary_image_failed", productImageError, { productId });
+    throw new Error(getSupabaseErrorMessage("Không thể cập nhật ảnh chính của sản phẩm", productImageError));
   }
 
   revalidateProductPaths(productId);

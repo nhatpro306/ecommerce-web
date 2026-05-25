@@ -28,7 +28,7 @@ import {
 } from "@/services/admin/adminProductService";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getProductImage } from "@/utils/productImages";
-import { getActiveVariantStock, getSellableStock } from "@/utils/productVisibility";
+import { getSellableStock } from "@/utils/productVisibility";
 
 import {
   activateAdminProductAction,
@@ -51,20 +51,35 @@ function getPrimaryImage(product: ProductWithDetails) {
 
 function getVariantSummary(product: ProductWithDetails) {
   const variants = product.variants || [];
-  if (variants.length === 0) {
-    return product.sizes?.length || product.colors?.length
-      ? `${product.sizes?.length || 0} size / ${product.colors?.length || 0} màu`
-      : "Chưa có variant";
-  }
+  if (variants.length === 0) return `Tổng tồn kho: ${product.stock ?? 0}`;
   const activeVariants = variants.filter((variant) => variant.is_active !== false);
-  const colorCount = new Set(activeVariants.map((variant) => variant.color)).size;
-  const sizeCount = new Set(activeVariants.map((variant) => variant.size)).size;
+  const colorCount = new Set(activeVariants.map((variant) => variant.color).filter(Boolean)).size;
+  const sizeCount = new Set(activeVariants.map((variant) => variant.size).filter(Boolean)).size;
   return `${colorCount} màu / ${sizeCount} size`;
 }
 
-function summarizeList(values?: string[]) {
-  if (!values || values.length === 0) return "Chưa có";
-  return values.join(", ");
+function isClassifiedProduct(product: ProductWithDetails) {
+  return (product.variants || []).length > 0;
+}
+
+function getProductTypeLabel(product: ProductWithDetails) {
+  return isClassifiedProduct(product) ? "Có phân loại" : "Đơn giản";
+}
+
+function getActiveVariantCount(product: ProductWithDetails) {
+  return (product.variants || []).filter((variant) => variant.is_active !== false).length;
+}
+
+function getVariantStatusText(product: ProductWithDetails) {
+  const variants = product.variants || [];
+  if (variants.length === 0) return `Tổng tồn kho: ${product.stock ?? 0}`;
+  return `${getActiveVariantCount(product)}/${variants.length} phân loại đang bán`;
+}
+
+function hasVariantIssue(product: ProductWithDetails) {
+  if (!isClassifiedProduct(product)) return false;
+  const activeVariants = (product.variants || []).filter((variant) => variant.is_active !== false);
+  return activeVariants.length === 0 || activeVariants.some((variant) => variant.stock == null || variant.stock < 0);
 }
 
 function isVisibleOnStorefront(product: ProductWithDetails) {
@@ -277,7 +292,7 @@ export default function AdminProductsPage() {
             Quản lý sản phẩm
           </h1>
           <p className="text-zinc-500">
-            Theo dõi catalog, tồn kho variant và trạng thái bán hàng.
+            Theo dõi sản phẩm, tồn kho và trạng thái bán hàng.
           </p>
         </div>
         <Link href="/admin/products/new">
@@ -386,7 +401,8 @@ export default function AdminProductsPage() {
           const isActive = product.is_active !== false;
           const visibleOnWeb = isVisibleOnStorefront(product);
           const imageMissing = !hasImage(product);
-          const variantStock = getActiveVariantStock(product.variants);
+          const classifiedProduct = isClassifiedProduct(product);
+          const variantIssue = hasVariantIssue(product);
 
           return (
             <Card key={product.product_id} className="overflow-hidden rounded-none">
@@ -427,12 +443,22 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="text-sm text-zinc-700">
-                  <p>Size: {summarizeList(product.sizes)}</p>
-                  <p>Màu: {summarizeList(product.colors)}</p>
-                  {variantStock > 0 && <p>Tồn kho variant: {variantStock}</p>}
+                  <p>Loại: {getProductTypeLabel(product)}</p>
+                  {classifiedProduct ? (
+                    <>
+                      <p>{getVariantSummary(product)}</p>
+                      <p>{getVariantStatusText(product)}</p>
+                      <p>Tổng tồn kho: {totalStock}</p>
+                    </>
+                  ) : (
+                    <p>Tổng tồn kho: {totalStock}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <Badge className="rounded-none bg-black text-white hover:bg-black">
+                    {getProductTypeLabel(product)}
+                  </Badge>
                   <Badge className="rounded-none bg-zinc-100 text-zinc-700 hover:bg-zinc-100">
                     {getSellerStatus(product)}
                   </Badge>
@@ -442,6 +468,16 @@ export default function AdminProductsPage() {
                   {totalStock === 0 && (
                     <Badge className="rounded-none bg-zinc-950 text-white hover:bg-zinc-950">
                       Hết hàng
+                    </Badge>
+                  )}
+                  {totalStock === 0 && !classifiedProduct && (
+                    <Badge className="rounded-none bg-amber-100 text-amber-800 hover:bg-amber-100">
+                      Thiếu tồn kho
+                    </Badge>
+                  )}
+                  {variantIssue && (
+                    <Badge className="rounded-none bg-amber-100 text-amber-800 hover:bg-amber-100">
+                      Phân loại cần sửa
                     </Badge>
                   )}
                   {isLowStock && totalStock > 0 && (
@@ -518,10 +554,10 @@ export default function AdminProductsPage() {
                 <th className="px-4 py-3 font-bold">Sản phẩm</th>
                 <th className="px-4 py-3 font-bold">Danh mục</th>
                 <th className="px-4 py-3 font-bold">Giá</th>
-                <th className="px-4 py-3 font-bold">Size</th>
-                <th className="px-4 py-3 font-bold">Màu</th>
+                <th className="px-4 py-3 font-bold">Loại</th>
+                <th className="px-4 py-3 font-bold">Phân loại</th>
                 <th className="px-4 py-3 font-bold">Tồn kho</th>
-                <th className="px-4 py-3 font-bold">Variant</th>
+                <th className="px-4 py-3 font-bold">Chi tiết tồn kho</th>
                 <th className="px-4 py-3 font-bold">Trạng thái</th>
                 <th className="px-4 py-3 text-right font-bold">Thao tác</th>
               </tr>
@@ -533,6 +569,8 @@ export default function AdminProductsPage() {
                 const isActive = product.is_active !== false;
                 const imageMissing = !hasImage(product);
                 const visibleOnWeb = isVisibleOnStorefront(product);
+                const classifiedProduct = isClassifiedProduct(product);
+                const variantIssue = hasVariantIssue(product);
 
                 return (
                   <tr key={product.product_id} className="bg-white hover:bg-zinc-50">
@@ -555,7 +593,7 @@ export default function AdminProductsPage() {
                             SKU: {product.sku || product.variants?.[0]?.sku || "Chưa có"}
                           </p>
                           <p className="mt-1 line-clamp-1 text-xs text-zinc-400">
-                            {product.slug || product.product_id}
+                            {product.slug || "Chưa có URL"}
                           </p>
                         </div>
                       </div>
@@ -566,11 +604,13 @@ export default function AdminProductsPage() {
                     <td className="px-4 py-4 font-bold">
                       {formatCurrency(product.price)}
                     </td>
-                    <td className="px-4 py-4 text-zinc-600">
-                      {summarizeList(product.sizes)}
+                    <td className="px-4 py-4">
+                      <Badge className="rounded-none bg-black text-white hover:bg-black">
+                        {getProductTypeLabel(product)}
+                      </Badge>
                     </td>
                     <td className="px-4 py-4 text-zinc-600">
-                      {summarizeList(product.colors)}
+                      {classifiedProduct ? getVariantSummary(product) : "Không có màu/size riêng"}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
@@ -586,10 +626,20 @@ export default function AdminProductsPage() {
                             Hết hàng
                           </Badge>
                         )}
+                        {totalStock === 0 && !classifiedProduct && (
+                          <Badge className="rounded-none bg-amber-100 text-amber-800 hover:bg-amber-100">
+                            Thiếu tồn kho
+                          </Badge>
+                        )}
+                        {variantIssue && (
+                          <Badge className="rounded-none bg-amber-100 text-amber-800 hover:bg-amber-100">
+                            Phân loại cần sửa
+                          </Badge>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4 text-zinc-600">
-                      {getVariantSummary(product)}
+                      {getVariantStatusText(product)}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-1.5">
