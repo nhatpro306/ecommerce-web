@@ -53,6 +53,8 @@ type DashboardData = {
   recentOrders: RecentOrder[];
   attentionProducts: ProductWithDetails[];
   recentlyUpdatedProducts: ProductWithDetails[];
+  ordersError: string | null;
+  productsError: string | null;
 };
 
 type ProductIssue = {
@@ -277,72 +279,103 @@ export default function AdminDashboardClient() {
   const { adminEmail } = useAdminSession();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchAll() {
-      try {
-        setLoading(true);
-        setLoadError(null);
+      setLoading(true);
 
-        const [orderAnalytics, allProducts] = await Promise.all([
-          adminOrderService.getOrderAnalytics(),
-          adminProductService.getAllProducts({ includeReviews: false, limit: 50 }),
-        ]);
+      const startedAt =
+        typeof performance !== "undefined" ? performance.now() : Date.now();
 
-        if (cancelled) return;
+      const [orderResult, productsResult] = await Promise.allSettled([
+        adminOrderService.getOrderAnalytics(),
+        adminProductService.getAllProducts({ includeReviews: false, limit: 50 }),
+      ]);
 
-        const lowStockProducts = allProducts.filter((product) => {
-          const stock = getSellableStock(product);
-          return stock > 0 && stock <= 5;
-        });
-        const activeProducts = allProducts.filter((product) =>
-          isPubliclyVisibleProduct(product),
-        );
-        const brokenProducts = allProducts.filter(
-          (product) => !isPubliclyVisibleProduct(product),
-        );
+      if (cancelled) return;
 
-        const attentionProducts = [...brokenProducts, ...lowStockProducts]
-          .filter(
-            (product, index, list) =>
-              list.findIndex((p) => p.product_id === product.product_id) === index,
-          )
-          .slice(0, 8);
+      const durationMs = Math.round(
+        (typeof performance !== "undefined" ? performance.now() : Date.now()) -
+          startedAt,
+      );
+      console.info("[AdminDashboardClient] fetch settled", {
+        durationMs,
+        orders: orderResult.status,
+        products: productsResult.status,
+      });
 
-        const recentlyUpdatedProducts = [...allProducts]
-          .sort((a, b) => {
-            const aDate = new Date(a.updated_at || a.created_at || 0).getTime();
-            const bDate = new Date(b.updated_at || b.created_at || 0).getTime();
-            return bDate - aDate;
-          })
-          .slice(0, 5);
-
-        setData({
-          todayOrders: orderAnalytics.todayOrders,
-          todayRevenue: orderAnalytics.todayRevenue,
-          pendingOrders:
-            (orderAnalytics.ordersByStatus.pending || 0) +
-            (orderAnalytics.ordersByStatus.processing || 0),
-          activeProducts: activeProducts.length,
-          lowStockProducts: lowStockProducts.length,
-          brokenProducts: brokenProducts.length,
-          totalOrders: orderAnalytics.totalOrders,
-          totalRevenue: orderAnalytics.totalRevenue,
-          recentOrders: orderAnalytics.recentOrders.slice(0, 6) as RecentOrder[],
-          attentionProducts,
-          recentlyUpdatedProducts,
-        });
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        if (!cancelled) {
-          setLoadError("Không thể tải dữ liệu bảng điều khiển.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+      const orderAnalytics =
+        orderResult.status === "fulfilled" ? orderResult.value : null;
+      const ordersError =
+        orderResult.status === "rejected"
+          ? orderResult.reason instanceof Error
+            ? orderResult.reason.message
+            : String(orderResult.reason)
+          : null;
+      if (ordersError) {
+        console.error("[AdminDashboardClient] orders fetch failed:", ordersError);
       }
+
+      const allProducts =
+        productsResult.status === "fulfilled" ? productsResult.value : [];
+      const productsError =
+        productsResult.status === "rejected"
+          ? productsResult.reason instanceof Error
+            ? productsResult.reason.message
+            : String(productsResult.reason)
+          : null;
+      if (productsError) {
+        console.error("[AdminDashboardClient] products fetch failed:", productsError);
+      }
+
+      const lowStockProducts = allProducts.filter((product) => {
+        const stock = getSellableStock(product);
+        return stock > 0 && stock <= 5;
+      });
+      const activeProducts = allProducts.filter((product) =>
+        isPubliclyVisibleProduct(product),
+      );
+      const brokenProducts = allProducts.filter(
+        (product) => !isPubliclyVisibleProduct(product),
+      );
+
+      const attentionProducts = [...brokenProducts, ...lowStockProducts]
+        .filter(
+          (product, index, list) =>
+            list.findIndex((p) => p.product_id === product.product_id) === index,
+        )
+        .slice(0, 8);
+
+      const recentlyUpdatedProducts = [...allProducts]
+        .sort((a, b) => {
+          const aDate = new Date(a.updated_at || a.created_at || 0).getTime();
+          const bDate = new Date(b.updated_at || b.created_at || 0).getTime();
+          return bDate - aDate;
+        })
+        .slice(0, 5);
+
+      setData({
+        todayOrders: orderAnalytics?.todayOrders ?? 0,
+        todayRevenue: orderAnalytics?.todayRevenue ?? 0,
+        pendingOrders:
+          (orderAnalytics?.ordersByStatus.pending || 0) +
+          (orderAnalytics?.ordersByStatus.processing || 0),
+        activeProducts: activeProducts.length,
+        lowStockProducts: lowStockProducts.length,
+        brokenProducts: brokenProducts.length,
+        totalOrders: orderAnalytics?.totalOrders ?? 0,
+        totalRevenue: orderAnalytics?.totalRevenue ?? 0,
+        recentOrders: (orderAnalytics?.recentOrders.slice(0, 6) ?? []) as RecentOrder[],
+        attentionProducts,
+        recentlyUpdatedProducts,
+        ordersError,
+        productsError,
+      });
+
+      setLoading(false);
     }
 
     fetchAll();
@@ -350,7 +383,7 @@ export default function AdminDashboardClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const displayName = adminEmail ? adminEmail.split("@")[0] : "Admin RESEY";
 
@@ -364,14 +397,14 @@ export default function AdminDashboardClient() {
     );
   }
 
-  if (loadError || !data) {
+  if (!data) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-14 text-center">
         <h1 className="text-2xl font-black uppercase">Không thể tải dashboard</h1>
-        <p className="mt-3 text-zinc-600">{loadError || "Vui lòng thử lại sau."}</p>
+        <p className="mt-3 text-zinc-600">Vui lòng thử lại sau.</p>
         <Button
           className="mt-6 rounded-none bg-zinc-950 text-white hover:bg-zinc-800"
-          onClick={() => window.location.reload()}
+          onClick={() => setReloadKey((k) => k + 1)}
         >
           Tải lại
         </Button>
@@ -421,6 +454,49 @@ export default function AdminDashboardClient() {
           </Link>
         </div>
       </header>
+
+      {(data.ordersError || data.productsError) && (
+        <div className="space-y-2">
+          {data.productsError && (
+            <div className="flex items-start gap-3 border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+              <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-bold">Không tải được dữ liệu sản phẩm</p>
+                <p className="mt-1 text-xs text-rose-700 break-all">
+                  {data.productsError}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 rounded-none border-rose-300 text-rose-800 hover:bg-rose-100"
+                onClick={() => setReloadKey((k) => k + 1)}
+              >
+                Thử lại
+              </Button>
+            </div>
+          )}
+          {data.ordersError && (
+            <div className="flex items-start gap-3 border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-bold">Không tải được dữ liệu đơn hàng</p>
+                <p className="mt-1 text-xs text-amber-700 break-all">
+                  {data.ordersError}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 rounded-none border-amber-300 text-amber-800 hover:bg-amber-100"
+                onClick={() => setReloadKey((k) => k + 1)}
+              >
+                Thử lại
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPI cards */}
       <section
