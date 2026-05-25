@@ -57,7 +57,7 @@ export function OrderStatusChart({ orders }: OrderStatusChartProps) {
       labels,
       datasets: [
         {
-          label: "Orders",
+          label: "Đơn hàng",
           data,
           backgroundColor: [
             "rgba(75, 192, 192, 0.5)", // Delivered
@@ -88,7 +88,7 @@ export function OrderStatusChart({ orders }: OrderStatusChartProps) {
       },
       title: {
         display: true,
-        text: "Order Status Distribution",
+        text: "Phân bổ trạng thái đơn hàng",
         font: {
           size: 16,
         },
@@ -100,7 +100,7 @@ export function OrderStatusChart({ orders }: OrderStatusChartProps) {
   if (!orders || orders.length === 0) {
     return (
       <div className="bg-muted/10 flex h-64 items-center justify-center rounded-lg border">
-        <p className="text-muted-foreground">No order status data available</p>
+        <p className="text-muted-foreground">Chưa có dữ liệu trạng thái đơn hàng</p>
       </div>
     );
   }

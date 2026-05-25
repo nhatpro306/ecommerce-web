@@ -169,10 +169,14 @@ export function useSupabaseAuth() {
     try {
       setLoading(true);
 
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: "global" });
 
       if (error) {
-        throw error;
+        // Fallback: clear local session even if global sign-out endpoint fails.
+        const { error: localError } = await supabase.auth.signOut({ scope: "local" });
+        if (localError) {
+          throw localError;
+        }
       }
 
       setUser(null);
