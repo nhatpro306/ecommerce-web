@@ -58,7 +58,7 @@ export function PaymentDistributionChart({
       labels,
       datasets: [
         {
-          label: "Payment Amount ($)",
+          label: "Doanh thu theo phương thức (₫)",
           data,
           backgroundColor: [
             "rgba(255, 99, 132, 0.5)",
@@ -91,7 +91,7 @@ export function PaymentDistributionChart({
       },
       title: {
         display: true,
-        text: "Payment Distribution",
+        text: "Phân bổ phương thức thanh toán",
         font: {
           size: 16,
         },
@@ -102,7 +102,7 @@ export function PaymentDistributionChart({
   if (!orders || orders.length === 0) {
     return (
       <div className="bg-muted/10 flex h-64 items-center justify-center rounded-lg border">
-        <p className="text-muted-foreground">No payment data available</p>
+        <p className="text-muted-foreground">Chưa có dữ liệu thanh toán</p>
       </div>
     );
   }

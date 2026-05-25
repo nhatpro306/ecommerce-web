@@ -63,6 +63,8 @@ export interface OrderAnalytics {
   ordersByStatus: Record<string, number>;
   recentOrders: OrderWithDetails[];
   topCustomers: CustomerStat[];
+  todayOrders: number;
+  todayRevenue: number;
 }
 
 function applyOrderFilters<T extends { eq: Function; gte: Function; lte: Function }>(
@@ -465,6 +467,18 @@ export const adminOrderService = {
       );
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const todayOrdersList = allOrders.filter((order) => {
+        if (!order.created_at) return false;
+        return new Date(order.created_at).getTime() >= startOfToday.getTime();
+      });
+      const todayOrders = todayOrdersList.length;
+      const todayRevenue = todayOrdersList.reduce(
+        (sum, order) => sum + Number(order.total || 0),
+        0,
+      );
+
       const ordersByStatus = allOrders.reduce(
         (acc, order) => {
           acc[order.status] = (acc[order.status] || 0) + 1;
@@ -508,6 +522,8 @@ export const adminOrderService = {
         ordersByStatus,
         recentOrders,
         topCustomers,
+        todayOrders,
+        todayRevenue: Number(todayRevenue.toFixed(2)),
       };
     } catch (err) {
       console.error("Failed to get order analytics:", err);
@@ -518,6 +534,8 @@ export const adminOrderService = {
         ordersByStatus: {},
         recentOrders: [],
         topCustomers: [],
+        todayOrders: 0,
+        todayRevenue: 0,
       };
     }
   },

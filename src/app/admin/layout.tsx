@@ -53,6 +53,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/signin");
+    router.refresh();
+  };
 
   if (loading) {
     return (
@@ -139,7 +144,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   {t("admin.backStorefront")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
+                <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {t("nav.signOut")}
                 </DropdownMenuItem>
