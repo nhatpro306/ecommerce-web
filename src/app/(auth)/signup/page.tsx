@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import SignUpForm from "./SignUpForm";
 import {
@@ -56,7 +57,9 @@ export default function SignUp() {
               Tạo tài khoản mới bằng email và mật khẩu.
             </CardDescription>
           </CardHeader>
-          <SignUpForm />
+          <Suspense fallback={null}>
+            <SignUpForm />
+          </Suspense>
         </Card>
       </div>
     </div>

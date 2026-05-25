@@ -97,6 +97,11 @@ function parseList(value: string) {
     .filter(Boolean);
 }
 
+function looksLikeTestProduct(title: string, description: string) {
+  const text = `${title} ${description}`.toLowerCase();
+  return /(test|demo|sample|mock|aaa|123)/.test(text);
+}
+
 function buildInitialVariants(product?: ProductWithDetails | null): VariantDraft[] {
   if (!product) return [defaultVariant()];
 
@@ -239,6 +244,27 @@ export function ProductFormModal({
 
     if (variants.length === 0) {
       newErrors.variants = "Cần ít nhất một variant size/màu";
+    }
+
+    if (formData.is_active) {
+      if (formData.category_id === "no-category") {
+        newErrors.category_id = "Vui lòng chọn danh mục.";
+      }
+      const hasAnyImage =
+        selectedFiles.length > 0 || !!formData.image.trim() || !!product?.images?.[0]?.url;
+      if (!hasAnyImage) {
+        newErrors.imageFiles = "Vui lòng tải ít nhất 1 ảnh sản phẩm.";
+      }
+
+      const hasStock =
+        variants.reduce((sum, variant) => sum + Math.max(0, Number.parseInt(variant.stock || "0", 10) || 0), 0) > 0;
+      if (!hasStock) {
+        newErrors.stock = "Vui lòng nhập tồn kho hoặc tạo biến thể.";
+      }
+
+      if (looksLikeTestProduct(formData.title, formData.description)) {
+        newErrors.submit = "Không thể đăng bán sản phẩm test/demo.";
+      }
     }
 
     const variantKeys = new Set<string>();
@@ -641,6 +667,9 @@ export function ProductFormModal({
                     Tải lại danh mục
                   </Button>
                 )}
+                {errors.category_id && (
+                  <p className="mt-1 text-sm text-rose-600">{errors.category_id}</p>
+                )}
               </div>
             </div>
 
@@ -681,6 +710,7 @@ export function ProductFormModal({
               />
               Hiển thị sản phẩm trên storefront
             </label>
+            {errors.stock && <p className="text-sm text-rose-600">{errors.stock}</p>}
           </section>
 
           <section className="space-y-4 rounded-2xl border border-zinc-200 p-5">

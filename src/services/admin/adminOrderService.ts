@@ -63,6 +63,8 @@ export interface OrderAnalytics {
   ordersByStatus: Record<string, number>;
   recentOrders: OrderWithDetails[];
   topCustomers: CustomerStat[];
+  todayOrders: number;
+  todayRevenue: number;
 }
 
 function applyOrderFilters<T extends { eq: Function; gte: Function; lte: Function }>(
@@ -439,59 +441,120 @@ export const adminOrderService = {
 
   async getOrderAnalytics(): Promise<OrderAnalytics> {
     try {
-      const { data: orders, error } = await supabase
-        .from("orders")
-        .select(
-          `
-          *,
-          profiles (
-            username,
-            email
-          )
-        `,
-        )
-        .order("created_at", { ascending: false });
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const todayIso = startOfToday.toISOString();
 
-      if (error) {
-        console.error("Error fetching orders for analytics:", error);
-        throw error;
+      const [
+        totalCountResult,
+        totalRevenueResult,
+        todayOrdersResult,
+        statusRowsResult,
+        recentOrdersResult,
+        customerRowsResult,
+      ] = await Promise.all([
+        supabase.from("orders").select("*", { count: "exact", head: true }),
+        supabase.from("orders").select("total"),
+        supabase.from("orders").select("total").gte("created_at", todayIso),
+        supabase.from("orders").select("status"),
+        supabase
+          .from("orders")
+          .select(
+            `
+            id,
+            status,
+            total,
+            created_at,
+            payment_method,
+            customer_name,
+            customer_phone,
+            user_id,
+            profiles (
+              username,
+              email
+            )
+          `,
+          )
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("orders")
+          .select(
+            `
+            user_id,
+            total,
+            profiles (
+              username,
+              email
+            )
+          `,
+          ),
+      ]);
+
+      if (
+        totalCountResult.error ||
+        totalRevenueResult.error ||
+        todayOrdersResult.error ||
+        statusRowsResult.error ||
+        recentOrdersResult.error ||
+        customerRowsResult.error
+      ) {
+        const firstError =
+          totalCountResult.error ||
+          totalRevenueResult.error ||
+          todayOrdersResult.error ||
+          statusRowsResult.error ||
+          recentOrdersResult.error ||
+          customerRowsResult.error;
+        console.error("Error fetching orders for analytics:", firstError);
+        throw firstError;
       }
 
-      const allOrders = orders || [];
-      const totalOrders = allOrders.length;
-      const totalRevenue = allOrders.reduce(
-        (sum, order) => sum + order.total,
+      const totalOrders = totalCountResult.count || 0;
+      const totalRevenue = (totalRevenueResult.data || []).reduce(
+        (sum, order) => sum + Number(order.total || 0),
         0,
       );
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      const ordersByStatus = allOrders.reduce(
+      const todayOrdersList = todayOrdersResult.data || [];
+      const todayOrders = todayOrdersList.length;
+      const todayRevenue = todayOrdersList.reduce(
+        (sum, order) => sum + Number(order.total || 0),
+        0,
+      );
+
+      const ordersByStatus = (statusRowsResult.data || []).reduce(
         (acc, order) => {
-          acc[order.status] = (acc[order.status] || 0) + 1;
+          const status = order.status || "unknown";
+          acc[status] = (acc[status] || 0) + 1;
           return acc;
         },
         {} as Record<string, number>,
       );
 
-      const recentOrders = allOrders.slice(0, 10).map((order) => ({
+      const recentOrders = (recentOrdersResult.data || []).map((order) => ({
         ...order,
         profile: order.profiles,
-      }));
+      })) as unknown as OrderWithDetails[];
 
-      const customerStats = allOrders.reduce<Record<string, CustomerStat>>(
+      const customerStats = (customerRowsResult.data || []).reduce<Record<string, CustomerStat>>(
         (acc, order) => {
-          const userId = order.user_id;
+          const userId = order.user_id || "guest";
+          const profile = Array.isArray(order.profiles)
+            ? order.profiles[0]
+            : order.profiles;
           if (!acc[userId]) {
             acc[userId] = {
               userId,
-              username: order.profiles?.username || "Unknown",
-              email: order.profiles?.email || "Unknown",
+              username: profile?.username || "Unknown",
+              email: profile?.email || "Unknown",
               totalOrders: 0,
               totalSpent: 0,
             };
           }
           acc[userId].totalOrders += 1;
-          acc[userId].totalSpent += order.total;
+          acc[userId].totalSpent += Number(order.total || 0);
           return acc;
         },
         {},
@@ -508,6 +571,8 @@ export const adminOrderService = {
         ordersByStatus,
         recentOrders,
         topCustomers,
+        todayOrders,
+        todayRevenue: Number(todayRevenue.toFixed(2)),
       };
     } catch (err) {
       console.error("Failed to get order analytics:", err);
@@ -518,6 +583,8 @@ export const adminOrderService = {
         ordersByStatus: {},
         recentOrders: [],
         topCustomers: [],
+        todayOrders: 0,
+        todayRevenue: 0,
       };
     }
   },

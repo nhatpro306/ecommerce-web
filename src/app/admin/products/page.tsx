@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Edit,
@@ -24,7 +23,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   adminProductService,
-  CreateProductData,
   ProductWithDetails,
   UpdateProductData,
 } from "@/services/admin/adminProductService";
@@ -34,7 +32,6 @@ import { getActiveVariantStock, getSellableStock } from "@/utils/productVisibili
 
 import {
   activateAdminProductAction,
-  createAdminProductAction,
   deactivateAdminProductAction,
   deleteAdminProductAction,
   updateAdminProductAction,
@@ -59,9 +56,10 @@ function getVariantSummary(product: ProductWithDetails) {
       ? `${product.sizes?.length || 0} size / ${product.colors?.length || 0} màu`
       : "Chưa có variant";
   }
-
-  const activeCount = variants.filter((variant) => variant.is_active).length;
-  return `${activeCount}/${variants.length} variant đang bán`;
+  const activeVariants = variants.filter((variant) => variant.is_active !== false);
+  const colorCount = new Set(activeVariants.map((variant) => variant.color)).size;
+  const sizeCount = new Set(activeVariants.map((variant) => variant.size)).size;
+  return `${colorCount} màu / ${sizeCount} size`;
 }
 
 function summarizeList(values?: string[]) {
@@ -77,8 +75,20 @@ function hasImage(product: ProductWithDetails) {
   return Boolean(product.images?.[0]?.url || product.image);
 }
 
+function getSellerStatus(product: ProductWithDetails) {
+  const imageMissing = !hasImage(product);
+  const categoryMissing = !product.category?.name;
+  const stock = getSellableStock(product);
+  const isActive = product.is_active !== false;
+
+  if (categoryMissing || imageMissing) return "Cần sửa";
+  if (!isActive && stock > 0) return "Nháp";
+  if (!isActive) return "Tạm ẩn";
+  if (stock <= 0) return "Hết hàng";
+  return "Đang bán";
+}
+
 export default function AdminProductsPage() {
-  const searchParams = useSearchParams();
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,7 +96,6 @@ export default function AdminProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("newest");
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithDetails | null>(null);
   const [hidingProduct, setHidingProduct] =
@@ -98,12 +107,6 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, []);
 
-  useEffect(() => {
-    if (searchParams.get("create") === "1") {
-      setShowCreateModal(true);
-    }
-  }, [searchParams]);
-
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -114,22 +117,6 @@ export default function AdminProductsPage() {
       toast.error("Không thể tải sản phẩm");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreateProduct = async (productData: CreateProductData) => {
-    try {
-      const createdProduct = await createAdminProductAction(productData);
-      fetchProducts();
-      return createdProduct;
-    } catch (error) {
-      console.error("Error creating product:", error);
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Không thể tạo sản phẩm";
-      toast.error(message);
-      throw error instanceof Error ? error : new Error(message);
     }
   };
 
@@ -293,13 +280,12 @@ export default function AdminProductsPage() {
             Theo dõi catalog, tồn kho variant và trạng thái bán hàng.
           </p>
         </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="h-11 cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.16em] text-white hover:bg-zinc-800"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Thêm sản phẩm
-        </Button>
+        <Link href="/admin/products/new">
+          <Button className="h-11 cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.16em] text-white hover:bg-zinc-800">
+            <Plus className="mr-2 h-4 w-4" />
+            Thêm sản phẩm mới
+          </Button>
+        </Link>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -447,6 +433,9 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <Badge className="rounded-none bg-zinc-100 text-zinc-700 hover:bg-zinc-100">
+                    {getSellerStatus(product)}
+                  </Badge>
                   <Badge className={isActive ? "rounded-none bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : "rounded-none bg-zinc-200 text-zinc-700 hover:bg-zinc-200"}>
                     {isActive ? "Đang bán" : "Đang ẩn"}
                   </Badge>
@@ -463,6 +452,11 @@ export default function AdminProductsPage() {
                   {imageMissing && (
                     <Badge className="rounded-none bg-rose-100 text-rose-700 hover:bg-rose-100">
                       Thiếu ảnh
+                    </Badge>
+                  )}
+                  {!product.category?.name && (
+                    <Badge className="rounded-none bg-amber-100 text-amber-700 hover:bg-amber-100">
+                      Chưa có danh mục
                     </Badge>
                   )}
                   {!visibleOnWeb && (
@@ -599,6 +593,9 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-1.5">
+                        <Badge className="rounded-none bg-zinc-100 text-zinc-700 hover:bg-zinc-100">
+                          {getSellerStatus(product)}
+                        </Badge>
                         <Badge
                           className={
                             isActive
@@ -611,6 +608,11 @@ export default function AdminProductsPage() {
                         {imageMissing && (
                           <Badge className="rounded-none bg-rose-100 text-rose-700 hover:bg-rose-100">
                             Thiếu ảnh
+                          </Badge>
+                        )}
+                        {!product.category?.name && (
+                          <Badge className="rounded-none bg-amber-100 text-amber-700 hover:bg-amber-100">
+                            Chưa có danh mục
                           </Badge>
                         )}
                         {!visibleOnWeb && (
@@ -686,21 +688,16 @@ export default function AdminProductsPage() {
                 : "Bắt đầu bằng cách thêm sản phẩm đầu tiên."}
             </p>
             {!searchTerm && categoryFilter === "all" && !lowStockOnly && (
-              <Button onClick={() => setShowCreateModal(true)} className="rounded-none">
-                <Plus className="mr-2 h-4 w-4" />
-                Thêm sản phẩm
-              </Button>
+              <Link href="/admin/products/new">
+                <Button className="rounded-none">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Thêm sản phẩm mới
+                </Button>
+              </Link>
             )}
           </CardContent>
         </Card>
       )}
-
-      <ProductFormModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateProduct}
-        title="Tạo sản phẩm mới"
-      />
 
       <ProductFormModal
         isOpen={!!editingProduct}

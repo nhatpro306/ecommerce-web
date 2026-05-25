@@ -32,6 +32,11 @@ export interface ProductWithDetails extends ProductType {
   average_rating?: number;
 }
 
+interface GetAllProductsOptions {
+  includeReviews?: boolean;
+  limit?: number;
+}
+
 /**
  * Admin service for product reads. Mutations are routed through server actions
  * so admin permissions are enforced server-side.
@@ -42,9 +47,11 @@ export const adminProductService = {
    * Variant/image reads are best-effort so older databases still load until the
    * inventory migration is applied.
    */
-  async getAllProducts(): Promise<ProductWithDetails[]> {
+  async getAllProducts(options: GetAllProductsOptions = {}): Promise<ProductWithDetails[]> {
     try {
-      const { data, error } = await supabase
+      const { includeReviews = true, limit } = options;
+
+      let query = supabase
         .from("products")
         .select(
           `
@@ -52,10 +59,21 @@ export const adminProductService = {
           categories!products_category_id_fkey (
             id,
             name
+          ),
+          product_images (
+            *
+          ),
+          product_variants (
+            *
           )
         `,
         )
         .order("created_at", { ascending: false });
+      if (limit && limit > 0) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching all products:", error);
@@ -65,20 +83,17 @@ export const adminProductService = {
       const products = data || [];
       const productIds = products.map((product) => product.product_id);
 
-      const [variantsByProduct, imagesByProduct, reviewsByProduct] =
-        await Promise.all([
-          this.getVariantsByProduct(productIds),
-          this.getImagesByProduct(productIds),
-          this.getReviewStatsByProduct(productIds),
-        ]);
+      const reviewsByProduct = includeReviews
+        ? await this.getReviewStatsByProduct(productIds)
+        : {};
 
       return products.map((product) => {
         const reviewStats = reviewsByProduct[product.product_id];
         return {
           ...product,
           category: product.categories,
-          images: imagesByProduct[product.product_id] || [],
-          variants: variantsByProduct[product.product_id] || [],
+          images: product.product_images || [],
+          variants: product.product_variants || [],
           total_reviews: reviewStats?.total ?? 0,
           average_rating: reviewStats?.average ?? 0,
         };

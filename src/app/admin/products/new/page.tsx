@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import AdminProductCreatePageClient from "@/components/admin/AdminProductCreatePageClient";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 
-export default function AdminProductCreateRedirectPage() {
-  redirect("/admin/products?create=1");
+export default async function AdminProductCreatePage() {
+  await requireAdmin();
+  return <AdminProductCreatePageClient />;
 }

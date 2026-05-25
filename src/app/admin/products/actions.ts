@@ -102,6 +102,75 @@ function revalidateProductPaths(slugOrId?: string) {
   }
 }
 
+function looksLikeTestProduct(title?: string | null, description?: string | null) {
+  const text = `${title || ""} ${description || ""}`.toLowerCase();
+  return /(test|demo|sample|mock|aaa|123)/.test(text);
+}
+
+async function getPublishReadiness(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  productId: string,
+) {
+  const reasons: string[] = [];
+
+  const { data: product, error: productError } = await supabase
+    .from("products")
+    .select("product_id,title,description,price,stock,category_id,is_active,slug")
+    .eq("product_id", productId)
+    .maybeSingle();
+
+  if (productError || !product) {
+    return {
+      ok: false,
+      reasons: ["Khong th? t?i thong tin s?n ph?m ?? ki?m tra ??ng ban."],
+      slug: null as string | null,
+    };
+  }
+
+  if (!product.title?.trim()) reasons.push("Vui long nh?p ten s?n ph?m.");
+  if (!product.category_id) reasons.push("Vui long ch?n danh m?c.");
+  if (!(Number(product.price) > 0)) reasons.push("Vui long nh?p gia ban h?p l?.");
+  if (looksLikeTestProduct(product.title, product.description)) {
+    reasons.push("Khong th? ??ng ban s?n ph?m test/demo.");
+  }
+
+  const { data: images, error: imageError } = await supabase
+    .from("product_images")
+    .select("id,is_primary")
+    .eq("product_id", productId);
+  if (imageError || !images || images.length === 0) {
+    reasons.push("Vui long t?i it nh?t 1 ?nh s?n ph?m.");
+  } else if (!images.some((image) => image.is_primary)) {
+    reasons.push("Vui long ch?n ?nh chinh cho s?n ph?m.");
+  }
+
+  const { data: variants, error: variantError } = await supabase
+    .from("product_variants")
+    .select("stock,is_active")
+    .eq("product_id", productId);
+
+  if (variantError && !isMissingVariantTableError(variantError)) {
+    reasons.push("Khong th? ki?m tra bi?n th? s?n ph?m.");
+  }
+
+  const activeVariantStock = (variants || [])
+    .filter((variant) => variant.is_active !== false)
+    .reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
+
+  const sellableStock = variants && variants.length > 0 ? activeVariantStock : Number(product.stock || 0);
+  if (!(sellableStock > 0)) {
+    reasons.push("Vui long nh?p t?n kho ho?c t?o bi?n th?.");
+  }
+
+  return { ok: reasons.length === 0, reasons, slug: product.slug || null };
+}
+
+export async function validateProductPublishReadinessAction(productId: string) {
+  await requireAdmin();
+  const supabase = await createServerSupabase();
+  return getPublishReadiness(supabase, productId);
+}
+
 export async function createAdminProductAction(
   productData: CreateProductData,
 ): Promise<ProductType> {
@@ -110,7 +179,7 @@ export async function createAdminProductAction(
 
   const insertPayload = {
     ...productData,
-    is_active: productData.is_active ?? true,
+    is_active: productData.is_active ?? false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -133,6 +202,17 @@ export async function createAdminProductAction(
     throw new Error(
       getSupabaseErrorMessage("Không thể tạo sản phẩm", error),
     );
+  }
+
+  if (insertPayload.is_active) {
+    const readiness = await getPublishReadiness(supabase, data.product_id);
+    if (!readiness.ok) {
+      await supabase
+        .from("products")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("product_id", data.product_id);
+      throw new Error(readiness.reasons.join(" "));
+    }
   }
 
   revalidateProductPaths(data?.slug || data?.product_id);
@@ -179,6 +259,17 @@ export async function updateAdminProductAction(
         `product_id=${productId}`,
       ),
     );
+  }
+
+  if (updatePayload.is_active === true) {
+    const readiness = await getPublishReadiness(supabase, productId);
+    if (!readiness.ok) {
+      await supabase
+        .from("products")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("product_id", productId);
+      throw new Error(readiness.reasons.join(" "));
+    }
   }
 
   revalidateProductPaths(data?.slug || productId);
@@ -441,6 +532,11 @@ export async function activateAdminProductAction(
 
   if (!productId?.trim()) {
     throw new Error("Thiếu product_id. Không thể bật sản phẩm.");
+  }
+
+  const readiness = await getPublishReadiness(supabase, productId);
+  if (!readiness.ok) {
+    throw new Error(readiness.reasons.join(" "));
   }
 
   const { error } = await supabase

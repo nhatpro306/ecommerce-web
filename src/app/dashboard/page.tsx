@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useProducts, useOrders } from "@/hooks/queries";
@@ -13,9 +15,17 @@ import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdmin();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     "analytics" | "products" | "orders"
   >("analytics");
+
+  useEffect(() => {
+    if (!adminLoading && isAdmin) {
+      router.replace("/admin");
+    }
+  }, [adminLoading, isAdmin, router]);
 
   // Use query hooks instead of manual state management
   const {
