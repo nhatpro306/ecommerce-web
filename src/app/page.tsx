@@ -32,7 +32,7 @@ export default async function Home() {
   ];
 
   const heroBadge = settings.hero_badge_text || "RESEY / Bộ sưu tập mới";
-  const heroTitle = settings.hero_title || "Phong cách phố";
+  const heroTitle = settings.hero_title || "PHONG CÁCH PHỐ";
   const heroTitleLine2 = settings.slogan || "Dấu ấn riêng.";
   const heroSubtitle =
     settings.hero_subtitle ||

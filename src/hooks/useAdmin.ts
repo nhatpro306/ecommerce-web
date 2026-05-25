@@ -44,9 +44,20 @@ export function useAdmin(): AdminData {
           if (queryError.code === "PGRST116") {
             setIsAdmin(false);
           } else {
-            console.error("Error checking admin status:", queryError);
-            setError("Failed to verify admin status");
-            setIsAdmin(false);
+            // Fallback to profiles table when admin_users view is unavailable.
+            const { data: profile, error: profileError } = await supabase
+              .from("profiles")
+              .select("role, is_active")
+              .eq("profile_id", user.id)
+              .maybeSingle();
+
+            if (!profileError && profile?.role === "admin" && profile?.is_active !== false) {
+              setIsAdmin(true);
+            } else {
+              console.error("Error checking admin status:", queryError, profileError);
+              setError("Failed to verify admin status");
+              setIsAdmin(false);
+            }
           }
         } else {
           // User found in admin_users view

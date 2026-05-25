@@ -117,9 +117,9 @@ export default function CartShoppingPage() {
                   <span>{t("cart.shippingFee")}</span>
                   <span>{t("cart.freeShipping")}</span>
                 </div>
-                <div className="flex justify-between border-t border-zinc-200 pt-4 text-lg font-black">
+                <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-4 text-lg font-black">
                   <span>{t("checkout.total")}</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                  <span className="text-right">{formatCurrency(subtotal)}</span>
                 </div>
               </div>
               <Link href={user ? "/checkout" : "/signin"}>

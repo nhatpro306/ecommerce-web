@@ -20,15 +20,22 @@ const benefits: [string, string][] = [
   ["Local brand Việt", "thiết kế cho nhịp sống phố"],
 ];
 
-const stores: string[] = ["Cửa hàng online chính thức"];
+const channels: string[] = [
+  "Cửa hàng online chính thức",
+  "Đặt hàng qua website 24/7",
+  "Hỗ trợ qua email & mạng xã hội",
+];
 
 async function getPublicStoreContact() {
+  const envHotline = process.env.NEXT_PUBLIC_HOTLINE?.trim();
+  const hotlineFallback = envHotline || "";
+
   try {
     const supabase = createPublicServerSupabase();
     const { data } = await withServerTimeout(
       supabase
         .from("store_settings")
-        .select("contact_email, contact_phone")
+        .select("contact_email, contact_phone, instagram_url, tiktok_url")
         .eq("id", 1)
         .maybeSingle(),
       3000,
@@ -37,13 +44,19 @@ async function getPublicStoreContact() {
 
     return {
       email: data?.contact_email?.trim() || "support@resey.uk",
-      phone: data?.contact_phone?.trim() || "Đang cập nhật",
+      phone: data?.contact_phone?.trim() || hotlineFallback,
+      instagram: data?.instagram_url?.trim() || "",
+      tiktok: data?.tiktok_url?.trim() || "",
+      zalo: data?.contact_phone?.trim() || hotlineFallback,
     };
   } catch (error) {
     void error;
     return {
       email: "support@resey.uk",
-      phone: "Đang cập nhật",
+      phone: hotlineFallback,
+      instagram: "",
+      tiktok: "",
+      zalo: hotlineFallback,
     };
   }
 }
@@ -81,8 +94,33 @@ export async function SiteFooter() {
             </p>
 
             <div className="mt-4 space-y-1 text-sm text-zinc-600">
-              <p>Hotline: {contact.phone}</p>
-              <p>Email: {contact.email}</p>
+              {contact.phone ? (
+                <p>
+                  Hotline:{" "}
+                  <a
+                    href={`tel:${contact.phone.replace(/[^0-9+]/g, "")}`}
+                    className="font-semibold text-zinc-900 underline-offset-4 hover:underline"
+                  >
+                    {contact.phone}
+                  </a>
+                </p>
+              ) : (
+                <p>Hỗ trợ qua email — phản hồi trong giờ hành chính.</p>
+              )}
+              <p>
+                Email:{" "}
+                <a
+                  href={`mailto:${contact.email}`}
+                  className="font-semibold text-zinc-900 underline-offset-4 hover:underline"
+                >
+                  {contact.email}
+                </a>
+              </p>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold uppercase tracking-[0.12em]">
+              {contact.instagram ? <Link href={contact.instagram} target="_blank" rel="noreferrer" className="hover:text-zinc-600">Instagram</Link> : null}
+              {contact.tiktok ? <Link href={contact.tiktok} target="_blank" rel="noreferrer" className="hover:text-zinc-600">TikTok</Link> : null}
+              {contact.zalo ? <span className="text-zinc-500">Zalo: {contact.zalo}</span> : null}
             </div>
           </div>
 
@@ -104,12 +142,12 @@ export async function SiteFooter() {
 
           <div>
             <h3 className="text-sm font-bold uppercase tracking-[0.18em]">
-              Hệ thống cửa hàng
+              Kênh bán hàng
             </h3>
 
             <ul className="mt-4 space-y-2 text-sm text-zinc-600">
-              {stores.map((store) => (
-                <li key={store}>{store}</li>
+              {channels.map((channel) => (
+                <li key={channel}>{channel}</li>
               ))}
             </ul>
           </div>

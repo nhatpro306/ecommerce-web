@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -54,12 +53,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
-
-  useEffect(() => {
-    if (!loading && !isAdmin) {
-      router.push("/dashboard");
-    }
-  }, [isAdmin, loading, router]);
 
   if (loading) {
     return (
