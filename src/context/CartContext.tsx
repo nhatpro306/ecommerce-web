@@ -10,7 +10,6 @@ import { ProductType } from '../types';
 import * as cartService from '@/services/cart/cartService';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
-import { isPubliclyVisibleProduct } from '@/utils/productVisibility';
 
 const LOCAL_CART_STORAGE_KEY = 'resey-local-cart';
 const UUID_PATTERN =
@@ -92,54 +91,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [activeCartId, setActiveCartId] = useState<number | null>(null);
   const { user } = useAuth();
 
-  const addToLocalCart = (
-    product: ProductType,
-    quantity: number,
-    selectedSize: string | null,
-    selectedColor: string | null,
-    selectedVariantId: string | null,
-    selectedSku: string | null,
-    targetKey: string
-  ) => {
-    setCartItems((previousItems) => {
-      const existingItemIndex = previousItems.findIndex(
-        (item) =>
-          getCartItemKey(
-            item.product_id,
-            item.selected_size,
-            item.selected_color
-          ) === targetKey
-      );
-
-      const nextItems =
-        existingItemIndex === -1
-          ? [
-              ...previousItems,
-              {
-                ...product,
-                quantity,
-                variant_id: selectedVariantId,
-                selected_size: selectedSize,
-                selected_color: selectedColor,
-                variant_info: {
-                  size: selectedSize,
-                  color: selectedColor,
-                  sku: selectedSku,
-                  localCart: true,
-                },
-              },
-            ]
-          : previousItems.map((item, index) =>
-              index === existingItemIndex
-                ? { ...item, quantity: item.quantity + quantity }
-                : item
-            );
-
-      writeLocalCart(nextItems);
-      return nextItems;
-    });
-  };
-
   // Load cart from database when user changes
   useEffect(() => {
     async function loadCart() {
@@ -153,7 +104,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       try {
-        const cart = await cartService.getOrCreateCart({ userId: user.id });
+        // Fetch existing active cart only — do NOT create one on page load.
+        // Cart is created lazily when the user first calls addToCart.
+        const cart = await cartService.getActiveCart();
         if (cart) {
           setActiveCartId(cart.id);
 
@@ -196,7 +149,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('Error loading cart:', error);
-        toast.error('Không thể tải giỏ hàng của bạn');
+        // Do not block the page — cart count starts at 0 and will sync on next interaction
       } finally {
         setIsLoading(false);
       }
@@ -235,7 +188,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const selectedVariantId = options?.variantId ?? null;
     const selectedSku = options?.sku ?? product.sku ?? null;
     const shouldUseLocalCart = !user || !isSupabaseProductId(product.product_id);
-    const isVisibleProduct = isPubliclyVisibleProduct(product);
 
     const targetKey = getCartItemKey(product.product_id, selectedSize, selectedColor);
     const existingQuantity = cartItems
@@ -245,11 +197,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
           targetKey
       )
       .reduce((total, item) => total + item.quantity, 0);
-
-    if (!isVisibleProduct) {
-      toast.error('Sản phẩm hiện không khả dụng để thêm vào giỏ');
-      return false;
-    }
 
     if (product.stock <= 0) {
       toast.error('Sản phẩm đã hết hàng');
@@ -262,22 +209,50 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     if (shouldUseLocalCart) {
-      addToLocalCart(
-        product,
-        quantity,
-        selectedSize,
-        selectedColor,
-        selectedVariantId,
-        selectedSku,
-        targetKey
-      );
+      setCartItems((previousItems) => {
+        const existingItemIndex = previousItems.findIndex(
+          (item) =>
+            getCartItemKey(
+              item.product_id,
+              item.selected_size,
+              item.selected_color
+            ) === targetKey
+        );
+
+        const nextItems =
+          existingItemIndex === -1
+            ? [
+                ...previousItems,
+                {
+                  ...product,
+                  quantity,
+                  variant_id: selectedVariantId,
+                  selected_size: selectedSize,
+                  selected_color: selectedColor,
+                  variant_info: {
+                    size: selectedSize,
+                    color: selectedColor,
+                    sku: selectedSku,
+                    localCart: true,
+                  },
+                },
+              ]
+            : previousItems.map((item, index) =>
+                index === existingItemIndex
+                  ? { ...item, quantity: item.quantity + quantity }
+                  : item
+              );
+
+        writeLocalCart(nextItems);
+        return nextItems;
+      });
         toast.success('Đã thêm vào giỏ');
         return true;
       }
 
     let cartId = activeCartId;
     if (!cartId) {
-      const cart = await cartService.createCart({ userId: user?.id ?? null });
+      const cart = await cartService.createCart();
       if (!cart) {
         toast.error('Không thể tạo giỏ hàng');
         return false;
@@ -342,19 +317,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         toast.success('Đã thêm vào giỏ');
         return true;
       }
-
-      // If DB add failed (e.g. transient auth lock), fall back to local cart
-      addToLocalCart(
-        product,
-        quantity,
-        selectedSize,
-        selectedColor,
-        selectedVariantId,
-        selectedSku,
-        targetKey
-      );
-      toast.success('Đã thêm vào giỏ');
-      return true;
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error('Không thể thêm sản phẩm vào giỏ');
@@ -525,3 +487,4 @@ export function useCart() {
   }
   return context;
 }
+
