@@ -29,30 +29,28 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
     () => product.variants?.filter((variant) => variant.is_active) || [],
     [product.variants],
   );
+  const isVariantProduct = activeVariants.length > 0;
 
-  const availableColors = activeVariants.length
-    ? Array.from(new Set(activeVariants.map((variant) => variant.color)))
-    : product.colors?.length
-      ? product.colors
-      : ["Black", "White", "Gray"];
+  const availableColors = isVariantProduct
+    ? Array.from(new Set(activeVariants.map((variant) => variant.color).filter(Boolean)))
+    : [];
 
-  const availableSizes = activeVariants.length
+  const availableSizes = isVariantProduct
     ? Array.from(
         new Set(
           activeVariants
             .filter((variant) => !selectedColor || variant.color === selectedColor)
-            .map((variant) => variant.size),
+            .map((variant) => variant.size)
+            .filter(Boolean),
         ),
       )
-    : product.sizes?.length
-      ? product.sizes
-      : ["S", "M", "L", "XL"];
+    : [];
 
-  const selectedVariant = activeVariants.find(
-    (variant) => variant.size === selectedSize && variant.color === selectedColor,
-  );
+  const selectedVariant = isVariantProduct
+    ? activeVariants.find((variant) => variant.size === selectedSize && variant.color === selectedColor)
+    : undefined;
 
-  const currentStock = selectedVariant?.stock ?? product.stock;
+  const currentStock = isVariantProduct ? selectedVariant?.stock ?? 0 : product.stock;
   const currentPrice = selectedVariant?.price_override ?? product.price;
   const productImage = getProductImage(product);
 
@@ -69,8 +67,8 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
     return Array.from(imageSet);
   }, [activeVariants, product.images, productImage]);
 
-  const hasSizeOptions = availableSizes.length > 0;
-  const hasColorOptions = availableColors.length > 0;
+  const hasSizeOptions = isVariantProduct && availableSizes.length > 0;
+  const hasColorOptions = isVariantProduct && availableColors.length > 0;
 
   const relatedProducts = useMemo(() => {
     const sameCategory = allProducts.filter(
@@ -92,23 +90,23 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
   }, [productImage, selectedVariant?.image_url]);
 
   useEffect(() => {
-    if (selectedSize && activeVariants.length > 0 && !availableSizes.includes(selectedSize)) {
+    if (selectedSize && isVariantProduct && !availableSizes.includes(selectedSize)) {
       setSelectedSize("");
     }
-  }, [activeVariants.length, availableSizes, selectedSize]);
+  }, [availableSizes, isVariantProduct, selectedSize]);
 
   const handleAddToCart = async () => {
-    if (hasSizeOptions && !selectedSize) return toast.error(t("products.chooseSizeError"));
-    if (hasColorOptions && !selectedColor) return toast.error(t("products.chooseColorError"));
-    if (activeVariants.length > 0 && !selectedVariant) return toast.error(t("products.variantUnavailable"));
+    if (isVariantProduct && (!selectedColor || !selectedSize || !selectedVariant)) {
+      return toast.error("Vui lòng chọn màu và size.");
+    }
     if (currentStock <= 0) return toast.error(t("products.outOfStockError"));
     if (quantity > currentStock) return toast.error(t("products.quantityExceedsStock"));
 
     const added = await addToCart(
       { ...product, price: currentPrice, stock: currentStock },
       {
-        size: selectedSize || undefined,
-        color: selectedColor || undefined,
+        size: isVariantProduct ? selectedSize || undefined : undefined,
+        color: isVariantProduct ? selectedColor || undefined : undefined,
         quantity,
         variantId: selectedVariant?.id,
         sku: selectedVariant?.sku || product.sku || null,
@@ -161,6 +159,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
           </div>
 
           <div className="mt-6 space-y-5">
+            {isVariantProduct ? (
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">{t("products.selectColor")}</h2>
               <div className="flex flex-wrap gap-2">
@@ -186,7 +185,9 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                 <p className="mt-2 text-xs text-zinc-500">{t("products.sizeSelectHint")}</p>
               )}
             </div>
+            ) : null}
 
+            {isVariantProduct ? (
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">{t("products.selectSize")}</h2>
               <div className="flex flex-wrap gap-2">
@@ -222,8 +223,9 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                 </p>
               )}
             </div>
+            ) : null}
 
-            {selectedColor && selectedSize && (
+            {isVariantProduct && selectedColor && selectedSize && (
               <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm font-semibold text-zinc-800">
                 {currentStock <= 0
                   ? t("products.outOfStock")
@@ -233,6 +235,12 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                 {selectedVariant?.sku ? ` / SKU: ${selectedVariant.sku}` : ""}
               </div>
             )}
+
+            {!isVariantProduct ? (
+              <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm font-semibold text-zinc-800">
+                {currentStock > 0 ? `Còn ${currentStock} sản phẩm` : "Hết hàng"}
+              </div>
+            ) : null}
 
             <div>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em]">{t("products.quantity")}</h2>
@@ -246,7 +254,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
             <Button
               size="lg"
               className="h-14 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-zinc-800 md:static md:h-14"
-              disabled={currentStock <= 0}
+              disabled={currentStock <= 0 || (isVariantProduct && !selectedVariant)}
               onClick={handleAddToCart}
             >
               {currentStock <= 0 ? (
@@ -286,7 +294,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
         <Button
           size="lg"
           className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.16em] text-white hover:bg-zinc-800"
-          disabled={currentStock <= 0}
+          disabled={currentStock <= 0 || (isVariantProduct && !selectedVariant)}
           onClick={handleAddToCart}
         >
           {currentStock <= 0 ? t("products.outOfStock") : `${t("products.addToCart")} - ${formatCurrency(currentPrice * quantity)}`}

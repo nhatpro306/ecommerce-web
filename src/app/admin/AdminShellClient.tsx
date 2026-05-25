@@ -47,7 +47,7 @@ export default function AdminShellClient({ children }: { children: React.ReactNo
   };
 
   return (
-    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-4 px-4 py-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:px-6">
       <aside className="h-fit border border-zinc-200 bg-white">
         <div className="border-b border-zinc-200 px-4 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">RESEY</p>

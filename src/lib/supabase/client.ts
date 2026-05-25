@@ -4,33 +4,44 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
-const { url: supabaseUrl, key: supabaseKey } = getSupabasePublicEnv();
-
-// Create the Supabase client with additional options for browser usage
-export const supabase = createBrowserClient<Database>(
-  supabaseUrl,
-  supabaseKey,
-  {
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
-      },
-      heartbeatIntervalMs: 30000,
-      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
-    },
-    db: {
-      schema: "public",
-    },
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
+const CLIENT_OPTIONS = {
+  realtime: {
+    params: { eventsPerSecond: 10 },
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
   },
-);
+  db: { schema: "public" },
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+} as const;
 
-// Export auth specifically for auth operations
-export const supabaseAuth = supabase.auth;
+// Lazy singleton — only resolved at runtime in the browser, not at module eval.
+let _client: ReturnType<typeof createBrowserClient<Database>> | null = null;
+
+export function getSupabaseClient() {
+  if (!_client) {
+    const { url, key } = getSupabasePublicEnv();
+    _client = createBrowserClient<Database>(url, key, CLIENT_OPTIONS);
+  }
+  return _client;
+}
+
+// Proxy object: accessing any property triggers lazy init.
+// This preserves `import { supabase } from "..."` call-sites unchanged.
+export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient<Database>>, {
+  get(_target, prop) {
+    return getSupabaseClient()[prop as keyof ReturnType<typeof createBrowserClient<Database>>];
+  },
+});
+
+export const supabaseAuth = new Proxy({} as ReturnType<typeof createBrowserClient<Database>>["auth"], {
+  get(_target, prop) {
+    return getSupabaseClient().auth[prop as keyof ReturnType<typeof createBrowserClient<Database>>["auth"]];
+  },
+});
 
 export function createClientSupabase() {
   const { url, key } = getSupabasePublicEnv();
