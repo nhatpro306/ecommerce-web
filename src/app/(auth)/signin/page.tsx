@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -63,7 +64,9 @@ export default async function SignIn({ searchParams }: SignInProps) {
               Nhập email và mật khẩu để tiếp tục mua sắm.
             </CardDescription>
           </CardHeader>
-          <SignInForm message={message} />
+          <Suspense fallback={null}>
+            <SignInForm message={message} />
+          </Suspense>
         </Card>
       </div>
     </div>

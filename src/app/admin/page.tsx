@@ -362,7 +362,7 @@ export default function AdminDashboard() {
     return fromMeta || user?.email?.split("@")[0] || "Admin RESEY";
   }, [user]);
 
-  if (adminLoading || loading) {
+  if (adminLoading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-12">
         <div className="flex h-64 items-center justify-center">
@@ -382,6 +382,16 @@ export default function AdminDashboard() {
             Về trang người dùng
           </Button>
         </Link>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-12">
+        <div className="flex h-64 items-center justify-center">
+          <LoadingSpinner />
+        </div>
       </div>
     );
   }
