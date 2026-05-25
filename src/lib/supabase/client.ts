@@ -20,10 +20,51 @@ const CLIENT_OPTIONS = {
 
 // Lazy singleton — only resolved at runtime in the browser, not at module eval.
 let _client: ReturnType<typeof createBrowserClient<Database>> | null = null;
+let _staleCookiesCleared = false;
+
+function getProjectRefFromUrl(url: string): string | null {
+  const match = url.match(/^https?:\/\/([a-z0-9-]+)\.supabase\.co/i);
+  return match ? match[1] : null;
+}
+
+/**
+ * Remove `sb-<ref>-auth-token` cookies that belong to a *different* Supabase
+ * project than the one this build targets. A leftover cookie from a previous
+ * project ref can cause `auth.getSession()` to hang indefinitely, which then
+ * prevents any PostgREST request from leaving the browser.
+ */
+function clearStaleSupabaseCookies(currentRef: string) {
+  if (typeof document === "undefined" || _staleCookiesCleared) return;
+  _staleCookiesCleared = true;
+
+  const cookieNames = document.cookie
+    .split(";")
+    .map((c) => c.trim().split("=")[0])
+    .filter((name) => /^sb-[a-z0-9-]+-auth-token(\.\d+)?$/i.test(name));
+
+  for (const name of cookieNames) {
+    const match = name.match(/^sb-([a-z0-9-]+)-auth-token/i);
+    if (!match) continue;
+    if (match[1] === currentRef) continue;
+
+    // Expire on every plausible path/domain combination.
+    const past = "Thu, 01 Jan 1970 00:00:00 GMT";
+    const host = window.location.hostname;
+    const apex = host.split(".").slice(-2).join(".");
+    document.cookie = `${name}=; expires=${past}; path=/`;
+    document.cookie = `${name}=; expires=${past}; path=/; domain=${host}`;
+    document.cookie = `${name}=; expires=${past}; path=/; domain=.${host}`;
+    if (apex && apex !== host) {
+      document.cookie = `${name}=; expires=${past}; path=/; domain=.${apex}`;
+    }
+  }
+}
 
 export function getSupabaseClient() {
   if (!_client) {
     const { url, key } = getSupabasePublicEnv();
+    const ref = getProjectRefFromUrl(url);
+    if (ref) clearStaleSupabaseCookies(ref);
     _client = createBrowserClient<Database>(url, key, CLIENT_OPTIONS);
   }
   return _client;

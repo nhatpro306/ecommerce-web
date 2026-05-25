@@ -1,5 +1,8 @@
 ﻿import { supabase } from "@/lib/supabase/client";
 import { ProductImageType, ProductType, ProductVariantType } from "@/types";
+import { withTimeout } from "@/utils/withTimeout";
+
+const ADMIN_QUERY_TIMEOUT_MS = 10000;
 
 export interface CreateProductData {
   title: string;
@@ -98,7 +101,11 @@ export const adminProductService = {
         query = query.limit(limit);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await withTimeout(
+        query,
+        ADMIN_QUERY_TIMEOUT_MS,
+        "Tải danh sách sản phẩm quá lâu. Vui lòng thử lại.",
+      );
 
       if (error) {
         console.error("Error fetching all products:", error);

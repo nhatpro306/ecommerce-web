@@ -15,6 +15,12 @@ export const requireAdmin = cache(async (): Promise<AdminUser> => {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
+    if (userError) {
+      console.error("requireAdmin: auth.getUser failed", {
+        code: userError.code,
+        message: userError.message,
+      });
+    }
     throw new Error("Authentication required");
   }
 
@@ -24,7 +30,17 @@ export const requireAdmin = cache(async (): Promise<AdminUser> => {
     .eq("profile_id", user.id)
     .single();
 
-  if (profileError || !profile || profile.role !== "admin" || profile.is_active === false) {
+  if (profileError) {
+    console.error("requireAdmin: profile lookup failed", {
+      userId: user.id,
+      code: profileError.code,
+      message: profileError.message,
+      details: profileError.details,
+    });
+    throw new Error("Admin access required");
+  }
+
+  if (!profile || profile.role !== "admin" || profile.is_active === false) {
     throw new Error("Admin access required");
   }
 
