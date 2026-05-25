@@ -1,12 +1,11 @@
 'use client';
 
-import { createClientSupabase } from './client';
+import { supabase } from './client';
 
 /**
  * Helper function to get the authenticated user from client-side
  */
 export async function getClientUser() {
-  const supabase = createClientSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -17,7 +16,6 @@ export async function getClientUser() {
  * Helper function to get user profile data from client-side
  */
 export async function getUserProfile(userId: string) {
-  const supabase = createClientSupabase();
   const { data } = await supabase
     .from('profiles')
     .select('*')
@@ -31,7 +29,6 @@ export async function getUserProfile(userId: string) {
  * Helper function to get products from client-side
  */
 export async function getProducts() {
-  const supabase = createClientSupabase();
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -45,7 +42,6 @@ export async function getProducts() {
  * Helper function to get current session from client-side
  */
 export async function getClientSession() {
-  const supabase = createClientSupabase();
   const {
     data: { session },
   } = await supabase.auth.getSession();
