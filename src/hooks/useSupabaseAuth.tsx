@@ -1,6 +1,6 @@
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile/profileService";
 import { authService } from "@/services/auth/authService";
@@ -10,7 +10,7 @@ export function useSupabaseAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const ensureUserProfile = async (currentUser: User) => {
+  const ensureUserProfile = useCallback(async (currentUser: User) => {
     try {
       let userEmail = currentUser.email || "";
 
@@ -64,7 +64,15 @@ export function useSupabaseAuth() {
     } catch (error) {
       console.error("Lỗi khi xử lý hồ sơ người dùng:", error);
     }
-  };
+  }, []);
+
+  const scheduleProfileSync = useCallback((currentUser: User) => {
+    // Auth state callbacks run under Supabase's internal auth lock. Run profile
+    // DB writes on the next tick so product/cart REST calls are not blocked.
+    window.setTimeout(() => {
+      void ensureUserProfile(currentUser);
+    }, 0);
+  }, [ensureUserProfile]);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,9 +88,7 @@ export function useSupabaseAuth() {
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await ensureUserProfile(session.user);
-        }
+        if (session?.user) scheduleProfileSync(session.user);
       } catch (error) {
         console.error("Không thể lấy phiên đăng nhập:", error);
       } finally {
@@ -96,13 +102,11 @@ export function useSupabaseAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
-      if (session?.user) {
-        await ensureUserProfile(session.user);
-      }
+      if (session?.user) scheduleProfileSync(session.user);
 
       setLoading(false);
     });
@@ -111,7 +115,7 @@ export function useSupabaseAuth() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [scheduleProfileSync]);
 
   const signIn = async (email: string, password: string) => {
     try {

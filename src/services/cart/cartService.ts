@@ -57,6 +57,12 @@ function normalizeJoinedProduct(product: ProductType | ProductType[] | null | un
   return Array.isArray(product) ? product[0] : product;
 }
 
+function reportCartError(message: string, error: unknown): never {
+  console.error(message, error);
+  toast.error('Cart operation failed.');
+  throw error instanceof Error ? error : new Error(message);
+}
+
 export async function getActiveCart(options?: CartUserOptions) {
   try {
     const userId = await resolveCartUserId(options);
@@ -70,16 +76,12 @@ export async function getActiveCart(options?: CartUserOptions) {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching cart:', error);
-      toast.error('Cart operation failed.');
-      return null;
+      reportCartError('Error fetching cart:', error);
     }
 
     return data as CartType | null;
   } catch (error) {
-    console.error('Error in getActiveCart:', error);
-    toast.error('Cart operation failed.');
-    return null;
+    reportCartError('Error in getActiveCart:', error);
   }
 }
 
@@ -95,16 +97,12 @@ export async function createCart(options?: CartUserOptions) {
       .single();
 
     if (error) {
-      console.error('Error creating cart:', error);
-      toast.error('Cart operation failed.');
-      return null;
+      reportCartError('Error creating cart:', error);
     }
 
     return data as CartType;
   } catch (error) {
-    console.error('Error in createCart:', error);
-    toast.error('Cart operation failed.');
-    return null;
+    reportCartError('Error in createCart:', error);
   }
 }
 
@@ -122,9 +120,7 @@ export async function getCartItems(cartId: number): Promise<(CartItemType & { pr
       .eq('cart_id', cartId);
 
     if (error) {
-      console.error('Error fetching cart items:', error);
-      toast.error('Cart operation failed.');
-      return [];
+      reportCartError('Error fetching cart items:', error);
     }
 
     return data.reduce<(CartItemType & { product: ProductType })[]>((items, item) => {
@@ -138,9 +134,7 @@ export async function getCartItems(cartId: number): Promise<(CartItemType & { pr
       return items;
     }, []);
   } catch (error) {
-    console.error('Error in getCartItems:', error);
-    toast.error('Cart operation failed.');
-    return [];
+    reportCartError('Error in getCartItems:', error);
   }
 }
 
@@ -172,9 +166,7 @@ export async function addItemToCart(
     const { data: existingItems, error: fetchError } = await existingItemQuery;
 
     if (fetchError) {
-      console.error('Error checking existing cart item:', fetchError);
-      toast.error('Cart operation failed.');
-      return null;
+      reportCartError('Error checking existing cart item:', fetchError);
     }
 
     if (existingItems && existingItems.length > 0) {
@@ -189,9 +181,7 @@ export async function addItemToCart(
         .single();
 
       if (error) {
-        console.error('Error updating cart item:', error);
-        toast.error('Cart operation failed.');
-        return null;
+        reportCartError('Error updating cart item:', error);
       }
 
       return data as CartItemType;
@@ -223,21 +213,15 @@ export async function addItemToCart(
 
         if (!legacyError) return legacyData as CartItemType;
 
-        console.error('Error adding legacy cart item:', legacyError);
-        toast.error('Cart operation failed.');
-        return null;
+        reportCartError('Error adding legacy cart item:', legacyError);
       }
 
-      console.error('Error adding item to cart:', error);
-      toast.error('Cart operation failed.');
-      return null;
+      reportCartError('Error adding item to cart:', error);
     }
 
     return data as CartItemType;
   } catch (error) {
-    console.error('Error in addItemToCart:', error);
-    toast.error('Cart operation failed.');
-    return null;
+    reportCartError('Error in addItemToCart:', error);
   }
 }
 
@@ -253,16 +237,12 @@ export async function updateCartItemQuantity(cartItemId: number, quantity: numbe
       .single();
 
     if (error) {
-      console.error('Error updating cart item quantity:', error);
-      toast.error('Cart operation failed.');
-      return null;
+      reportCartError('Error updating cart item quantity:', error);
     }
 
     return data as CartItemType;
   } catch (error) {
-    console.error('Error in updateCartItemQuantity:', error);
-    toast.error('Cart operation failed.');
-    return null;
+    reportCartError('Error in updateCartItemQuantity:', error);
   }
 }
 
@@ -271,16 +251,12 @@ export async function removeCartItem(cartItemId: number) {
     const { error } = await supabase.from('cart_items').delete().eq('id', cartItemId);
 
     if (error) {
-      console.error('Error removing cart item:', error);
-      toast.error('Cart operation failed.');
-      return false;
+      reportCartError('Error removing cart item:', error);
     }
 
     return true;
   } catch (error) {
-    console.error('Error in removeCartItem:', error);
-    toast.error('Cart operation failed.');
-    return false;
+    reportCartError('Error in removeCartItem:', error);
   }
 }
 
@@ -289,16 +265,12 @@ export async function clearCart(cartId: number) {
     const { error } = await supabase.from('cart_items').delete().eq('cart_id', cartId);
 
     if (error) {
-      console.error('Error clearing cart:', error);
-      toast.error('Cart operation failed.');
-      return false;
+      reportCartError('Error clearing cart:', error);
     }
 
     return true;
   } catch (error) {
-    console.error('Error in clearCart:', error);
-    toast.error('Cart operation failed.');
-    return false;
+    reportCartError('Error in clearCart:', error);
   }
 }
 
@@ -312,15 +284,11 @@ export async function findCartItemByProductId(cartId: number, productId: string)
       .maybeSingle();
 
     if (error) {
-      console.error('Error finding cart item:', error);
-      toast.error('Cart operation failed.');
-      return null;
+      reportCartError('Error finding cart item:', error);
     }
 
     return data as CartItemType | null;
   } catch (error) {
-    console.error('Error in findCartItemByProductId:', error);
-    toast.error('Cart operation failed.');
-    return null;
+    reportCartError('Error in findCartItemByProductId:', error);
   }
 }

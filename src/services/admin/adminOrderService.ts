@@ -488,13 +488,18 @@ export const adminOrderService = {
           .select(
             `
             id,
+            user_id,
             status,
             total,
+            shipping_address_id,
             created_at,
+            updated_at,
             payment_method,
+            payment_id,
             customer_name,
             customer_phone,
-            user_id,
+            customer_email,
+            customer_note,
             profiles (
               username,
               email

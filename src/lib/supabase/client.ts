@@ -33,40 +33,22 @@ export function getSupabaseClient() {
 // This preserves `import { supabase } from "..."` call-sites unchanged.
 export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient<Database>>, {
   get(_target, prop) {
-    return getSupabaseClient()[prop as keyof ReturnType<typeof createBrowserClient<Database>>];
+    const client = getSupabaseClient();
+    const value = client[prop as keyof ReturnType<typeof createBrowserClient<Database>>];
+    return typeof value === "function" ? value.bind(client) : value;
   },
 });
 
 export const supabaseAuth = new Proxy({} as ReturnType<typeof createBrowserClient<Database>>["auth"], {
   get(_target, prop) {
-    return getSupabaseClient().auth[prop as keyof ReturnType<typeof createBrowserClient<Database>>["auth"]];
+    const auth = getSupabaseClient().auth;
+    const value = auth[prop as keyof ReturnType<typeof createBrowserClient<Database>>["auth"]];
+    return typeof value === "function" ? value.bind(auth) : value;
   },
 });
 
 export function createClientSupabase() {
-  const { url, key } = getSupabasePublicEnv();
-
-  return createBrowserClient<Database>(
-    url,
-    key,
-    {
-      realtime: {
-        params: {
-          eventsPerSecond: 10,
-        },
-        heartbeatIntervalMs: 30000,
-        reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
-      },
-      db: {
-        schema: "public",
-      },
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-      },
-    },
-  );
+  return getSupabaseClient();
 }
 
 /**
