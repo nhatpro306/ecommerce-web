@@ -25,8 +25,10 @@ set search_path = public, auth
 as $$
   select exists (
     select 1
-    from public.admin_users au
-    where au.user_id = auth.uid()
+    from public.profiles p
+    where p.profile_id = auth.uid()
+      and p.role = 'admin'
+      and p.is_active = true
   );
 $$;
 
@@ -60,6 +62,7 @@ drop policy if exists "carts_insert_own"         on public.carts;
 drop policy if exists "carts_update_own"         on public.carts;
 drop policy if exists "carts_delete_own"         on public.carts;
 drop policy if exists "carts_admin_all"          on public.carts;
+drop policy if exists "carts_admin_read_all"     on public.carts;
 -- Drop any legacy policies that might call is_admin():
 drop policy if exists "Enable read access for users" on public.carts;
 drop policy if exists "Enable insert for authenticated users" on public.carts;

@@ -19,7 +19,7 @@ grant usage on schema private to anon, authenticated;
 -- 2) Rebuild private.is_admin(uuid) as SECURITY DEFINER reading profiles
 --    directly. We do NOT rely on the admin_users view because it is
 --    security_invoker and depends on the caller's RLS on profiles.
-create or replace function private.is_admin(user_id uuid)
+create or replace function private.is_admin(check_user_id uuid)
 returns boolean
 language sql
 stable
@@ -29,7 +29,7 @@ as $$
   select exists (
     select 1
     from public.profiles
-    where profile_id = user_id
+    where profile_id = check_user_id
       and role = 'admin'
       and is_active = true
   );
