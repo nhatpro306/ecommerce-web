@@ -4,6 +4,42 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
+/**
+ * In-memory mutex per lock name.
+ *
+ * Replaces `navigatorLock` (the @supabase/auth-js default in browsers). The
+ * navigator.locks API is shared by every script in the tab, and if any caller
+ * grabs `lock:sb-<ref>-auth-token` and never releases — observed in
+ * production: dashboard mount + concurrent cart hydration left an orphan
+ * holder — every subsequent `auth.getSession()` / `from(...)` blocks forever.
+ *
+ * A process-local FIFO queue keeps the gotrue serialization guarantees
+ * (refresh + cookie writes never run in parallel) without the cross-context
+ * deadlock surface.
+ */
+const _lockQueues = new Map<string, Promise<unknown>>();
+async function processLock<R>(
+  name: string,
+  _acquireTimeout: number,
+  fn: () => Promise<R>,
+): Promise<R> {
+  const prev = _lockQueues.get(name) ?? Promise.resolve();
+  let release!: () => void;
+  const next = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  _lockQueues.set(name, prev.then(() => next));
+  try {
+    await prev;
+    return await fn();
+  } finally {
+    release();
+    if (_lockQueues.get(name) === next) {
+      _lockQueues.delete(name);
+    }
+  }
+}
+
 const CLIENT_OPTIONS = {
   realtime: {
     params: { eventsPerSecond: 10 },
@@ -15,6 +51,7 @@ const CLIENT_OPTIONS = {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    lock: processLock,
   },
 } as const;
 
