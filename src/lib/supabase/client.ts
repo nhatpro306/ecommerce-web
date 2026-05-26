@@ -88,6 +88,20 @@ export const supabaseAuth = new Proxy({} as ReturnType<typeof createBrowserClien
   },
 });
 
+/**
+ * Always returns the same singleton browser client.
+ *
+ * Older call sites use this name expecting a new instance. Creating multiple
+ * @supabase/ssr browser clients in one tab causes them to deadlock on the
+ * shared `lock:sb-<ref>-auth-token` (navigator.locks) — once any client is
+ * inside its lock callback, every other client's `auth.getSession()` /
+ * `from(...)` request blocks forever. We saw this on production: the admin
+ * dashboard's parallel fetches and the cart's `getClientUser()` calls each
+ * constructed their own client and the queries never resolved.
+ *
+ * Returning the cached singleton is safe — auth state, cookies, and realtime
+ * subscriptions are intentionally shared across the tab.
+ */
 export function createClientSupabase() {
   return getSupabaseClient();
 }
@@ -96,10 +110,9 @@ export function createClientSupabase() {
  * Helper function to get the authenticated user from client-side
  */
 export async function getAuthenticatedUser() {
-  const supabase = createClientSupabase();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getSupabaseClient().auth.getUser();
   return user;
 }
 
@@ -107,8 +120,7 @@ export async function getAuthenticatedUser() {
  * Helper function to get user profile data from client-side
  */
 export async function getUserProfile(userId: string) {
-  const supabase = createClientSupabase();
-  const { data } = await supabase
+  const { data } = await getSupabaseClient()
     .from("profiles")
     .select("*")
     .eq("id", userId)
@@ -121,8 +133,7 @@ export async function getUserProfile(userId: string) {
  * Helper function to get products from client-side
  */
 export async function getProducts() {
-  const supabase = createClientSupabase();
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
