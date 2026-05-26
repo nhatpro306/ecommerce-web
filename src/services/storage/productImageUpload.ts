@@ -79,6 +79,11 @@ export async function uploadProductImage(
   productId: string,
   file: File,
 ): Promise<UploadedProductImage> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại trước khi tải ảnh.");
+  }
+
   const validationError = validateProductImageFile(file);
 
   if (validationError) {

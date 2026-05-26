@@ -13,16 +13,6 @@ export interface CartVariantOptions {
   variantInfo?: Record<string, unknown>;
 }
 
-function isMissingVariantIdColumn(error: { message?: string; code?: string }) {
-  const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
-  return (
-    message.includes("variant_id") &&
-    (message.includes("schema cache") ||
-      message.includes("column") ||
-      message.includes("could not find"))
-  );
-}
-
 // Get the active cart for the current user
 export async function getActiveCart() {
   try {
@@ -224,27 +214,6 @@ export async function addItemToCart(
         .single();
 
       if (error) {
-        if (isMissingVariantIdColumn(error)) {
-          // Compatibility path for databases that have not applied the
-          // variant_id cart migration yet. Size/color are still persisted.
-          const { variant_id: _variantId, ...legacyPayload } = insertPayload;
-          void _variantId;
-
-          const { data: legacyData, error: legacyError } = await supabase
-            .from('cart_items')
-            .insert(legacyPayload)
-            .select('*')
-            .single();
-
-          if (!legacyError) {
-            return legacyData as CartItemType;
-          }
-
-          console.error('Error adding legacy cart item:', legacyError);
-          toast.error('Không thể thêm sản phẩm vào giỏ. Vui lòng kiểm tra cấu hình database.');
-          return null;
-        }
-
         console.error('Error adding item to cart:', error);
         toast.error('Không thể thêm sản phẩm vào giỏ');
         return null;

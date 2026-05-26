@@ -241,7 +241,6 @@ export default function AdminProductsPage() {
         .toLowerCase();
       const searchableText = [
         product.title,
-        product.description,
         product.category?.name,
         skuText,
       ]

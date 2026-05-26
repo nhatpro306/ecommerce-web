@@ -2,8 +2,8 @@
 import { ProductImageType, ProductType, ProductVariantType } from "@/types";
 import { withTimeout } from "@/utils/withTimeout";
 
-const ADMIN_QUERY_TIMEOUT_MS = 25000;
-const SIDE_QUERY_TIMEOUT_MS = 15000;
+const ADMIN_QUERY_TIMEOUT_MS = 12000;
+const SIDE_QUERY_TIMEOUT_MS = 6000;
 
 export interface CreateProductData {
   title: string;
@@ -56,14 +56,28 @@ export const adminProductService = {
     const startedAt =
       typeof performance !== "undefined" ? performance.now() : Date.now();
 
-    let baseQuery = supabase
+    const MAX_ADMIN_PRODUCTS = 100;
+    const effectiveLimit = limit && limit > 0 ? limit : MAX_ADMIN_PRODUCTS;
+
+    // Fail fast if browser session is missing/expired — avoids 12s timeout
+    // when auth refresh is stuck behind the processLock mutex.
+    const { data: sessionResult, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      throw new Error(`Phiên đăng nhập bị lỗi: ${sessionError.message}`);
+    }
+    if (!sessionResult.session) {
+      throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.");
+    }
+
+    // description is heavy text and not displayed in the admin list.
+    // sizes/colors arrays are derived from variants in the table view.
+    const baseQuery = supabase
       .from("products")
       .select(
         `
         product_id,
         title,
         slug,
-        description,
         price,
         sale_price,
         image,
@@ -74,17 +88,11 @@ export const adminProductService = {
         sku,
         category_id,
         created_at,
-        updated_at,
-        categories!products_category_id_fkey (
-          id,
-          name
-        )
+        updated_at
         `,
       )
-      .order("created_at", { ascending: false });
-    if (limit && limit > 0) {
-      baseQuery = baseQuery.limit(limit);
-    }
+      .order("created_at", { ascending: false })
+      .limit(effectiveLimit);
 
     let baseData: unknown[] = [];
     try {
@@ -101,14 +109,13 @@ export const adminProductService = {
           console.warn(
             "[adminProductService.getAllProducts] sale_price column missing; retrying without it",
           );
-          let retryQuery = supabase
+          const retryQuery = supabase
             .from("products")
             .select(
               `
               product_id,
               title,
               slug,
-              description,
               price,
               image,
               stock,
@@ -118,15 +125,11 @@ export const adminProductService = {
               sku,
               category_id,
               created_at,
-              updated_at,
-              categories!products_category_id_fkey (
-                id,
-                name
-              )
+              updated_at
               `,
             )
-            .order("created_at", { ascending: false });
-          if (limit && limit > 0) retryQuery = retryQuery.limit(limit);
+            .order("created_at", { ascending: false })
+            .limit(effectiveLimit);
           const retry = await withTimeout(
             retryQuery,
             ADMIN_QUERY_TIMEOUT_MS,
@@ -157,11 +160,16 @@ export const adminProductService = {
         (typeof performance !== "undefined" ? performance.now() : Date.now()) -
           startedAt,
       );
+      const message = err instanceof Error ? err.message : String(err);
       console.error("[adminProductService.getAllProducts] failed", {
         durationMs: elapsedMs,
-        message: err instanceof Error ? err.message : String(err),
+        message,
+        hint:
+          elapsedMs >= ADMIN_QUERY_TIMEOUT_MS - 1000
+            ? "Timeout reached — likely auth session refresh stuck or network blocked. Try sign out + sign in."
+            : undefined,
       });
-      throw err;
+      throw new Error(`${message} (after ${elapsedMs}ms)`);
     }
 
     const baseDurationMs = Math.round(
@@ -173,18 +181,36 @@ export const adminProductService = {
       durationMs: baseDurationMs,
     });
 
-    const products = baseData as Array<ProductType & { categories?: unknown }>;
+    const products = baseData as Array<ProductType & { category_id?: number | null }>;
     if (products.length === 0) return [];
 
     const productIds = products.map((product) => product.product_id);
+    const categoryIds = Array.from(
+      new Set(
+        products
+          .map((product) => product.category_id)
+          .filter((id): id is number => Number.isFinite(Number(id))),
+      ),
+    );
 
-    const [imagesResult, variantsResult, reviewsResult] = await Promise.allSettled([
-      this.getImagesByProduct(productIds),
-      this.getVariantsByProduct(productIds),
-      includeReviews
-        ? this.getReviewStatsByProduct(productIds)
-        : Promise.resolve({} as Record<string, { total: number; average: number }>),
-    ]);
+    const [categoriesResult, imagesResult, variantsResult, reviewsResult] =
+      await Promise.allSettled([
+        this.getCategoriesByIds(categoryIds),
+        this.getImagesByProduct(productIds),
+        this.getVariantsByProduct(productIds),
+        includeReviews
+          ? this.getReviewStatsByProduct(productIds)
+          : Promise.resolve({} as Record<string, { total: number; average: number }>),
+      ]);
+
+    const categoriesMap =
+      categoriesResult.status === "fulfilled" ? categoriesResult.value : {};
+    if (categoriesResult.status === "rejected") {
+      console.warn(
+        "[adminProductService.getAllProducts] categories side query failed (category=undefined)",
+        categoriesResult.reason,
+      );
+    }
 
     const imagesMap =
       imagesResult.status === "fulfilled" ? imagesResult.value : {};
@@ -213,10 +239,9 @@ export const adminProductService = {
 
     return products.map((product) => {
       const reviewStats = reviewsMap[product.product_id as string];
-      const categoryValue = (product as { categories?: unknown }).categories;
-      const category = Array.isArray(categoryValue)
-        ? (categoryValue[0] as { id: number; name: string } | undefined)
-        : (categoryValue as { id: number; name: string } | undefined);
+      const categoryId = product.category_id;
+      const category =
+        categoryId != null ? categoriesMap[String(categoryId)] : undefined;
       const row: ProductWithDetails = {
         ...(product as ProductType),
         category: category ?? undefined,
@@ -227,6 +252,39 @@ export const adminProductService = {
       };
       return row;
     });
+  },
+
+  async getCategoriesByIds(
+    categoryIds: number[],
+  ): Promise<Record<string, { id: number; name: string }>> {
+    if (categoryIds.length === 0) return {};
+
+    const categoriesQuery = supabase
+      .from("categories")
+      .select("id, name")
+      .in("id", categoryIds);
+
+    const { data, error } = await withTimeout(
+      categoriesQuery,
+      SIDE_QUERY_TIMEOUT_MS,
+      "Tải danh mục sản phẩm quá lâu.",
+    );
+
+    if (error) {
+      console.warn(
+        "[adminProductService.getCategoriesByIds] categories unavailable:",
+        { message: error.message, code: (error as { code?: string }).code },
+      );
+      return {};
+    }
+
+    return (data || []).reduce<Record<string, { id: number; name: string }>>(
+      (acc, category) => {
+        acc[String(category.id)] = { id: category.id, name: category.name };
+        return acc;
+      },
+      {},
+    );
   },
 
   async getVariantsByProduct(
@@ -343,78 +401,30 @@ export const adminProductService = {
   },
 
   /**
-   * Create a new product. Kept for compatibility; admin pages should use server
-   * actions for writes.
+   * @deprecated Use createAdminProductAction server action instead.
+   * Browser-side writes are blocked by RLS on production.
    */
-  async createProduct(productData: CreateProductData): Promise<ProductType> {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          ...productData,
-          is_active: productData.is_active ?? true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating product:", error);
-        throw error;
-      }
-
-      return data;
-    } catch (err) {
-      console.error("Failed to create product:", err);
-      throw err;
-    }
+  async createProduct(_productData: CreateProductData): Promise<ProductType> {
+    throw new Error("Use createAdminProductAction server action instead.");
   },
 
+  /**
+   * @deprecated Use updateAdminProductAction server action instead.
+   * Browser-side writes are blocked by RLS on production.
+   */
   async updateProduct(
-    productId: string,
-    productData: UpdateProductData,
+    _productId: string,
+    _productData: UpdateProductData,
   ): Promise<ProductType> {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .update({
-          ...productData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("product_id", productId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating product:", error);
-        throw error;
-      }
-
-      return data;
-    } catch (err) {
-      console.error("Failed to update product:", err);
-      throw err;
-    }
+    throw new Error("Use updateAdminProductAction server action instead.");
   },
 
-  async deleteProduct(productId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from("products")
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq("product_id", productId);
-
-      if (error) {
-        console.error("Error deleting product:", error);
-        throw error;
-      }
-
-      return true;
-    } catch (err) {
-      console.error("Failed to delete product:", err);
-      throw err;
-    }
+  /**
+   * @deprecated Use deleteAdminProductAction server action instead.
+   * Browser-side writes are blocked by RLS on production.
+   */
+  async deleteProduct(_productId: string): Promise<boolean> {
+    throw new Error("Use deleteAdminProductAction server action instead.");
   },
 
   async updateStock(productId: string, newStock: number): Promise<ProductType> {
