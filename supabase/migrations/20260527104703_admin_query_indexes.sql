@@ -1,4 +1,4 @@
-﻿-- Admin/public query indexes for product lists, variants, images, carts, and orders.
+-- Admin/public query indexes for product lists, variants, images, carts, and orders.
 
 create index if not exists idx_products_active_created_at
   on public.products (is_active, created_at desc);

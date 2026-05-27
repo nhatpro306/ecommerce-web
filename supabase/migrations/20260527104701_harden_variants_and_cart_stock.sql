@@ -1,4 +1,4 @@
-﻿-- Tighten public variant visibility and validate cart quantity server-side.
+-- Tighten public variant visibility and validate cart quantity server-side.
 
 create or replace function public.validate_cart_item_quantity(
   p_cart_item_id integer,
@@ -85,6 +85,7 @@ end;
 $$;
 
 revoke all on function public.validate_cart_item_quantity(integer, integer) from public;
+revoke execute on function public.validate_cart_item_quantity(integer, integer) from anon;
 grant execute on function public.validate_cart_item_quantity(integer, integer) to authenticated, service_role;
 
 drop policy if exists "product_variants_public_read" on public.product_variants;
@@ -170,4 +171,17 @@ begin
 end;
 $$;
 
-revoke execute on function public.is_admin(uuid) from anon, authenticated;
+do $$
+begin
+  if exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'is_admin'
+      and pg_get_function_identity_arguments(p.oid) = 'check_user_id uuid'
+  ) then
+    revoke execute on function public.is_admin(uuid) from anon, authenticated;
+  end if;
+end
+$$;

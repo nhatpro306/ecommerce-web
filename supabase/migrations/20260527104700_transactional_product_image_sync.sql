@@ -1,4 +1,4 @@
-﻿-- Atomically replace product image metadata and keep products.image in sync.
+-- Atomically replace product image metadata and keep products.image in sync.
 -- Requires admin profile via private.is_admin(auth.uid()).
 
 create or replace function public.sync_product_images(
@@ -96,4 +96,5 @@ end;
 $$;
 
 revoke all on function public.sync_product_images(uuid, jsonb) from public;
+revoke execute on function public.sync_product_images(uuid, jsonb) from anon;
 grant execute on function public.sync_product_images(uuid, jsonb) to authenticated, service_role;
