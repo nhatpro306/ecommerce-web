@@ -123,6 +123,7 @@ function getSellerStatus(product: ProductWithDetails) {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -143,11 +144,17 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const data = await adminProductService.getAllProducts();
       setProducts(data);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Không thể tải sản phẩm");
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Không thể tải sản phẩm";
+      console.error("[AdminProductsPage] fetchProducts failed:", error);
+      setFetchError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -234,7 +241,6 @@ export default function AdminProductsPage() {
         .toLowerCase();
       const searchableText = [
         product.title,
-        product.description,
         product.category?.name,
         skuText,
       ]
@@ -329,9 +335,32 @@ export default function AdminProductsPage() {
   if (loading) {
     return (
       <div className="container mx-auto py-8">
-        <div className="flex h-64 items-center justify-center">
+        <div className="flex h-64 flex-col items-center justify-center gap-3">
           <LoadingSpinner />
+          <p className="text-sm text-zinc-500">Đang tải sản phẩm…</p>
         </div>
+      </div>
+    );
+  }
+
+  if (fetchError && products.length === 0) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="rounded-none border-rose-200 bg-rose-50">
+          <CardContent className="space-y-3 p-6 text-center">
+            <AlertTriangle className="mx-auto h-10 w-10 text-rose-600" />
+            <h2 className="text-lg font-black uppercase text-rose-800">
+              Không tải được sản phẩm
+            </h2>
+            <p className="text-sm text-rose-700 break-all">{fetchError}</p>
+            <Button
+              onClick={fetchProducts}
+              className="rounded-none bg-zinc-950 text-white hover:bg-zinc-800"
+            >
+              Thử lại
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

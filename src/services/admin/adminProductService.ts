@@ -1,5 +1,9 @@
 ﻿import { supabase } from "@/lib/supabase/client";
 import { ProductImageType, ProductType, ProductVariantType } from "@/types";
+import { withTimeout } from "@/utils/withTimeout";
+
+const ADMIN_QUERY_TIMEOUT_MS = 12000;
+const SIDE_QUERY_TIMEOUT_MS = 6000;
 
 export interface CreateProductData {
   title: string;
@@ -37,90 +41,6 @@ interface GetAllProductsOptions {
   limit?: number;
 }
 
-const PRODUCT_ADMIN_SELECT = `
-  product_id,
-  slug,
-  title,
-  description,
-  material,
-  price,
-  sale_price,
-  image,
-  stock,
-  sizes,
-  colors,
-  is_active,
-  sku,
-  category_id,
-  created_at,
-  updated_at,
-  categories!products_category_id_fkey (
-    id,
-    name
-  ),
-  product_images (
-    id,
-    product_id,
-    url,
-    alt_text,
-    sort_order,
-    is_primary,
-    created_at
-  ),
-  product_variants (
-    id,
-    product_id,
-    size,
-    color,
-    sku,
-    stock,
-    price_override,
-    image_url,
-    is_active,
-    created_at,
-    updated_at
-  )
-`;
-
-const PRODUCT_VARIANT_SELECT = `
-  id,
-  product_id,
-  size,
-  color,
-  sku,
-  stock,
-  price_override,
-  image_url,
-  is_active,
-  created_at,
-  updated_at
-`;
-
-const PRODUCT_IMAGE_SELECT = `
-  id,
-  product_id,
-  url,
-  alt_text,
-  sort_order,
-  is_primary,
-  created_at
-`;
-
-function normalizeProductCategory(
-  category:
-    | { id?: number | null; name?: string | null }
-    | { id?: number | null; name?: string | null }[]
-    | null
-    | undefined,
-) {
-  const value = Array.isArray(category) ? category[0] : category;
-  if (!value?.id || !value.name) return undefined;
-  return {
-    id: value.id,
-    name: value.name,
-  };
-}
-
 /**
  * Admin service for product reads. Mutations are routed through server actions
  * so admin permissions are enforced server-side.
@@ -132,46 +52,239 @@ export const adminProductService = {
    * inventory migration is applied.
    */
   async getAllProducts(options: GetAllProductsOptions = {}): Promise<ProductWithDetails[]> {
+    const { includeReviews = true, limit } = options;
+    const startedAt =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+
+    const MAX_ADMIN_PRODUCTS = 100;
+    const effectiveLimit = limit && limit > 0 ? limit : MAX_ADMIN_PRODUCTS;
+
+    // Fail fast if browser session is missing/expired — avoids 12s timeout
+    // when auth refresh is stuck behind the processLock mutex.
+    const { data: sessionResult, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      throw new Error(`Phiên đăng nhập bị lỗi: ${sessionError.message}`);
+    }
+    if (!sessionResult.session) {
+      throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.");
+    }
+
+    // description is heavy text and not displayed in the admin list.
+    // sizes/colors arrays are derived from variants in the table view.
+    const baseQuery = supabase
+      .from("products")
+      .select(
+        `
+        product_id,
+        title,
+        slug,
+        price,
+        sale_price,
+        image,
+        stock,
+        sizes,
+        colors,
+        is_active,
+        sku,
+        category_id,
+        created_at,
+        updated_at
+        `,
+      )
+      .order("created_at", { ascending: false })
+      .limit(effectiveLimit);
+
+    let baseData: unknown[] = [];
     try {
-      const { includeReviews = true, limit } = options;
-
-      let query = supabase
-        .from("products")
-        .select(PRODUCT_ADMIN_SELECT)
-        .order("created_at", { ascending: false });
-      if (limit && limit > 0) {
-        query = query.limit(limit);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await withTimeout(
+        baseQuery,
+        ADMIN_QUERY_TIMEOUT_MS,
+        "Tải danh sách sản phẩm quá lâu. Vui lòng thử lại.",
+      );
 
       if (error) {
-        console.error("Error fetching all products:", error);
-        throw error;
+        // sale_price column missing → retry without it
+        const msg = (error.message || "").toLowerCase();
+        if (msg.includes("sale_price") || (error as { code?: string }).code === "42703") {
+          console.warn(
+            "[adminProductService.getAllProducts] sale_price column missing; retrying without it",
+          );
+          const retryQuery = supabase
+            .from("products")
+            .select(
+              `
+              product_id,
+              title,
+              slug,
+              price,
+              image,
+              stock,
+              sizes,
+              colors,
+              is_active,
+              sku,
+              category_id,
+              created_at,
+              updated_at
+              `,
+            )
+            .order("created_at", { ascending: false })
+            .limit(effectiveLimit);
+          const retry = await withTimeout(
+            retryQuery,
+            ADMIN_QUERY_TIMEOUT_MS,
+            "Tải danh sách sản phẩm quá lâu. Vui lòng thử lại.",
+          );
+          if (retry.error) {
+            console.error("[adminProductService.getAllProducts] base products retry failed", {
+              message: retry.error.message,
+              code: (retry.error as { code?: string }).code,
+              table: "products",
+            });
+            throw retry.error;
+          }
+          baseData = retry.data || [];
+        } else {
+          console.error("[adminProductService.getAllProducts] base products query failed", {
+            message: error.message,
+            code: (error as { code?: string }).code,
+            table: "products",
+          });
+          throw error;
+        }
+      } else {
+        baseData = data || [];
       }
-
-      const products = data || [];
-      const productIds = products.map((product) => product.product_id);
-
-      const reviewsByProduct = includeReviews
-        ? await this.getReviewStatsByProduct(productIds)
-        : {};
-
-      return products.map((product) => {
-        const reviewStats = reviewsByProduct[product.product_id];
-        return {
-          ...product,
-          category: normalizeProductCategory(product.categories),
-          images: product.product_images || [],
-          variants: product.product_variants || [],
-          total_reviews: reviewStats?.total ?? 0,
-          average_rating: reviewStats?.average ?? 0,
-        };
-      });
     } catch (err) {
-      console.error("Failed to get all products:", err);
-      throw err;
+      const elapsedMs = Math.round(
+        (typeof performance !== "undefined" ? performance.now() : Date.now()) -
+          startedAt,
+      );
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[adminProductService.getAllProducts] failed", {
+        durationMs: elapsedMs,
+        message,
+        hint:
+          elapsedMs >= ADMIN_QUERY_TIMEOUT_MS - 1000
+            ? "Timeout reached — likely auth session refresh stuck or network blocked. Try sign out + sign in."
+            : undefined,
+      });
+      throw new Error(`${message} (after ${elapsedMs}ms)`);
     }
+
+    const baseDurationMs = Math.round(
+      (typeof performance !== "undefined" ? performance.now() : Date.now()) -
+        startedAt,
+    );
+    console.info("[adminProductService.getAllProducts] base products loaded", {
+      count: baseData.length,
+      durationMs: baseDurationMs,
+    });
+
+    const products = baseData as Array<ProductType & { category_id?: number | null }>;
+    if (products.length === 0) return [];
+
+    const productIds = products.map((product) => product.product_id);
+    const categoryIds = Array.from(
+      new Set(
+        products
+          .map((product) => product.category_id)
+          .filter((id): id is number => Number.isFinite(Number(id))),
+      ),
+    );
+
+    const [categoriesResult, imagesResult, variantsResult, reviewsResult] =
+      await Promise.allSettled([
+        this.getCategoriesByIds(categoryIds),
+        this.getImagesByProduct(productIds),
+        this.getVariantsByProduct(productIds),
+        includeReviews
+          ? this.getReviewStatsByProduct(productIds)
+          : Promise.resolve({} as Record<string, { total: number; average: number }>),
+      ]);
+
+    const categoriesMap =
+      categoriesResult.status === "fulfilled" ? categoriesResult.value : {};
+    if (categoriesResult.status === "rejected") {
+      console.warn(
+        "[adminProductService.getAllProducts] categories side query failed (category=undefined)",
+        categoriesResult.reason,
+      );
+    }
+
+    const imagesMap =
+      imagesResult.status === "fulfilled" ? imagesResult.value : {};
+    if (imagesResult.status === "rejected") {
+      console.warn(
+        "[adminProductService.getAllProducts] product_images side query failed (fallback to products.image)",
+        imagesResult.reason,
+      );
+    }
+    const variantsMap =
+      variantsResult.status === "fulfilled" ? variantsResult.value : {};
+    if (variantsResult.status === "rejected") {
+      console.warn(
+        "[adminProductService.getAllProducts] product_variants side query failed (variants=[])",
+        variantsResult.reason,
+      );
+    }
+    const reviewsMap =
+      reviewsResult.status === "fulfilled" ? reviewsResult.value : {};
+    if (reviewsResult.status === "rejected") {
+      console.warn(
+        "[adminProductService.getAllProducts] reviews side query failed",
+        reviewsResult.reason,
+      );
+    }
+
+    return products.map((product) => {
+      const reviewStats = reviewsMap[product.product_id as string];
+      const categoryId = product.category_id;
+      const category =
+        categoryId != null ? categoriesMap[String(categoryId)] : undefined;
+      const row: ProductWithDetails = {
+        ...(product as ProductType),
+        category: category ?? undefined,
+        images: imagesMap[product.product_id as string] ?? [],
+        variants: variantsMap[product.product_id as string] ?? [],
+        total_reviews: reviewStats?.total ?? 0,
+        average_rating: reviewStats?.average ?? 0,
+      };
+      return row;
+    });
+  },
+
+  async getCategoriesByIds(
+    categoryIds: number[],
+  ): Promise<Record<string, { id: number; name: string }>> {
+    if (categoryIds.length === 0) return {};
+
+    const categoriesQuery = supabase
+      .from("categories")
+      .select("id, name")
+      .in("id", categoryIds);
+
+    const { data, error } = await withTimeout(
+      categoriesQuery,
+      SIDE_QUERY_TIMEOUT_MS,
+      "Tải danh mục sản phẩm quá lâu.",
+    );
+
+    if (error) {
+      console.warn(
+        "[adminProductService.getCategoriesByIds] categories unavailable:",
+        { message: error.message, code: (error as { code?: string }).code },
+      );
+      return {};
+    }
+
+    return (data || []).reduce<Record<string, { id: number; name: string }>>(
+      (acc, category) => {
+        acc[String(category.id)] = { id: category.id, name: category.name };
+        return acc;
+      },
+      {},
+    );
   },
 
   async getVariantsByProduct(
@@ -179,14 +292,23 @@ export const adminProductService = {
   ): Promise<Record<string, ProductVariantType[]>> {
     if (productIds.length === 0) return {};
 
-    const { data, error } = await supabase
+    const variantsQuery = supabase
       .from("product_variants")
-      .select(PRODUCT_VARIANT_SELECT)
+      .select("*")
       .in("product_id", productIds)
       .order("size", { ascending: true });
 
+    const { data, error } = await withTimeout(
+      variantsQuery,
+      SIDE_QUERY_TIMEOUT_MS,
+      "Tải phân loại sản phẩm quá lâu.",
+    );
+
     if (error) {
-      console.warn("Product variants are not available yet:", error.message);
+      console.warn(
+        "[adminProductService.getVariantsByProduct] product_variants unavailable:",
+        { message: error.message, code: (error as { code?: string }).code },
+      );
       return {};
     }
 
@@ -205,13 +327,22 @@ export const adminProductService = {
   ): Promise<Record<string, { total: number; average: number }>> {
     if (productIds.length === 0) return {};
 
-    const { data, error } = await supabase
+    const reviewsQuery = supabase
       .from("reviews")
       .select("product_id, rating")
       .in("product_id", productIds);
 
+    const { data, error } = await withTimeout(
+      reviewsQuery,
+      SIDE_QUERY_TIMEOUT_MS,
+      "Tải đánh giá sản phẩm quá lâu.",
+    );
+
     if (error) {
-      console.warn("Product reviews are not available:", error.message);
+      console.warn(
+        "[adminProductService.getReviewStatsByProduct] reviews unavailable:",
+        { message: error.message, code: (error as { code?: string }).code },
+      );
       return {};
     }
 
@@ -239,14 +370,23 @@ export const adminProductService = {
   ): Promise<Record<string, ProductImageType[]>> {
     if (productIds.length === 0) return {};
 
-    const { data, error } = await supabase
+    const imagesQuery = supabase
       .from("product_images")
-      .select(PRODUCT_IMAGE_SELECT)
+      .select("*")
       .in("product_id", productIds)
       .order("sort_order", { ascending: true });
 
+    const { data, error } = await withTimeout(
+      imagesQuery,
+      SIDE_QUERY_TIMEOUT_MS,
+      "Tải ảnh sản phẩm quá lâu.",
+    );
+
     if (error) {
-      console.warn("Product images are not available yet:", error.message);
+      console.warn(
+        "[adminProductService.getImagesByProduct] product_images unavailable (fallback to products.image):",
+        { message: error.message, code: (error as { code?: string }).code },
+      );
       return {};
     }
 
@@ -261,78 +401,30 @@ export const adminProductService = {
   },
 
   /**
-   * Create a new product. Kept for compatibility; admin pages should use server
-   * actions for writes.
+   * @deprecated Use createAdminProductAction server action instead.
+   * Browser-side writes are blocked by RLS on production.
    */
-  async createProduct(productData: CreateProductData): Promise<ProductType> {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          ...productData,
-          is_active: productData.is_active ?? true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating product:", error);
-        throw error;
-      }
-
-      return data;
-    } catch (err) {
-      console.error("Failed to create product:", err);
-      throw err;
-    }
+  async createProduct(_productData: CreateProductData): Promise<ProductType> {
+    throw new Error("Use createAdminProductAction server action instead.");
   },
 
+  /**
+   * @deprecated Use updateAdminProductAction server action instead.
+   * Browser-side writes are blocked by RLS on production.
+   */
   async updateProduct(
-    productId: string,
-    productData: UpdateProductData,
+    _productId: string,
+    _productData: UpdateProductData,
   ): Promise<ProductType> {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .update({
-          ...productData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("product_id", productId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating product:", error);
-        throw error;
-      }
-
-      return data;
-    } catch (err) {
-      console.error("Failed to update product:", err);
-      throw err;
-    }
+    throw new Error("Use updateAdminProductAction server action instead.");
   },
 
-  async deleteProduct(productId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from("products")
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq("product_id", productId);
-
-      if (error) {
-        console.error("Error deleting product:", error);
-        throw error;
-      }
-
-      return true;
-    } catch (err) {
-      console.error("Failed to delete product:", err);
-      throw err;
-    }
+  /**
+   * @deprecated Use deleteAdminProductAction server action instead.
+   * Browser-side writes are blocked by RLS on production.
+   */
+  async deleteProduct(_productId: string): Promise<boolean> {
+    throw new Error("Use deleteAdminProductAction server action instead.");
   },
 
   async updateStock(productId: string, newStock: number): Promise<ProductType> {
@@ -363,7 +455,7 @@ export const adminProductService = {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("product_id, slug, title, description, material, price, sale_price, image, stock, sizes, colors, is_active, sku, category_id, created_at, updated_at")
+        .select("*")
         .lt("stock", threshold)
         .order("stock", { ascending: true });
 
@@ -383,7 +475,7 @@ export const adminProductService = {
     try {
       const { count: totalProducts } = await supabase
         .from("products")
-        .select("product_id", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true });
 
       const { data: categoryCounts } = await supabase.from("products").select(`
         category_id,
@@ -409,7 +501,7 @@ export const adminProductService = {
 
       const { count: lowStockCount } = await supabase
         .from("products")
-        .select("product_id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .lt("stock", 10);
 
       const { data: products } = await supabase

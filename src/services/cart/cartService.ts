@@ -2,31 +2,9 @@ import { supabase } from '@/lib/supabase/client';
 import { ProductType, CartItemType, CartType, CartStatus } from '../../types';
 import { toast } from 'sonner';
 import { getClientUser } from '@/lib/supabase/clientUtils';
+import { withTimeout } from '@/utils/withTimeout';
 
-const CART_SELECT = 'id, user_id, status, total_items, total_price, created_at, updated_at';
-const CART_ITEM_SELECT =
-  'id, cart_id, product_id, variant_id, quantity, price, selected_size, selected_color, variant_info, created_at, updated_at';
-const CART_ITEM_WITH_PRODUCT_SELECT = `
-  ${CART_ITEM_SELECT},
-  product:products (
-    product_id,
-    slug,
-    title,
-    description,
-    material,
-    price,
-    sale_price,
-    image,
-    stock,
-    sizes,
-    colors,
-    is_active,
-    sku,
-    category_id,
-    created_at,
-    updated_at
-  )
-`;
+const CART_QUERY_TIMEOUT_MS = 8000;
 
 export interface CartVariantOptions {
   variantId?: string;
@@ -35,123 +13,149 @@ export interface CartVariantOptions {
   variantInfo?: Record<string, unknown>;
 }
 
-interface CartUserOptions {
-  userId?: string | null;
-}
-
-function isMissingVariantIdColumn(error: { message?: string; code?: string }) {
-  const message = `${error.code || ''} ${error.message || ''}`.toLowerCase();
-  return (
-    message.includes('variant_id') &&
-    (message.includes('schema cache') || message.includes('column') || message.includes('could not find'))
-  );
-}
-
-async function resolveCartUserId(options?: CartUserOptions) {
-  if (options?.userId) return options.userId;
-  const user = await getClientUser();
-  return user?.id ?? null;
-}
-
-function normalizeJoinedProduct(product: ProductType | ProductType[] | null | undefined) {
-  return Array.isArray(product) ? product[0] : product;
-}
-
-function reportCartError(message: string, error: unknown): never {
-  console.error(message, error);
-  toast.error('Cart operation failed.');
-  throw error instanceof Error ? error : new Error(message);
-}
-
-export async function getActiveCart(options?: CartUserOptions) {
+// Get the active cart for the current user
+export async function getActiveCart() {
   try {
-    const userId = await resolveCartUserId(options);
-    if (!userId) return null;
+    const user = await getClientUser();
+    if (!user) {
+      return null;
+    }
 
-    const { data, error } = await supabase
-      .from('carts')
-      .select(CART_SELECT)
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
+    const { data, error } = await withTimeout(
+      supabase
+        .from('carts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle(),
+      CART_QUERY_TIMEOUT_MS,
+      'Kết nối giỏ hàng quá lâu. Vui lòng thử lại.',
+    );
 
     if (error) {
-      reportCartError('Error fetching cart:', error);
+      console.error('Error fetching cart:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      if (error.code === '42501') {
+        toast.error('Quyền truy cập giỏ hàng bị từ chối. Vui lòng đăng nhập lại.');
+      } else {
+        toast.error('Không thể tải giỏ hàng');
+      }
+      return null;
     }
 
     return data as CartType | null;
   } catch (error) {
-    reportCartError('Error in getActiveCart:', error);
+    console.error('Error in getActiveCart:', error);
+    toast.error('Có lỗi xảy ra khi tải giỏ hàng');
+    return null;
   }
 }
 
-export async function createCart(options?: CartUserOptions) {
+// Create a new cart for the current user
+export async function createCart() {
   try {
-    const userId = await resolveCartUserId(options);
-    if (!userId) throw new Error('Login required for server cart');
+    const user = await getClientUser();
+    if (!user) {
+      throw new Error('Bạn cần đăng nhập để dùng giỏ hàng');
+    }
 
     const { data, error } = await supabase
       .from('carts')
-      .insert({ user_id: userId, status: 'active' as CartStatus })
-      .select(CART_SELECT)
+      .insert({
+        user_id: user.id,
+        status: 'active' as CartStatus,
+      })
+      .select('*')
       .single();
 
     if (error) {
-      reportCartError('Error creating cart:', error);
+      console.error('Error creating cart:', error);
+      toast.error('Không thể tạo giỏ hàng');
+      return null;
     }
 
     return data as CartType;
   } catch (error) {
-    reportCartError('Error in createCart:', error);
+    console.error('Error in createCart:', error);
+    toast.error('Có lỗi xảy ra khi tạo giỏ hàng');
+    return null;
   }
 }
 
-export async function getOrCreateCart(options?: CartUserOptions) {
-  const cart = await getActiveCart(options);
-  if (cart) return cart;
-  return await createCart(options);
+// Get or create an active cart
+export async function getOrCreateCart() {
+  const cart = await getActiveCart();
+  if (cart) {
+    return cart;
+  }
+  return await createCart();
 }
 
-export async function getCartItems(cartId: number): Promise<(CartItemType & { product: ProductType })[]> {
+// Get cart items with product details
+export async function getCartItems(cartId: number) {
   try {
     const { data, error } = await supabase
       .from('cart_items')
-      .select(CART_ITEM_WITH_PRODUCT_SELECT)
+      .select(
+        `
+        *,
+        product:products(*)
+      `
+      )
       .eq('cart_id', cartId);
 
     if (error) {
-      reportCartError('Error fetching cart items:', error);
+      console.error('Error fetching cart items:', error);
+      toast.error('Không thể tải sản phẩm trong giỏ');
+      return [];
     }
 
-    return data.reduce<(CartItemType & { product: ProductType })[]>((items, item) => {
-      const product = normalizeJoinedProduct(item.product as ProductType | ProductType[] | null);
-      if (!product) return items;
-
-      items.push({
+    return data.map(
+      (item: {
+        id: number;
+        cart_id: number;
+        product_id: string;
+        variant_id?: string | null;
+        quantity: number;
+        price: number;
+        selected_size?: string | null;
+        selected_color?: string | null;
+        variant_info?: Record<string, unknown>;
+        created_at: string;
+        updated_at: string;
+        product: ProductType;
+      }) => ({
         ...item,
-        product,
-      } as CartItemType & { product: ProductType });
-      return items;
-    }, []);
+        product: item.product as ProductType,
+      })
+    ) as (CartItemType & { product: ProductType })[];
   } catch (error) {
-    reportCartError('Error in getCartItems:', error);
+    console.error('Error in getCartItems:', error);
+    toast.error('Có lỗi xảy ra khi tải sản phẩm trong giỏ');
+    return [];
   }
 }
 
+// Add item to cart
 export async function addItemToCart(
   cartId: number,
   productId: string,
   price: number,
   quantity: number = 1,
-  options: CartVariantOptions = {},
+  options: CartVariantOptions = {}
 ) {
   try {
     const selectedSize = options.size ?? null;
     const selectedColor = options.color ?? null;
 
+    // Variants must be matched by product + selected size + selected color.
     let existingItemQuery = supabase
       .from('cart_items')
-      .select(CART_ITEM_SELECT)
+      .select('*')
       .eq('cart_id', cartId)
       .eq('product_id', productId);
 
@@ -166,10 +170,13 @@ export async function addItemToCart(
     const { data: existingItems, error: fetchError } = await existingItemQuery;
 
     if (fetchError) {
-      reportCartError('Error checking existing cart item:', fetchError);
+      console.error('Error checking existing cart item:', fetchError);
+      toast.error('Không thể kiểm tra giỏ hàng');
+      return null;
     }
 
     if (existingItems && existingItems.length > 0) {
+      // Update existing item quantity
       const existingItem = existingItems[0];
       const newQuantity = existingItem.quantity + quantity;
 
@@ -177,118 +184,149 @@ export async function addItemToCart(
         .from('cart_items')
         .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
         .eq('id', existingItem.id)
-        .select(CART_ITEM_SELECT)
+        .select('*')
         .single();
 
       if (error) {
-        reportCartError('Error updating cart item:', error);
+        console.error('Error updating cart item:', error);
+        toast.error('Không thể cập nhật giỏ hàng');
+        return null;
+      }
+
+      return data as CartItemType;
+    } else {
+      // Insert new item
+      const insertPayload = {
+        cart_id: cartId,
+        product_id: productId,
+        variant_id: options.variantId ?? null,
+        quantity,
+        price,
+        selected_size: selectedSize,
+        selected_color: selectedColor,
+        variant_info: options.variantInfo ?? {},
+      };
+
+      const { data, error } = await supabase
+        .from('cart_items')
+        .insert(insertPayload)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error adding item to cart:', error);
+        toast.error('Không thể thêm sản phẩm vào giỏ');
+        return null;
       }
 
       return data as CartItemType;
     }
-
-    const insertPayload = {
-      cart_id: cartId,
-      product_id: productId,
-      variant_id: options.variantId ?? null,
-      quantity,
-      price,
-      selected_size: selectedSize,
-      selected_color: selectedColor,
-      variant_info: options.variantInfo ?? {},
-    };
-
-    const { data, error } = await supabase.from('cart_items').insert(insertPayload).select(CART_ITEM_SELECT).single();
-
-    if (error) {
-      if (isMissingVariantIdColumn(error)) {
-        const { variant_id: _variantId, ...legacyPayload } = insertPayload;
-        void _variantId;
-
-        const { data: legacyData, error: legacyError } = await supabase
-          .from('cart_items')
-          .insert(legacyPayload)
-          .select(CART_ITEM_SELECT)
-          .single();
-
-        if (!legacyError) return legacyData as CartItemType;
-
-        reportCartError('Error adding legacy cart item:', legacyError);
-      }
-
-      reportCartError('Error adding item to cart:', error);
-    }
-
-    return data as CartItemType;
   } catch (error) {
-    reportCartError('Error in addItemToCart:', error);
+    console.error('Error in addItemToCart:', error);
+    toast.error('Có lỗi xảy ra khi thêm sản phẩm vào giỏ');
+    return null;
   }
 }
 
-export async function updateCartItemQuantity(cartItemId: number, quantity: number) {
+// Update cart item quantity
+export async function updateCartItemQuantity(
+  cartItemId: number,
+  quantity: number
+) {
   try {
-    if (quantity <= 0) return await removeCartItem(cartItemId);
+    if (quantity <= 0) {
+      // If quantity is 0 or less, remove the item
+      return await removeCartItem(cartItemId);
+    }
 
     const { data, error } = await supabase
       .from('cart_items')
       .update({ quantity, updated_at: new Date().toISOString() })
       .eq('id', cartItemId)
-      .select(CART_ITEM_SELECT)
+      .select('*')
       .single();
 
     if (error) {
-      reportCartError('Error updating cart item quantity:', error);
+      console.error('Error updating cart item quantity:', error);
+      toast.error('Không thể cập nhật số lượng');
+      return null;
     }
 
     return data as CartItemType;
   } catch (error) {
-    reportCartError('Error in updateCartItemQuantity:', error);
+    console.error('Error in updateCartItemQuantity:', error);
+    toast.error('Có lỗi xảy ra khi cập nhật số lượng');
+    return null;
   }
 }
 
+// Remove item from cart
 export async function removeCartItem(cartItemId: number) {
   try {
-    const { error } = await supabase.from('cart_items').delete().eq('id', cartItemId);
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', cartItemId);
 
     if (error) {
-      reportCartError('Error removing cart item:', error);
+      console.error('Error removing cart item:', error);
+      toast.error('Không thể xóa sản phẩm khỏi giỏ');
+      return false;
     }
 
     return true;
   } catch (error) {
-    reportCartError('Error in removeCartItem:', error);
+    console.error('Error in removeCartItem:', error);
+    toast.error('Có lỗi xảy ra khi xóa sản phẩm khỏi giỏ');
+    return false;
   }
 }
 
+// Clear all items from cart
 export async function clearCart(cartId: number) {
   try {
-    const { error } = await supabase.from('cart_items').delete().eq('cart_id', cartId);
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cartId);
 
     if (error) {
-      reportCartError('Error clearing cart:', error);
+      console.error('Error clearing cart:', error);
+      toast.error('Không thể xóa giỏ hàng');
+      return false;
     }
 
     return true;
   } catch (error) {
-    reportCartError('Error in clearCart:', error);
+    console.error('Error in clearCart:', error);
+    toast.error('Có lỗi xảy ra khi xóa giỏ hàng');
+    return false;
   }
 }
 
-export async function findCartItemByProductId(cartId: number, productId: string) {
+// Find cart item by product ID
+export async function findCartItemByProductId(
+  cartId: number,
+  productId: string
+) {
   try {
     const { data, error } = await supabase
       .from('cart_items')
-      .select(CART_ITEM_SELECT)
+      .select('*')
       .eq('cart_id', cartId)
       .eq('product_id', productId)
       .maybeSingle();
 
     if (error) {
-      reportCartError('Error finding cart item:', error);
+      console.error('Error finding cart item:', error);
+      toast.error('Không thể tìm sản phẩm trong giỏ');
+      return null;
     }
 
     return data as CartItemType | null;
   } catch (error) {
-    reportCartError('Error in findCartItemByProductId:', error);
+    console.error('Error in findCartItemByProductId:', error);
+    toast.error('Có lỗi xảy ra khi tìm sản phẩm trong giỏ');
+    return null;
   }
 }

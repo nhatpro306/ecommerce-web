@@ -87,11 +87,15 @@ export async function getAdminOrdersAction(
   ]);
 
   if (countError) {
-    throw new Error(countError.message);
+    throw new Error(
+      [countError.code, countError.message, countError.details].filter(Boolean).join(" — "),
+    );
   }
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(
+      [error.code, error.message, error.details].filter(Boolean).join(" — "),
+    );
   }
 
   return {
