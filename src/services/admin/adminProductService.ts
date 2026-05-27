@@ -1,5 +1,6 @@
-﻿import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import { ProductImageType, ProductType, ProductVariantType } from "@/types";
+import { getSellableStock } from "@/utils/productVisibility";
 
 export interface CreateProductData {
   title: string;
@@ -35,6 +36,7 @@ export interface ProductWithDetails extends ProductType {
 interface GetAllProductsOptions {
   includeReviews?: boolean;
   limit?: number;
+  offset?: number;
 }
 
 const PRODUCT_ADMIN_SELECT = `
@@ -133,14 +135,14 @@ export const adminProductService = {
    */
   async getAllProducts(options: GetAllProductsOptions = {}): Promise<ProductWithDetails[]> {
     try {
-      const { includeReviews = true, limit } = options;
+      const { includeReviews = true, limit, offset = 0 } = options;
 
       let query = supabase
         .from("products")
         .select(PRODUCT_ADMIN_SELECT)
         .order("created_at", { ascending: false });
       if (limit && limit > 0) {
-        query = query.limit(limit);
+        query = query.range(offset, offset + limit - 1);
       }
 
       const { data, error } = await query;
@@ -167,7 +169,7 @@ export const adminProductService = {
           total_reviews: reviewStats?.total ?? 0,
           average_rating: reviewStats?.average ?? 0,
         };
-      });
+      }) as unknown as ProductWithDetails[];
     } catch (err) {
       console.error("Failed to get all products:", err);
       throw err;
@@ -282,7 +284,7 @@ export const adminProductService = {
         throw error;
       }
 
-      return data;
+      return data as unknown as ProductType;
     } catch (err) {
       console.error("Failed to create product:", err);
       throw err;
@@ -309,7 +311,7 @@ export const adminProductService = {
         throw error;
       }
 
-      return data;
+      return data as unknown as ProductType;
     } catch (err) {
       console.error("Failed to update product:", err);
       throw err;
@@ -352,7 +354,7 @@ export const adminProductService = {
         throw error;
       }
 
-      return data;
+      return data as unknown as ProductType;
     } catch (err) {
       console.error("Failed to update product stock:", err);
       throw err;
@@ -361,18 +363,13 @@ export const adminProductService = {
 
   async getLowStockProducts(threshold: number = 10): Promise<ProductType[]> {
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("product_id, slug, title, description, material, price, sale_price, image, stock, sizes, colors, is_active, sku, category_id, created_at, updated_at")
-        .lt("stock", threshold)
-        .order("stock", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching low stock products:", error);
-        throw error;
-      }
-
-      return data || [];
+      const products = await this.getAllProducts({ includeReviews: false, limit: 200 });
+      return products
+        .filter((product) => {
+          const stock = getSellableStock(product);
+          return stock > 0 && stock < threshold;
+        })
+        .sort((a, b) => getSellableStock(a) - getSellableStock(b));
     } catch (err) {
       console.error("Failed to get low stock products:", err);
       return [];
@@ -407,24 +404,20 @@ export const adminProductService = {
         return acc;
       }, {});
 
-      const { count: lowStockCount } = await supabase
-        .from("products")
-        .select("product_id", { count: "exact", head: true })
-        .lt("stock", 10);
-
-      const { data: products } = await supabase
-        .from("products")
-        .select("price, stock");
-
-      const totalInventoryValue = (products || []).reduce(
-        (sum, product) => sum + product.price * product.stock,
+      const products = await this.getAllProducts({ includeReviews: false, limit: 1000 });
+      const lowStockCount = products.filter((product) => {
+        const stock = getSellableStock(product);
+        return stock > 0 && stock < 10;
+      }).length;
+      const totalInventoryValue = products.reduce(
+        (sum, product) => sum + Number(product.price || 0) * getSellableStock(product),
         0,
       );
 
       return {
         totalProducts: totalProducts || 0,
         categoryStats,
-        lowStockCount: lowStockCount || 0,
+        lowStockCount,
         totalInventoryValue: Number(totalInventoryValue.toFixed(2)),
       };
     } catch (err) {

@@ -4,7 +4,7 @@ import { ProfileType } from "@/types";
 export interface UserWithStats extends ProfileType {
   total_orders?: number;
   total_spent?: number;
-  last_order_date?: string;
+  last_order_date?: string | null;
   is_active?: boolean;
 }
 

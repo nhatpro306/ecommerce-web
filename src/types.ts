@@ -1,18 +1,20 @@
-﻿export interface ProductType {
+import type { Json } from "@/types/supabase";
+
+export interface ProductType {
   product_id: string;
-  slug?: string;
+  slug?: string | null;
   title: string;
   description: string;
-  material?: string;
+  material?: string | null;
   price: number;
   sale_price?: number | null;
-  image?: string;
+  image?: string | null;
   stock: number;
   sizes?: string[];
   colors?: string[];
-  is_active?: boolean;
-  sku?: string;
-  category_id?: number;
+  is_active?: boolean | null;
+  sku?: string | null;
+  category_id?: number | null;
   variants?: ProductVariantType[];
   images?: ProductImageType[];
   category?: {
@@ -20,8 +22,8 @@
     name?: string;
     description?: string;
   };
-  created_at?: string;
-  updated_at?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface ProductImageType {
@@ -31,7 +33,7 @@ export interface ProductImageType {
   alt_text?: string | null;
   sort_order: number;
   is_primary: boolean;
-  created_at?: string;
+  created_at?: string | null;
 }
 
 export interface ProductVariantType {
@@ -44,8 +46,8 @@ export interface ProductVariantType {
   price_override?: number | null;
   image_url?: string | null;
   is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface CartItemType {
@@ -57,7 +59,7 @@ export interface CartItemType {
   price: number;
   selected_size?: string | null;
   selected_color?: string | null;
-  variant_info?: Record<string, unknown>;
+  variant_info?: Json;
   created_at: string;
   updated_at: string;
   product?: ProductType;
@@ -85,7 +87,7 @@ export interface OrderItemType {
   variant_id?: string | null;
   selected_size?: string | null;
   selected_color?: string | null;
-  variant_info?: Record<string, unknown>;
+  variant_info?: Json;
   product_title_snapshot?: string | null;
   product_image_snapshot?: string | null;
   sku_snapshot?: string | null;
@@ -94,16 +96,20 @@ export interface OrderItemType {
   product?: {
     product_id: string;
     title: string;
-    image?: string;
+    image?: string | null;
   };
 }
 
 export type OrderStatus =
   | "pending"
   | "processing"
+  | "confirmed"
+  | "shipping"
+  | "completed"
   | "shipped"
   | "delivered"
-  | "cancelled";
+  | "cancelled"
+  | (string & {});
 
 export interface OrderType {
   id: number;
@@ -111,14 +117,14 @@ export interface OrderType {
   status: OrderStatus;
   total: number;
   shipping_address_id: number;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_email?: string;
-  customer_note?: string;
-  payment_method?: string;
-  payment_id?: string;
-  created_at?: string;
-  updated_at?: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  customer_note?: string | null;
+  payment_method?: string | null;
+  payment_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   order_items?: OrderItemType[];
 }
 
@@ -127,7 +133,7 @@ export interface AddressType {
   user_id: string;
   street: string;
   city: string;
-  state?: string;
+  state?: string | null;
   zip_code: string;
   country: string;
   is_default: boolean;
@@ -135,12 +141,13 @@ export interface AddressType {
 
 export interface ProfileType {
   profile_id: string;
-  username?: string;
-  avatar_url?: string;
-  email?: string;
-  role: "admin" | "user";
+  username?: string | null;
+  avatar_url?: string | null;
+  email?: string | null;
+  role: "admin" | "user" | string;
+  is_active?: boolean;
   created_at: string;
-  updated_at?: string;
+  updated_at?: string | null;
 }
 
 export interface ReviewType {
@@ -149,7 +156,7 @@ export interface ReviewType {
   user_id: string;
   rating: number;
   comment?: string;
-  created_at?: string;
+  created_at?: string | null;
 }
 
 export interface CategoryType {
@@ -185,7 +192,7 @@ export interface StoreSettingsType {
   bank_account_number?: string | null;
   shipping_fee: number;
   free_shipping_threshold?: number | null;
-  updated_at?: string;
+  updated_at?: string | null;
 }
 
 

@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
@@ -223,7 +223,7 @@ export async function createAdminProductAction(
   }
 
   revalidateProductPaths(data?.slug || data?.product_id);
-  return data as ProductType;
+  return data as unknown as ProductType;
 }
 
 export async function updateAdminProductAction(
@@ -280,7 +280,7 @@ export async function updateAdminProductAction(
   }
 
   revalidateProductPaths(data?.slug || productId);
-  return data as ProductType;
+  return data as unknown as ProductType;
 }
 
 export async function syncAdminProductVariantsAction(
@@ -545,7 +545,6 @@ export async function syncAdminProductImagesAction(
   const normalizedImages = images
     .filter((image) => image.url?.trim())
     .map((image, index) => ({
-      product_id: productId,
       url: image.url.trim(),
       alt_text: image.alt_text || null,
       sort_order: image.sort_order ?? index,
@@ -560,34 +559,14 @@ export async function syncAdminProductImagesAction(
     normalizedImages[0].is_primary = true;
   }
 
-  const { error: deleteError } = await supabase
-    .from("product_images")
-    .delete()
-    .eq("product_id", productId);
+  const { error: syncError } = await supabase.rpc("sync_product_images", {
+    p_product_id: productId,
+    p_images: normalizedImages,
+  });
 
-  if (deleteError) {
-    logSupabaseError("delete_product_images_failed", deleteError, { productId });
-    throw new Error(getSupabaseErrorMessage("Không thể cập nhật ảnh sản phẩm", deleteError));
-  }
-
-  const { error: insertError } = await supabase
-    .from("product_images")
-    .insert(normalizedImages);
-
-  if (insertError) {
-    logSupabaseError("insert_product_images_failed", insertError, { productId });
-    throw new Error(getSupabaseErrorMessage("Không thể lưu ảnh sản phẩm", insertError));
-  }
-
-  const primaryImage = normalizedImages.find((image) => image.is_primary) ?? normalizedImages[0];
-  const { error: productImageError } = await supabase
-    .from("products")
-    .update({ image: primaryImage.url, updated_at: new Date().toISOString() })
-    .eq("product_id", productId);
-
-  if (productImageError) {
-    logSupabaseError("update_product_primary_image_failed", productImageError, { productId });
-    throw new Error(getSupabaseErrorMessage("Không thể cập nhật ảnh chính của sản phẩm", productImageError));
+  if (syncError) {
+    logSupabaseError("sync_product_images_failed", syncError, { productId });
+    throw new Error(getSupabaseErrorMessage("Không thể đồng bộ ảnh sản phẩm", syncError));
   }
 
   revalidateProductPaths(productId);

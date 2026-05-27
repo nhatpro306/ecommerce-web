@@ -7,7 +7,7 @@ export async function getProfile(userId: string): Promise<ProfileType | null> {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('profile_id', userId)
       .single();
 
     if (error && error.code !== 'PGRST116') {

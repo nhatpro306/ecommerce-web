@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
@@ -8,6 +9,7 @@ import ShoppingSkeleton from "@/components/ShoppingSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase/client";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getProductImage } from "@/utils/productImages";
 
@@ -15,6 +17,48 @@ export default function CartShoppingPage() {
   const { cartItems, removeFromCart, updateQuantity, subtotal, isLoading } = useCart();
   const { user } = useAuth();
   const { t } = useI18n();
+  const [shippingConfig, setShippingConfig] = useState({
+    shippingFee: 0,
+    freeShippingThreshold: null as number | null,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadStoreSettings() {
+      const { data, error } = await supabase
+        .from("store_settings")
+        .select("shipping_fee, free_shipping_threshold")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (!isMounted || error || !data) return;
+
+      setShippingConfig({
+        shippingFee: Number(data.shipping_fee || 0),
+        freeShippingThreshold:
+          data.free_shipping_threshold == null
+            ? null
+            : Number(data.free_shipping_threshold),
+      });
+    }
+
+    loadStoreSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const shippingFee = useMemo(() => {
+    const configuredFee = Math.max(0, shippingConfig.shippingFee || 0);
+    const freeThreshold = shippingConfig.freeShippingThreshold;
+    if (freeThreshold != null && freeThreshold > 0 && subtotal >= freeThreshold) {
+      return 0;
+    }
+    return configuredFee;
+  }, [shippingConfig.freeShippingThreshold, shippingConfig.shippingFee, subtotal]);
+  const total = subtotal + shippingFee;
 
   if (isLoading) return <ShoppingSkeleton />;
 
@@ -115,11 +159,11 @@ export default function CartShoppingPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>{t("cart.shippingFee")}</span>
-                  <span>{t("cart.freeShipping")}</span>
+                  <span>{shippingFee > 0 ? formatCurrency(shippingFee) : t("cart.freeShipping")}</span>
                 </div>
                 <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-4 text-lg font-black">
                   <span>{t("checkout.total")}</span>
-                  <span className="text-right">{formatCurrency(subtotal)}</span>
+                  <span className="text-right">{formatCurrency(total)}</span>
                 </div>
               </div>
               <Link href={user ? "/checkout" : "/signin"}>

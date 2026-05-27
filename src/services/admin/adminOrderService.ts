@@ -19,8 +19,8 @@ interface CustomerStat {
 
 interface OrderJoinRow extends OrderType {
   profiles?: {
-    username: string;
-    email: string;
+    username?: string | null;
+    email?: string | null;
   } | null;
   addresses?: {
     street: string;
@@ -34,8 +34,8 @@ interface OrderJoinRow extends OrderType {
 
 export interface OrderWithDetails extends Omit<OrderType, "order_items"> {
   profile?: {
-    username: string;
-    email: string;
+    username?: string | null;
+    email?: string | null;
   };
   shipping_address?: {
     street: string;
@@ -63,6 +63,14 @@ export interface OrderAnalytics {
   ordersByStatus: Record<string, number>;
   recentOrders: OrderWithDetails[];
   topCustomers: CustomerStat[];
+  todayOrders: number;
+  todayRevenue: number;
+}
+
+export interface DashboardOrderAnalytics {
+  totalOrders: number;
+  ordersByStatus: Record<string, number>;
+  recentOrders: OrderWithDetails[];
   todayOrders: number;
   todayRevenue: number;
 }
@@ -465,6 +473,138 @@ export const adminOrderService = {
     }
   },
 
+  async getDashboardAnalytics(): Promise<DashboardOrderAnalytics> {
+    try {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const todayIso = startOfToday.toISOString();
+
+      const [
+        totalCountResult,
+        todayOrdersResult,
+        pendingCountResult,
+        processingCountResult,
+        recentOrdersResult,
+      ] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("total").gte("created_at", todayIso),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "processing"),
+        supabase
+          .from("orders")
+          .select(
+            `
+            id,
+            user_id,
+            status,
+            total,
+            shipping_address_id,
+            created_at,
+            updated_at,
+            payment_method,
+            payment_id,
+            customer_name,
+            customer_phone,
+            customer_email,
+            customer_note,
+            profiles (
+              username,
+              email
+            )
+          `,
+          )
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+
+      if (
+        totalCountResult.error ||
+        todayOrdersResult.error ||
+        pendingCountResult.error ||
+        processingCountResult.error
+      ) {
+        const firstError =
+          totalCountResult.error ||
+          todayOrdersResult.error ||
+          pendingCountResult.error ||
+          processingCountResult.error;
+        console.error("Error fetching orders for analytics:", firstError);
+        throw firstError;
+      }
+
+      let recentOrderRows = (recentOrdersResult.data || []) as Array<
+        Partial<OrderJoinRow> & {
+          profiles?:
+            | { username?: string | null; email?: string | null }
+            | { username?: string | null; email?: string | null }[]
+            | null;
+        }
+      >;
+      if (recentOrdersResult.error) {
+        if (!isJoinOrPolicyError(recentOrdersResult.error)) {
+          console.error("Error fetching recent orders for analytics:", recentOrdersResult.error);
+          throw recentOrdersResult.error;
+        }
+
+        const { data: basicRecentOrders, error: basicRecentOrdersError } = await supabase
+          .from("orders")
+          .select(ORDER_BASE_SELECT)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (basicRecentOrdersError) {
+          console.error("Error fetching fallback recent orders:", basicRecentOrdersError);
+          throw basicRecentOrdersError;
+        }
+
+        recentOrderRows = basicRecentOrders || [];
+      }
+
+      const totalOrders = totalCountResult.count || 0;
+      const todayOrdersList = todayOrdersResult.data || [];
+      const todayOrders = todayOrdersList.length;
+      const todayRevenue = todayOrdersList.reduce(
+        (sum, order) => sum + Number(order.total || 0),
+        0,
+      );
+
+      const ordersByStatus = {
+        pending: pendingCountResult.count || 0,
+        processing: processingCountResult.count || 0,
+      };
+
+      const recentOrders = recentOrderRows.map((order) => ({
+        ...order,
+        profile: (() => {
+          const profile = normalizeOrderProfile(order.profiles);
+          return profile
+            ? {
+                username: profile.username || "Unknown",
+                email: profile.email || "Unknown",
+              }
+            : undefined;
+        })(),
+      })) as OrderWithDetails[];
+
+      return {
+        totalOrders,
+        ordersByStatus,
+        recentOrders,
+        todayOrders,
+        todayRevenue: Number(todayRevenue.toFixed(2)),
+      };
+    } catch (err) {
+      console.error("Failed to get dashboard order analytics:", err);
+      return {
+        totalOrders: 0,
+        ordersByStatus: {},
+        recentOrders: [],
+        todayOrders: 0,
+        todayRevenue: 0,
+      };
+    }
+  },
+
   async getOrderAnalytics(): Promise<OrderAnalytics> {
     try {
       const startOfToday = new Date();
@@ -659,7 +799,7 @@ export const adminOrderService = {
       return (data || []).map((order) => ({
         ...order,
         profile: order.profiles,
-      }));
+      })) as unknown as OrderWithDetails[];
     } catch (err) {
       console.error("Failed to get orders requiring attention:", err);
       return [];

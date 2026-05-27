@@ -5,7 +5,7 @@ export async function deleteAddress(addressId: string) {
   const { error } = await supabase
     .from('addresses')
     .delete()
-    .eq('id', addressId);
+    .eq('id', Number(addressId));
 
   if (error) {
     toast.error('Failed to delete address');

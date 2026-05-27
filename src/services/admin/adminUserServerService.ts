@@ -11,7 +11,7 @@ export interface UserFilters {
 
 export interface SanitizedUserWithStats {
   profile_id: string;
-  username: string;
+  username: string | null;
   email: string; // Sanitized email (masked)
   role: string;
   created_at: string;
@@ -176,7 +176,8 @@ export const adminUserServerService = {
 };
 
 // Helper functions to sanitize sensitive data
-function maskEmail(email: string): string {
+function maskEmail(email: string | null): string {
+  if (!email) return "";
   const [username, domain] = email.split("@");
   if (username.length <= 3) {
     return `${username.substring(0, 1)}***@${domain}`;

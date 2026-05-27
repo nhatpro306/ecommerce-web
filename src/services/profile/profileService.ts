@@ -73,7 +73,7 @@ export const profileService = {
           ...data,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', userId)
+        .eq('profile_id', userId)
         .select('*')
         .single();
 
@@ -336,7 +336,7 @@ export const profileService = {
       const { error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userId);
+        .eq('profile_id', userId);
 
       if (error) {
         console.error('Error deleting profile:', error);

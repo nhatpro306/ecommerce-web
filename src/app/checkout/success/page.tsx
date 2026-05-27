@@ -18,20 +18,47 @@ interface BankConfig {
   accountNumber: string;
 }
 
+interface OrderSummary {
+  total: number;
+  paymentMethod: string;
+}
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, locale } = useI18n();
   const orderId = searchParams.get("order_id");
-  const paymentMethod = searchParams.get("payment_method");
-  const total = Number(searchParams.get("total") || 0);
+  const fallbackPaymentMethod = searchParams.get("payment_method");
   const [isLoading, setIsLoading] = useState(true);
   const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
+  const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setIsLoading(false), 700);
-    return () => window.clearTimeout(timeoutId);
-  }, []);
+    async function loadOrderSummary() {
+      const numericOrderId = Number(orderId);
+      if (!orderId || !Number.isInteger(numericOrderId)) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("orders")
+        .select("total, payment_method")
+        .eq("id", numericOrderId)
+        .maybeSingle();
+
+      if (!error && data) {
+        setOrderSummary({
+          total: Number(data.total || 0),
+          paymentMethod: data.payment_method || "cod",
+        });
+      }
+
+      setIsLoading(false);
+    }
+
+    loadOrderSummary();
+  }, [orderId]);
 
   useEffect(() => {
     async function loadStoreSettings() {
@@ -61,7 +88,8 @@ function SuccessContent() {
     [storeBankConfig],
   );
 
-  const paymentMethodLabel = getPaymentMethodLabel(paymentMethod || "cod", locale);
+  const paymentMethod = orderSummary?.paymentMethod || fallbackPaymentMethod || "cod";
+  const paymentMethodLabel = getPaymentMethodLabel(paymentMethod, locale);
 
   if (isLoading) {
     return (
@@ -92,7 +120,9 @@ function SuccessContent() {
           <div className="space-y-2 text-center">
             <p className="text-zinc-500">{t("success_thanks")}</p>
             {orderId && <p className="text-sm text-zinc-500">{t("success.orderCode")}: #{orderId}</p>}
-            {total > 0 && <p className="text-sm text-zinc-500">{t("success.totalAmount")}: {formatCurrency(total)}</p>}
+            {orderSummary?.total ? (
+              <p className="text-sm text-zinc-500">{t("success.totalAmount")}: {formatCurrency(orderSummary.total)}</p>
+            ) : null}
             <p className="text-sm text-zinc-500">{t("success.paymentMethod")}: {paymentMethodLabel}</p>
           </div>
 

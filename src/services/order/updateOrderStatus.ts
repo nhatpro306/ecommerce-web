@@ -5,7 +5,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
   const { data, error } = await supabase
     .from('orders')
     .update({ status })
-    .eq('id', orderId)
+    .eq('id', Number(orderId))
     .select()
     .single();
 

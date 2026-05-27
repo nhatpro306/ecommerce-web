@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/services/auth/authServerService";
+import { requireAdmin } from "@/lib/auth/requireAdmin";
 import { adminUserServerService } from "@/services/admin/adminUserServerService";
 
 /**
@@ -13,11 +13,7 @@ export async function updateUserRoleAction(
   role: "admin" | "user",
 ) {
   try {
-    // Verify current user is admin
-    const currentUser = await getCurrentUser();
-    if (!currentUser || currentUser.role !== "admin") {
-      throw new Error("Unauthorized: Admin access required");
-    }
+    await requireAdmin();
 
     // Update user role
     const result = await adminUserServerService.updateUserRole(userId, role);
@@ -46,14 +42,10 @@ export async function updateUserRoleAction(
  */
 export async function deleteUserAction(userId: string) {
   try {
-    // Verify current user is admin
-    const currentUser = await getCurrentUser();
-    if (!currentUser || currentUser.role !== "admin") {
-      throw new Error("Unauthorized: Admin access required");
-    }
+    const currentUser = await requireAdmin();
 
     // Prevent admin from deleting themselves
-    if (currentUser.profile_id === userId) {
+    if (currentUser.id === userId) {
       throw new Error("Cannot delete your own account");
     }
 

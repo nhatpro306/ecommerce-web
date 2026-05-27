@@ -1,4 +1,4 @@
-﻿import { createPublicServerSupabase } from '@/lib/supabase/public-server';
+import { createPublicServerSupabase } from '@/lib/supabase/public-server';
 import { ProductType } from '@/types';
 import {
   findSampleProduct,
@@ -132,7 +132,7 @@ export const productServerService = {
         const { data: productById, error: idError } = await runProductQuery(
           (select) =>
             onlyActiveProducts(
-              productSelect(supabase, select).eq('product_id', numericId),
+              productSelect(supabase, select).eq('product_id', String(numericId)),
             ).maybeSingle(),
           'Server product id query timed out',
         );

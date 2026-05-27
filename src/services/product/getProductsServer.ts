@@ -14,7 +14,7 @@ export async function getProductsServer(): Promise<ProductType[]> {
       return [];
     }
 
-    return data as ProductType[];
+    return data as unknown as ProductType[];
   } catch (error) {
     console.error('Error in getProductsServer:', error);
     return [];

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { ProductType, CartItemType, CartType, CartStatus } from '../../types';
+import type { Json } from "@/types/supabase";
 import { toast } from 'sonner';
 import { getClientUser } from '@/lib/supabase/clientUtils';
 
@@ -25,6 +26,11 @@ const CART_ITEM_WITH_PRODUCT_SELECT = `
     category_id,
     created_at,
     updated_at
+  ),
+  variant:product_variants (
+    id,
+    stock,
+    is_active
   )
 `;
 
@@ -38,6 +44,12 @@ export interface CartVariantOptions {
 interface CartUserOptions {
   userId?: string | null;
 }
+
+type CartVariantStock = {
+  id: string;
+  stock: number;
+  is_active: boolean;
+};
 
 function isMissingVariantIdColumn(error: { message?: string; code?: string }) {
   const message = `${error.code || ''} ${error.message || ''}`.toLowerCase();
@@ -55,6 +67,10 @@ async function resolveCartUserId(options?: CartUserOptions) {
 
 function normalizeJoinedProduct(product: ProductType | ProductType[] | null | undefined) {
   return Array.isArray(product) ? product[0] : product;
+}
+
+function normalizeJoinedVariant(variant: CartVariantStock | CartVariantStock[] | null | undefined) {
+  return Array.isArray(variant) ? variant[0] : variant;
 }
 
 function reportCartError(message: string, error: unknown): never {
@@ -126,10 +142,16 @@ export async function getCartItems(cartId: number): Promise<(CartItemType & { pr
     return data.reduce<(CartItemType & { product: ProductType })[]>((items, item) => {
       const product = normalizeJoinedProduct(item.product as ProductType | ProductType[] | null);
       if (!product) return items;
+      const variant = normalizeJoinedVariant(
+        (item as unknown as { variant?: CartVariantStock | CartVariantStock[] | null }).variant,
+      );
 
       items.push({
         ...item,
-        product,
+        product: {
+          ...product,
+          stock: variant?.stock ?? product.stock,
+        },
       } as CartItemType & { product: ProductType });
       return items;
     }, []);
@@ -195,7 +217,7 @@ export async function addItemToCart(
       price,
       selected_size: selectedSize,
       selected_color: selectedColor,
-      variant_info: options.variantInfo ?? {},
+      variant_info: (options.variantInfo ?? {}) as Json,
     };
 
     const { data, error } = await supabase.from('cart_items').insert(insertPayload).select(CART_ITEM_SELECT).single();
@@ -228,6 +250,15 @@ export async function addItemToCart(
 export async function updateCartItemQuantity(cartItemId: number, quantity: number) {
   try {
     if (quantity <= 0) return await removeCartItem(cartItemId);
+
+    const { error: stockError } = await supabase.rpc("validate_cart_item_quantity", {
+      p_cart_item_id: cartItemId,
+      p_quantity: quantity,
+    });
+
+    if (stockError) {
+      reportCartError("Error validating cart item stock:", stockError);
+    }
 
     const { data, error } = await supabase
       .from('cart_items')

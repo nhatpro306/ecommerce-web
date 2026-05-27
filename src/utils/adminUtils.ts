@@ -6,9 +6,9 @@ import { supabase } from "@/lib/supabase/client";
 
 export interface AdminUser {
   profile_id: string;
-  username: string;
-  email: string;
-  role: "admin" | "user";
+  username: string | null;
+  email: string | null;
+  role: "admin" | "user" | string;
   created_at: string;
 }
 

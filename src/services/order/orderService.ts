@@ -1,4 +1,5 @@
 import { AddressType } from "@/types";
+import type { Json } from "@/types/supabase";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { getActiveCart } from "@/services/cart/cartService";
@@ -10,14 +11,13 @@ interface OrderItemInput {
   price: number;
   selected_size?: string | null;
   selected_color?: string | null;
-  variant_info?: Record<string, unknown>;
+  variant_info?: Json;
 }
 
 interface CreateOrderParams {
   userId: string;
   items: OrderItemInput[];
   shippingAddress: AddressType;
-  totalAmount: number;
   paymentIntentId?: string;
   paymentMethod?: "cod" | "bank_transfer";
   customerName?: string;
@@ -31,7 +31,6 @@ export const orderService = {
     userId,
     items,
     shippingAddress,
-    totalAmount,
     paymentIntentId,
     paymentMethod = "cod",
     customerName,
@@ -48,9 +47,6 @@ export const orderService = {
       }
       if (!shippingAddress || !shippingAddress.id) {
         throw new Error("Vui lòng nhập đầy đủ địa chỉ giao hàng.");
-      }
-      if (!totalAmount || totalAmount <= 0) {
-        throw new Error("Tổng tiền không hợp lệ. Vui lòng kiểm tra lại giỏ hàng.");
       }
 
       const sanitizedItems = items
@@ -93,7 +89,8 @@ export const orderService = {
           message = "Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.";
         } else if (
           raw.includes("Not enough stock") ||
-          raw.includes("Variant is no longer available")
+          raw.includes("Variant is no longer available") ||
+          raw.includes("Product is no longer available")
         ) {
           message = "Một sản phẩm vừa hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng.";
         } else if (raw.includes("Shipping address does not belong")) {
@@ -167,7 +164,7 @@ export const orderService = {
         shipping_address:addresses!shipping_address_id (*)
       `,
       )
-      .eq("id", orderId)
+      .eq("id", Number(orderId))
       .single();
 
     if (error) {
@@ -181,7 +178,7 @@ export const orderService = {
     const { data, error } = await supabase
       .from("orders")
       .update({ status })
-      .eq("id", orderId)
+      .eq("id", Number(orderId))
       .select()
       .single();
 
@@ -194,7 +191,7 @@ export const orderService = {
 
   async deleteOrder(orderId: string) {
     // Attempt to delete order; assuming foreign keys handle cascade for order_items
-    const { error } = await supabase.from("orders").delete().eq("id", orderId);
+    const { error } = await supabase.from("orders").delete().eq("id", Number(orderId));
 
     if (error) {
       toast.error("Không thể xóa đơn hàng");

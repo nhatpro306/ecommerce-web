@@ -14,7 +14,7 @@ export async function getOrderById(orderId: string) {
       shipping_address:addresses!shipping_address_id (*)
     `
     )
-    .eq('id', orderId)
+    .eq('id', Number(orderId))
     .single();
 
   if (error) {

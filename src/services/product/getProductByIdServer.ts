@@ -17,7 +17,7 @@ export async function getProductByIdServer(
       return null;
     }
 
-    return data as ProductType;
+    return data as unknown as ProductType;
   } catch (error) {
     console.error('Error in getProductByIdServer:', error);
     return null;

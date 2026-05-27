@@ -143,28 +143,6 @@ async function rollbackUploadedImages(images: UploadedProductImage[]) {
   }
 }
 
-async function rollbackProductImageMetadata(
-  productId: string,
-  images: UploadedProductImage[],
-) {
-  if (images.length === 0) return;
-
-  const urls = images.map((image) => image.url);
-
-  const { error } = await supabase
-    .from("product_images")
-    .delete()
-    .eq("product_id", productId)
-    .in("url", urls);
-
-  if (error) {
-    logSupabaseError("rollback_product_image_metadata_failed", error, {
-      productId,
-      urls,
-    });
-  }
-}
-
 export async function uploadAndAttachProductImages(
   productId: string,
   files: File[],
@@ -191,7 +169,6 @@ export async function uploadAndAttachProductImages(
     primaryIndex >= 0 && primaryIndex < files.length ? primaryIndex : 0;
 
   const uploadedImages: UploadedProductImage[] = [];
-  let metadataInserted = false;
 
   try {
     onProgress?.(5);
@@ -202,83 +179,34 @@ export async function uploadAndAttachProductImages(
       onProgress?.(Math.min(55, Math.round(((index + 1) / files.length) * 55)));
     }
 
-    const { error: resetPrimaryError } = await supabase
-      .from("product_images")
-      .update({ is_primary: false })
-      .eq("product_id", productId);
+    const imagePayload = uploadedImages.map((uploaded, index) => ({
+      url: uploaded.url,
+      alt_text: files[index]?.name || null,
+      sort_order: index,
+      is_primary: index === safePrimaryIndex,
+    }));
 
-    if (resetPrimaryError) {
-      logSupabaseError("reset_primary_images_failed", resetPrimaryError, {
+    const { error: syncError } = await supabase.rpc("sync_product_images", {
+      p_product_id: productId,
+      p_images: imagePayload,
+    });
+
+    if (syncError) {
+      logSupabaseError("sync_product_images_failed", syncError, {
         productId,
+        uploadedCount: uploadedImages.length,
       });
 
       throw new Error(
         getSupabaseErrorMessage(
-          "Không thể cập nhật metadata ảnh. Vui lòng kiểm tra quyền update bảng product_images trong Supabase",
-          resetPrimaryError,
+          "Ảnh đã upload nhưng không thể đồng bộ metadata ảnh. Vui lòng kiểm tra migration sync_product_images và quyền admin",
+          syncError,
           `product_id=${productId}`,
         ),
       );
     }
 
-    for (const [index, file] of files.entries()) {
-      const uploaded = uploadedImages[index];
-
-      const { error: imageError } = await supabase.from("product_images").insert({
-        product_id: productId,
-        url: uploaded.url,
-        alt_text: file.name,
-        sort_order: index,
-        is_primary: index === safePrimaryIndex,
-      });
-
-      if (imageError) {
-        logSupabaseError("metadata_insert_failed", imageError, {
-          productId,
-          path: uploaded.path,
-          url: uploaded.url,
-          fileName: file.name,
-        });
-
-        throw new Error(
-          getSupabaseErrorMessage(
-            "Không thể lưu metadata ảnh vào bảng product_images. Vui lòng kiểm tra RLS/policy hoặc schema Supabase",
-            imageError,
-            `product_id=${productId}, url=${uploaded.url}`,
-          ),
-        );
-      }
-
-      onProgress?.(Math.min(90, 55 + Math.round(((index + 1) / files.length) * 35)));
-    }
-
-    metadataInserted = true;
-
-    const primaryUploadedImage = uploadedImages[safePrimaryIndex];
-
-    if (!primaryUploadedImage) {
-      throw new Error("Không tìm thấy ảnh chính sau khi upload.");
-    }
-
-    const { error: productError } = await supabase
-      .from("products")
-      .update({ image: primaryUploadedImage.url })
-      .eq("product_id", productId);
-
-    if (productError) {
-      logSupabaseError("product_main_image_update_failed", productError, {
-        productId,
-        url: primaryUploadedImage.url,
-      });
-
-      throw new Error(
-        getSupabaseErrorMessage(
-          "Ảnh đã upload nhưng không thể cập nhật ảnh chính trong bảng products",
-          productError,
-          `product_id=${productId}`,
-        ),
-      );
-    }
+    onProgress?.(95);
 
     onProgress?.(100);
 
@@ -288,13 +216,8 @@ export async function uploadAndAttachProductImages(
       operation: "upload_and_attach_product_images",
       productId,
       uploadedCount: uploadedImages.length,
-      metadataInserted,
       error,
     });
-
-    if (metadataInserted) {
-      await rollbackProductImageMetadata(productId, uploadedImages);
-    }
 
     await rollbackUploadedImages(uploadedImages);
 

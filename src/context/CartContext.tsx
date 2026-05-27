@@ -7,6 +7,7 @@ import {
   useEffect,
 } from 'react';
 import { ProductType } from '../types';
+import type { Json } from "@/types/supabase";
 import * as cartService from '@/services/cart/cartService';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
@@ -23,7 +24,7 @@ export interface CartItem extends ProductType {
   variant_id?: string | null;
   selected_size?: string | null;
   selected_color?: string | null;
-  variant_info?: Record<string, unknown>;
+  variant_info?: Json;
 }
 
 interface CartContextType {
@@ -65,7 +66,14 @@ function getCartItemKey(
 }
 
 function isLocalCartItem(item: CartItem): boolean {
-  return item.variant_info?.localCart === true || !isSupabaseProductId(item.product_id);
+  const variantInfo = item.variant_info;
+  const hasLocalFlag =
+    variantInfo !== null &&
+    typeof variantInfo === "object" &&
+    !Array.isArray(variantInfo) &&
+    variantInfo.localCart === true;
+
+  return hasLocalFlag || !isSupabaseProductId(item.product_id);
 }
 
 function readLocalCart(): CartItem[] {
@@ -159,27 +167,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
           const localItems = readLocalCart();
           if (localItems.length > 0) {
-            await Promise.all(
-              localItems.map((item) =>
-                cartService
-                  .addItemToCart(cart.id, item.product_id, item.price, item.quantity, {
-                    size: item.selected_size ?? undefined,
-                    color: item.selected_color ?? undefined,
-                    variantId: item.variant_id ?? undefined,
-                    variantInfo: {
-                      size: item.selected_size,
-                      color: item.selected_color,
-                    },
-                  })
-                  .catch((error) => {
-                    console.warn("Failed to sync local cart item:", error);
-                  }),
-              ),
-            );
-            writeLocalCart([]);
+            const failedLocalItems: CartItem[] = [];
+
+            for (const item of localItems) {
+              try {
+                await cartService.addItemToCart(cart.id, item.product_id, item.price, item.quantity, {
+                  size: item.selected_size ?? undefined,
+                  color: item.selected_color ?? undefined,
+                  variantId: item.variant_id ?? undefined,
+                  variantInfo: {
+                    size: item.selected_size,
+                    color: item.selected_color,
+                  },
+                });
+              } catch (error) {
+                console.warn("Failed to sync local cart item:", error);
+                failedLocalItems.push(item);
+              }
+            }
+
+            writeLocalCart(failedLocalItems);
+            if (failedLocalItems.length > 0) {
+              toast.warning("Một số sản phẩm chưa đồng bộ được lên tài khoản.");
+            }
           }
 
           const items = await cartService.getCartItems(cart.id);
+          const unsyncedLocalItems = readLocalCart();
           const formattedItems: CartItem[] = items.map((item) => ({
             ...item.product,
             quantity: item.quantity,
@@ -190,7 +204,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             variant_info: item.variant_info,
           }));
 
-          setCartItems(formattedItems);
+          setCartItems([...formattedItems, ...unsyncedLocalItems]);
           setSubtotal(cart.total_price);
           setTotalItems(cart.total_items);
         }
@@ -343,18 +357,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return true;
       }
 
-      // If DB add failed (e.g. transient auth lock), fall back to local cart
-      addToLocalCart(
-        product,
-        quantity,
-        selectedSize,
-        selectedColor,
-        selectedVariantId,
-        selectedSku,
-        targetKey
-      );
-      toast.success('Đã thêm vào giỏ');
-      return true;
+      toast.error('Không thể thêm sản phẩm vào giỏ. Vui lòng thử lại.');
+      return false;
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error('Không thể thêm sản phẩm vào giỏ');

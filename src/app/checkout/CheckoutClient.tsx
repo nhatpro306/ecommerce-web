@@ -22,6 +22,10 @@ interface BankConfig {
   accountName: string;
   accountNumber: string;
 }
+interface StoreCheckoutConfig extends BankConfig {
+  shippingFee: number;
+  freeShippingThreshold: number | null;
+}
 interface ProvinceOption {
   code: string;
   name: string;
@@ -45,7 +49,7 @@ export default function CheckoutClient() {
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
-  const [storeBankConfig, setStoreBankConfig] = useState<BankConfig | null>(null);
+  const [storeCheckoutConfig, setStoreCheckoutConfig] = useState<StoreCheckoutConfig | null>(null);
   const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
   const [selectedDistrictCode, setSelectedDistrictCode] = useState("");
   const [selectedWardCode, setSelectedWardCode] = useState("");
@@ -64,14 +68,19 @@ export default function CheckoutClient() {
     async function loadStoreSettings() {
       const { data, error } = await supabase
         .from("store_settings")
-        .select("bank_name, bank_account_name, bank_account_number")
+        .select("bank_name, bank_account_name, bank_account_number, shipping_fee, free_shipping_threshold")
         .eq("id", 1)
         .maybeSingle();
       if (error || !data) return;
-      setStoreBankConfig({
+      setStoreCheckoutConfig({
         name: data.bank_name || "Vietcombank",
         accountName: data.bank_account_name || "RESEY",
         accountNumber: data.bank_account_number || "0123456789",
+        shippingFee: Number(data.shipping_fee || 0),
+        freeShippingThreshold:
+          data.free_shipping_threshold == null
+            ? null
+            : Number(data.free_shipping_threshold),
       });
     }
     loadStoreSettings();
@@ -79,13 +88,24 @@ export default function CheckoutClient() {
 
   const bankConfig = useMemo(
     () =>
-      storeBankConfig || {
+      storeCheckoutConfig || {
         name: process.env.NEXT_PUBLIC_BANK_NAME || "Vietcombank",
         accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "RESEY",
         accountNumber: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "0123456789",
+        shippingFee: 0,
+        freeShippingThreshold: null,
       },
-    [storeBankConfig],
+    [storeCheckoutConfig],
   );
+  const shippingFee = useMemo(() => {
+    const configuredFee = Math.max(0, bankConfig.shippingFee || 0);
+    const freeThreshold = bankConfig.freeShippingThreshold;
+    if (freeThreshold != null && freeThreshold > 0 && subtotal >= freeThreshold) {
+      return 0;
+    }
+    return configuredFee;
+  }, [bankConfig.freeShippingThreshold, bankConfig.shippingFee, subtotal]);
+  const orderTotal = subtotal + shippingFee;
   const provinces = useMemo<ProvinceOption[]>(() => getProvinces().map((item) => ({ code: item.code, name: item.name })), []);
   const districts = useMemo<DistrictOption[]>(
     () =>
@@ -159,7 +179,6 @@ export default function CheckoutClient() {
           variant_info: item.variant_info ?? { size: item.selected_size, color: item.selected_color },
         })),
         shippingAddress: savedAddress,
-        totalAmount: subtotal,
         paymentMethod,
         customerName: form.fullName.trim(),
         customerPhone: form.phone.trim(),
@@ -340,9 +359,19 @@ export default function CheckoutClient() {
               </div>
             ))}
           </div>
-          <div className="mt-5 flex items-start justify-between gap-3 border-t border-zinc-200 pt-5 text-lg font-black">
+          <div className="mt-5 space-y-3 border-t border-zinc-200 pt-5 text-sm text-zinc-600">
+            <div className="flex items-center justify-between">
+              <span>{t("cart.subtotal")}</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>{t("cart.shippingFee")}</span>
+              <span>{shippingFee > 0 ? formatCurrency(shippingFee) : t("cart.freeShipping")}</span>
+            </div>
+          </div>
+          <div className="mt-4 flex items-start justify-between gap-3 border-t border-zinc-200 pt-4 text-lg font-black">
             <span>{t("checkout.total")}</span>
-            <span className="text-right">{formatCurrency(subtotal)}</span>
+            <span className="text-right">{formatCurrency(orderTotal)}</span>
           </div>
           <Button
             onClick={submitOrder}

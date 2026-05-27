@@ -57,7 +57,7 @@ export const addressService = {
         country: address.country,
         is_default: address.is_default || false,
       })
-      .eq('id', addressId)
+      .eq('id', Number(addressId))
       .select()
       .single();
 
@@ -72,7 +72,7 @@ export const addressService = {
     const { error } = await supabase
       .from('addresses')
       .delete()
-      .eq('id', addressId);
+      .eq('id', Number(addressId));
 
     if (error) {
       toast.error('Failed to delete address');

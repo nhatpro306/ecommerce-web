@@ -16,7 +16,7 @@ export async function updateAddress(
       country: address.country,
       is_default: address.is_default || false,
     })
-    .eq('id', addressId)
+    .eq('id', Number(addressId))
     .select()
     .single();
 

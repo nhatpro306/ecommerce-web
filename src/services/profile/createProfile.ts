@@ -10,7 +10,7 @@ export async function createProfile(
     const { data, error } = await supabase
       .from('profiles')
       .insert({
-        id: userId,
+        profile_id: userId,
         ...profileData,
       })
       .select()
