@@ -49,7 +49,12 @@ dist
 .vercel
 tsconfig.tsbuildinfo
 .env.production.local.bak
+# Vercel pulled env (e.g. `vercel env pull .env.vercel`)
+.env.vercel
+.env.vercel.*
 *.tsbuildinfo
+
+.codex/
 
 .mcp.json
 .obsidian/

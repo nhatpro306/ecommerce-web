@@ -42,10 +42,18 @@ export function useAddToCart() {
       productId,
       quantity,
       price,
+      size,
+      color,
+      variantId,
+      variantInfo,
     }: {
       productId: string;
       quantity: number;
       price: number;
+      size?: string;
+      color?: string;
+      variantId?: string | null;
+      variantInfo?: Record<string, unknown>;
     }) => {
       // Get or create active cart
       const cart = await getOrCreateCart();
@@ -53,8 +61,13 @@ export function useAddToCart() {
         throw new Error('Failed to get or create cart');
       }
 
-      // Add item to cart
-      await addItemToCart(cart.id, productId, price, quantity);
+      // Add item to cart with variant context forwarded.
+      await addItemToCart(cart.id, productId, price, quantity, {
+        size,
+        color,
+        variantId: variantId ?? undefined,
+        variantInfo,
+      });
 
       return cart.id;
     },
