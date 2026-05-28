@@ -518,7 +518,7 @@ export function ProductFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl">
+      <DialogContent className="max-h-[92vh] w-full !max-w-[min(1280px,95vw)] overflow-y-auto rounded-none p-6">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>

@@ -2,6 +2,8 @@
 import ClientProducts from "@/components/ClientProducts";
 import { productServerService } from "@/services/product/productServerService";
 
+export const revalidate = 60;
+
 type ProductsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };

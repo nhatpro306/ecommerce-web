@@ -6,6 +6,8 @@ import { createPublicServerSupabase } from "@/lib/supabase/public-server";
 import { productServerService } from "@/services/product/productServerService";
 import type { StoreSettingsType } from "@/types";
 
+export const revalidate = 60;
+
 export default async function Home() {
   const supabase = createPublicServerSupabase();
   const { data } = await supabase

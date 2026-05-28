@@ -18,6 +18,12 @@ interface CreateOrderParams {
   userId: string;
   items: OrderItemInput[];
   shippingAddress: AddressType;
+  /**
+   * UI-displayed shipping fee. Sent for telemetry/auditing only; the RPC
+   * recomputes the persisted shipping_fee from store_settings and ignores
+   * any tampering. Safe to omit on older callers.
+   */
+  shippingFee?: number;
   paymentIntentId?: string;
   paymentMethod?: "cod" | "bank_transfer";
   customerName?: string;
@@ -31,6 +37,7 @@ export const orderService = {
     userId,
     items,
     shippingAddress,
+    shippingFee,
     paymentIntentId,
     paymentMethod = "cod",
     customerName,
@@ -64,6 +71,10 @@ export const orderService = {
       }
 
       const activeCart = await getActiveCart();
+      const safeShippingFee =
+        typeof shippingFee === "number" && Number.isFinite(shippingFee) && shippingFee >= 0
+          ? shippingFee
+          : 0;
       const { data: orderId, error: checkoutError } = await supabase.rpc(
         "create_order_checkout",
         {
@@ -72,6 +83,7 @@ export const orderService = {
             shipping_address_id: shippingAddress.id,
             payment_method: paymentMethod,
             payment_id: paymentIntentId,
+            shipping_fee: safeShippingFee,
             customer_name: customerName,
             customer_phone: customerPhone,
             customer_email: customerEmail || null,

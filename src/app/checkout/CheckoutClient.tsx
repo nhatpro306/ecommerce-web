@@ -179,6 +179,7 @@ export default function CheckoutClient() {
           variant_info: item.variant_info ?? { size: item.selected_size, color: item.selected_color },
         })),
         shippingAddress: savedAddress,
+        shippingFee,
         paymentMethod,
         customerName: form.fullName.trim(),
         customerPhone: form.phone.trim(),

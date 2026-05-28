@@ -37,7 +37,10 @@ interface UseAuthFormReturn {
 export function useAuthForm({ isSignUp = false }: UseAuthFormProps = {}): UseAuthFormReturn {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = safeReturnTo(searchParams?.get("returnTo") ?? null);
+  // Accept either `returnTo` (existing) or `redirect` (used by requireAdmin).
+  const returnTo = safeReturnTo(
+    searchParams?.get("returnTo") ?? searchParams?.get("redirect") ?? null,
+  );
   const { signIn, signUp } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
