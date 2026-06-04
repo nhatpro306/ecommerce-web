@@ -79,7 +79,7 @@ export function ProductCard({ product, tag }: ProductCardProps) {
           />
           {/* Quick-add hover bar */}
           <span className="absolute inset-x-3 bottom-3 flex h-9 translate-y-2 items-center justify-center bg-zinc-950 text-[11px] font-bold uppercase tracking-[0.18em] text-white opacity-0 transition duration-180 group-hover:translate-y-0 group-hover:opacity-100">
-            + {t("product_add_to_cart")}
+            Xem chi tiết
           </span>
         </div>
 
