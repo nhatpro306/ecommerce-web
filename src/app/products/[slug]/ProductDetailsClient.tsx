@@ -19,16 +19,16 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
   const { addToCart } = useCart();
   const { t } = useI18n();
   const { data: allProducts = [] } = useProducts();
-  const [quantity, setQuantity] = useState(1);
-  const [isAddedToCart, setIsAddedToCart] = useState(false);
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
-  const [activeImage, setActiveImage] = useState("");
-
   const activeVariants = useMemo(
-    () => product.variants?.filter((variant) => variant.is_active) || [],
+    () => product.variants?.filter((variant) => variant.is_active !== false) || [],
     [product.variants],
   );
+  const initialVariant = activeVariants.find((variant) => Number(variant.stock || 0) > 0) || activeVariants[0];
+  const [quantity, setQuantity] = useState(1);
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(() => initialVariant?.size || "");
+  const [selectedColor, setSelectedColor] = useState(() => initialVariant?.color || "");
+  const [activeImage, setActiveImage] = useState("");
   const isVariantProduct = activeVariants.length > 0;
 
   const availableColors = isVariantProduct
@@ -84,6 +84,12 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
   useEffect(() => {
     if (currentStock > 0 && quantity > currentStock) setQuantity(currentStock);
   }, [currentStock, quantity]);
+
+  useEffect(() => {
+    if (!isVariantProduct) return;
+    setSelectedColor(initialVariant?.color || "");
+    setSelectedSize(initialVariant?.size || "");
+  }, [initialVariant?.color, initialVariant?.size, isVariantProduct]);
 
   useEffect(() => {
     setActiveImage(selectedVariant?.image_url || productImage);
