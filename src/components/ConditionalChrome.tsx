@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -27,7 +27,9 @@ export function ConditionalChrome({ children, footerSlot }: ConditionalChromePro
 
   return (
     <SidebarProvider>
-      <Sidebar />
+      <Suspense fallback={null}>
+        <Sidebar />
+      </Suspense>
       <SidebarInset>
         <DemoBanner />
         <Navbar />

@@ -29,7 +29,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useCategories } from "@/hooks/queries";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Motion } from "@/components/motion/motion";
 import {
   contentVariants,
@@ -61,6 +61,8 @@ const FALLBACK_CATEGORY_ITEMS = [
 export default function Sidebar() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get("category");
   const { state } = useSidebar();
 
   // Use the TanStack Query hook instead of manual state management
@@ -187,7 +189,11 @@ export default function Sidebar() {
                   animate="open"
                 >
                   {displayCategories.map((category) => {
-                    const isActive = pathname === category.href;
+                    const isAllCategory = category.name === "Tất cả";
+                    const onProductsPage = pathname === "/products";
+                    const isActive = isAllCategory
+                      ? onProductsPage && !activeCategory
+                      : onProductsPage && activeCategory === category.name;
                     const Icon = category.icon;
 
                     return (
