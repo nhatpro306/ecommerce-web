@@ -199,7 +199,11 @@ npm run build
 
 ## License
 
-Educational and portfolio project.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Credits / Third-party Notice
+
+Third-party libraries keep their own licenses. This project does not claim ownership of external libraries, templates, icons, or UI components.
 
 
 
