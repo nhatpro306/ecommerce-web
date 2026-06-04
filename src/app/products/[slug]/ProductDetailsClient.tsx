@@ -290,7 +290,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white p-3 md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
         <Button
           size="lg"
           className="h-12 w-full cursor-pointer rounded-none bg-zinc-950 text-xs font-bold uppercase tracking-[0.16em] text-white hover:bg-zinc-800"

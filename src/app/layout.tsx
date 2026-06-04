@@ -1,6 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TanStackQueryProvider } from "@/lib/providers/query-provider";
@@ -36,15 +36,32 @@ export const metadata: Metadata = {
       },
     ],
   },
+  manifest: "/manifest.webmanifest",
+  applicationName: "RESEY",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RESEY",
+  },
   icons: {
-    icon: "/brand/resey-logo.jpg",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
     shortcut: "/brand/resey-logo.jpg",
-    apple: "/brand/resey-logo.jpg",
+    apple: "/icons/apple-touch-icon.png",
   },
   robots: {
     index: true,
     follow: true,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6e0f11",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

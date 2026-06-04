@@ -46,12 +46,16 @@ const categoryIcons: Record<string, React.ElementType> = {
   Accessories: Watch,
 };
 
+function categoryHref(name: string) {
+  return `/products?category=${encodeURIComponent(name)}`;
+}
+
 const FALLBACK_CATEGORY_ITEMS = [
   { name: "Tất cả", icon: Home, href: "/products" },
-  { name: "T-Shirts", icon: Shirt, href: "/products" },
-  { name: "Hoodies", icon: Shirt, href: "/products" },
-  { name: "Pants", icon: Shirt, href: "/products" },
-  { name: "Accessories", icon: Watch, href: "/products" },
+  { name: "T-Shirts", icon: Shirt, href: categoryHref("T-Shirts") },
+  { name: "Hoodies", icon: Shirt, href: categoryHref("Hoodies") },
+  { name: "Pants", icon: Shirt, href: categoryHref("Pants") },
+  { name: "Accessories", icon: Watch, href: categoryHref("Accessories") },
 ];
 
 export default function Sidebar() {
@@ -80,7 +84,7 @@ export default function Sidebar() {
           ...categories.map((category) => ({
             name: category.name,
             icon: categoryIcons[category.name] || Smartphone,
-            href: "/products",
+            href: categoryHref(category.name),
           })),
         ]
       : FALLBACK_CATEGORY_ITEMS;
