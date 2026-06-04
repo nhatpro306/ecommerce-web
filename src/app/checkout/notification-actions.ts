@@ -91,10 +91,8 @@ export async function sendOrderCreatedNotificationAction(
   const customerName = escapeHtml(order.customer_name || input.customerName || "Khách hàng");
   const customerEmail = order.customer_email || input.customerEmail;
   const total = Number(order.total || input.total || 0);
-  const paymentLabel =
-    order.payment_method === "bank_transfer" || input.paymentMethod === "bank_transfer"
-      ? "Chuyển khoản"
-      : "COD";
+  const paymentMethod = order.payment_method || input.paymentMethod;
+  const paymentLabel = paymentMethod === "bank_transfer" ? "Chuyển khoản" : "COD";
 
   const sellerHtml = `
     <h1>RESEY có đơn hàng mới #${orderId}</h1>
