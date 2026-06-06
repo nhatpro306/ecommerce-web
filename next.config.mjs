@@ -40,6 +40,19 @@ const securityHeaders = [
     value:
       "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
   },
+  // Extra hardening — safe additions that do not depend on inline-script
+  // behavior, so they cannot break the store, Supabase, or checkout.
+  // Blocks legacy Flash/Acrobat cross-domain policy files.
+  {
+    key: "X-Permitted-Cross-Domain-Policies",
+    value: "none",
+  },
+  // Isolates our top-level browsing context (Spectre mitigation) while
+  // "allow-popups" keeps any popup-based auth/payment flow working.
+  {
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin-allow-popups",
+  },
 ];
 
 const nextConfig = {
